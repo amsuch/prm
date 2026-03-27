@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -16,12 +16,27 @@ import { supabase } from "@/lib/supabase";
 export default function SignIn() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState<"email" | "code">("email");
+  const [step, setStep] = useState<"email" | "waiting" | "code">("email");
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [codeError, setCodeError] = useState("");
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
-  const handleSendCode = async () => {
+  // Listen for auth state changes — handles magic link sign-in
+  useEffect(() => {
+    if (step !== "waiting" && step !== "code") return;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === "SIGNED_IN" && session) {
+          router.replace("/(app)/(tabs)");
+        }
+      },
+    );
+
+    return () => subscription.unsubscribe();
+  }, [step]);
+
+  const handleSendOtp = async () => {
     const trimmed = email.trim();
     if (!trimmed) {
       Alert.alert("Error", "Please enter your email");
@@ -36,7 +51,7 @@ export default function SignIn() {
         },
       });
       if (error) throw error;
-      setStep("code");
+      setStep("waiting");
       setCode(["", "", "", "", "", ""]);
       setCodeError("");
     } catch (e: unknown) {
@@ -70,7 +85,6 @@ export default function SignIn() {
   };
 
   const handleCodeChange = (index: number, value: string) => {
-    // Only allow digits
     const digit = value.replace(/[^0-9]/g, "").slice(-1);
     const newCode = [...code];
     newCode[index] = digit;
@@ -81,7 +95,6 @@ export default function SignIn() {
       inputRefs.current[index + 1]?.focus();
     }
 
-    // Auto-submit when all 6 digits entered
     const fullCode = newCode.join("");
     if (fullCode.length === 6 && newCode.every((d) => d !== "")) {
       handleVerifyCode(fullCode);
@@ -94,22 +107,6 @@ export default function SignIn() {
       newCode[index - 1] = "";
       setCode(newCode);
       inputRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handleCodePaste = (text: string) => {
-    const digits = text.replace(/[^0-9]/g, "").slice(0, 6);
-    if (digits.length > 0) {
-      const newCode = [...code];
-      for (let i = 0; i < digits.length; i++) {
-        newCode[i] = digits[i];
-      }
-      setCode(newCode);
-      if (digits.length === 6) {
-        handleVerifyCode(digits);
-      } else {
-        inputRefs.current[digits.length]?.focus();
-      }
     }
   };
 
@@ -139,7 +136,7 @@ export default function SignIn() {
     }
   };
 
-  const handleResendCode = async () => {
+  const handleResend = async () => {
     setLoading(true);
     setCodeError("");
     try {
@@ -149,7 +146,7 @@ export default function SignIn() {
       });
       if (error) throw error;
       setCode(["", "", "", "", "", ""]);
-      Alert.alert("Sent", "A new code has been sent to your email.");
+      Alert.alert("Sent", "A new sign-in email has been sent.");
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Failed to resend";
       Alert.alert("Error", msg);
@@ -158,8 +155,10 @@ export default function SignIn() {
     }
   };
 
-  // Step 2: Enter verification code
-  if (step === "code") {
+  // ============================================================
+  // Step 2: Waiting for magic link or code entry
+  // ============================================================
+  if (step === "waiting" || step === "code") {
     return (
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -168,69 +167,103 @@ export default function SignIn() {
         <View className="flex-1 items-center justify-center px-6">
           <View className="w-full max-w-sm items-center">
             <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-blue-100">
-              <Ionicons name="shield-checkmark-outline" size={32} color="#2563eb" />
+              <Ionicons name="mail-outline" size={32} color="#2563eb" />
             </View>
             <Text className="text-xl font-bold text-gray-900">
-              Enter verification code
+              Check your email
             </Text>
             <Text className="mt-2 text-center text-sm text-gray-500">
-              We sent a 6-digit code to{"\n"}
-              <Text className="font-medium text-gray-700">{email}</Text>
+              We sent a sign-in link to
             </Text>
+            <Text className="mt-1 font-medium text-gray-700">{email}</Text>
 
-            {/* Code input */}
-            <View className="mt-8 flex-row gap-2">
-              {code.map((digit, index) => (
-                <TextInput
-                  key={index}
-                  ref={(ref) => { inputRefs.current[index] = ref; }}
-                  value={digit}
-                  onChangeText={(value) => {
-                    // Handle paste of full code
-                    if (value.length > 1) {
-                      handleCodePaste(value);
-                    } else {
-                      handleCodeChange(index, value);
-                    }
-                  }}
-                  onKeyPress={({ nativeEvent }) =>
-                    handleCodeKeyPress(index, nativeEvent.key)
-                  }
-                  keyboardType="number-pad"
-                  maxLength={1}
-                  autoFocus={index === 0}
-                  selectTextOnFocus
-                  className={`h-14 w-11 rounded-xl border-2 text-center text-xl font-bold ${
-                    codeError
-                      ? "border-red-300 bg-red-50 text-red-600"
-                      : digit
-                        ? "border-blue-400 bg-blue-50 text-blue-700"
-                        : "border-gray-200 bg-gray-50 text-gray-900"
-                  }`}
-                />
-              ))}
+            {/* Primary action: click the link */}
+            <View className="mt-6 w-full rounded-xl border border-blue-200 bg-blue-50 p-4">
+              <View className="flex-row items-center">
+                <Ionicons name="link-outline" size={20} color="#2563eb" />
+                <Text className="ml-2 text-sm font-medium text-blue-800">
+                  Click the link in your email to sign in
+                </Text>
+              </View>
+              <Text className="mt-2 text-xs text-blue-600">
+                The link will sign you in automatically.
+                {Platform.OS === "web"
+                  ? " Make sure to open it in this browser."
+                  : ""}
+              </Text>
             </View>
 
-            {/* Error */}
-            {codeError ? (
-              <View className="mt-3 flex-row items-center">
-                <Ionicons name="alert-circle" size={14} color="#ef4444" />
-                <Text className="ml-1 text-sm text-red-500">{codeError}</Text>
-              </View>
-            ) : null}
+            {/* Alternative: enter code */}
+            <Pressable
+              onPress={() => setStep(step === "code" ? "waiting" : "code")}
+              className="mt-4"
+            >
+              <Text className="text-sm text-blue-600">
+                {step === "code"
+                  ? "Hide code input"
+                  : "Have a 6-digit code instead?"}
+              </Text>
+            </Pressable>
 
-            {/* Loading */}
-            {loading && (
-              <View className="mt-4">
-                <ActivityIndicator color="#2563eb" />
+            {step === "code" && (
+              <View className="mt-4 items-center">
+                <View className="flex-row gap-2">
+                  {code.map((digit, index) => (
+                    <TextInput
+                      key={index}
+                      ref={(ref) => {
+                        inputRefs.current[index] = ref;
+                      }}
+                      value={digit}
+                      onChangeText={(value) => {
+                        if (value.length > 1) {
+                          // Handle paste
+                          const digits = value
+                            .replace(/[^0-9]/g, "")
+                            .slice(0, 6);
+                          const newCode = [...code];
+                          for (let i = 0; i < digits.length; i++) {
+                            newCode[i] = digits[i];
+                          }
+                          setCode(newCode);
+                          if (digits.length === 6) handleVerifyCode(digits);
+                          else inputRefs.current[digits.length]?.focus();
+                        } else {
+                          handleCodeChange(index, value);
+                        }
+                      }}
+                      onKeyPress={({ nativeEvent }) =>
+                        handleCodeKeyPress(index, nativeEvent.key)
+                      }
+                      keyboardType="number-pad"
+                      maxLength={1}
+                      autoFocus={index === 0}
+                      selectTextOnFocus
+                      className={`h-12 w-10 rounded-lg border-2 text-center text-lg font-bold ${
+                        codeError
+                          ? "border-red-300 bg-red-50 text-red-600"
+                          : digit
+                            ? "border-blue-400 bg-blue-50 text-blue-700"
+                            : "border-gray-200 bg-gray-50 text-gray-900"
+                      }`}
+                    />
+                  ))}
+                </View>
+                {codeError && (
+                  <Text className="mt-2 text-xs text-red-500">{codeError}</Text>
+                )}
               </View>
             )}
 
-            {/* Actions */}
+            {loading && (
+              <ActivityIndicator className="mt-4" color="#2563eb" />
+            )}
+
+            {/* Bottom actions */}
             <View className="mt-8 items-center gap-3">
-              <Pressable onPress={handleResendCode} disabled={loading}>
+              <Pressable onPress={handleResend} disabled={loading}>
                 <Text className="text-sm font-medium text-blue-600">
-                  Resend code
+                  Resend email
                 </Text>
               </Pressable>
               <Pressable
@@ -251,7 +284,9 @@ export default function SignIn() {
     );
   }
 
+  // ============================================================
   // Step 1: Enter email
+  // ============================================================
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -287,7 +322,7 @@ export default function SignIn() {
             />
 
             <Pressable
-              onPress={handleSendCode}
+              onPress={handleSendOtp}
               disabled={loading}
               className="mb-3 items-center rounded-xl bg-blue-600 py-3.5 active:bg-blue-700"
             >
@@ -301,7 +336,7 @@ export default function SignIn() {
             </Pressable>
 
             <Text className="text-center text-xs text-gray-400">
-              We'll send you a verification code. No password needed.
+              We'll send you a sign-in link. No password needed.
             </Text>
 
             {/* Divider */}
