@@ -13,6 +13,7 @@ import {
   promotePersonToContact,
 } from "@/lib/entities";
 import { callLLM, type LLMConfig } from "@/lib/llm";
+import { askWithSQL } from "@/lib/sqlAgent";
 
 export type AgentResultContact = {
   id: string;
@@ -83,7 +84,8 @@ export type AgentResponse =
   | { type: "error"; message: string }
   | { type: "action"; message: string; actionType: ActionType; count?: number; contact?: AgentResultContact }
   | { type: "pending_action"; message: string; pendingAction: PendingAction }
-  | { type: "entities"; message: string; entities: EntityResult[] };
+  | { type: "entities"; message: string; entities: EntityResult[] }
+  | { type: "sql_result"; message: string; sql: string; rows: Record<string, unknown>[]; rowCount: number };
 
 // Row types used for casting Supabase query results
 type ContactRow = Tables<"contacts">;
@@ -633,30 +635,46 @@ async function handleLLMQuery(
   userId: string,
   llmConfig: LLMConfig,
 ): Promise<AgentResponse> {
-  // Gather context from the user's contacts
-  const context = await buildContactContext(userId, query);
-
+  // Try text-to-SQL first for data questions
   try {
-    const response = await callLLM(
-      llmConfig,
-      [{ role: "user", content: query }],
-      context,
-    );
-
+    const result = await askWithSQL(query, userId, llmConfig);
     return {
-      type: "text",
-      message: response.content,
+      type: "sql_result",
+      message: result.summary,
+      sql: result.sql,
+      rows: result.rows,
+      rowCount: result.rowCount,
     };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "LLM request failed";
-    // If LLM fails, fall back to structured search
-    if (msg.includes("API") || msg.includes("401") || msg.includes("403")) {
+  } catch (sqlErr) {
+    const sqlMsg = sqlErr instanceof Error ? sqlErr.message : "";
+
+    // If it's an API key issue, surface it immediately
+    if (sqlMsg.includes("401") || sqlMsg.includes("403") || sqlMsg.includes("invalid")) {
       return {
         type: "error",
-        message: `AI provider error: ${msg}\n\nCheck your API key in Settings.`,
+        message: `AI provider error: ${sqlMsg}\n\nCheck your API key in Settings.`,
       };
     }
-    return await handleSearch(query, userId);
+
+    // If SQL generation/execution failed, fall back to conversational LLM
+    try {
+      const context = await buildContactContext(userId, query);
+      const response = await callLLM(
+        llmConfig,
+        [{ role: "user", content: query }],
+        context,
+      );
+      return { type: "text", message: response.content };
+    } catch (llmErr) {
+      const msg = llmErr instanceof Error ? llmErr.message : "LLM request failed";
+      if (msg.includes("API") || msg.includes("401") || msg.includes("403")) {
+        return {
+          type: "error",
+          message: `AI provider error: ${msg}\n\nCheck your API key in Settings.`,
+        };
+      }
+      return await handleSearch(query, userId);
+    }
   }
 }
 
