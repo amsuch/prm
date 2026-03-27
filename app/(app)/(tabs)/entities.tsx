@@ -99,7 +99,7 @@ export default function EntitiesScreen() {
           data={entities}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => <EntityCard entity={item} />}
-          contentContainerStyle={{ paddingTop: 4, paddingBottom: 100 }}
+          contentContainerStyle={{ paddingTop: 4, paddingBottom: 96 }}
           showsVerticalScrollIndicator={false}
           onRefresh={refresh}
           refreshing={false}

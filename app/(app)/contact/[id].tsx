@@ -98,7 +98,7 @@ export default function ContactDetailScreen() {
     <View className="flex-1 bg-gray-50">
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 96 }}
       >
         {/* Header */}
         <ContactHeader contact={contact} />

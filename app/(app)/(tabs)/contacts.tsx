@@ -137,7 +137,7 @@ export default function ContactsScreen() {
       <SearchBar value={searchText} onChangeText={setSearchText} />
 
       {/* Filter Row */}
-      <View className="flex-row items-center justify-between pr-4">
+      <View className="flex-row items-center justify-between px-4">
         <View className="flex-1">
           <FilterChips
             activeFilter={filterBy}
@@ -148,21 +148,21 @@ export default function ContactsScreen() {
         <View className="flex-row items-center gap-2">
           <Pressable
             onPress={() => router.push("/(app)/(tabs)/import")}
-            className="flex-row items-center rounded-full bg-white px-3 py-1.5 shadow-sm"
+            className="flex-row items-center rounded-full bg-white px-3 py-1.5 shadow-sm active:bg-gray-50"
           >
             <Ionicons name="download-outline" size={14} color={Colors.brand[600]} />
             <Text className="ml-1 text-xs font-medium text-blue-600">Import</Text>
           </Pressable>
           <Pressable
             onPress={() => router.push("/(app)/bulk-link")}
-            className="flex-row items-center rounded-full bg-white px-3 py-1.5 shadow-sm"
+            className="flex-row items-center rounded-full bg-white px-3 py-1.5 shadow-sm active:bg-gray-50"
           >
             <Ionicons name="link" size={14} color={Colors.brand[600]} />
             <Text className="ml-1 text-xs font-medium text-blue-600">Link</Text>
           </Pressable>
           <Pressable
             onPress={cycleSortOption}
-            className="flex-row items-center rounded-full bg-white px-3 py-1.5 shadow-sm"
+            className="flex-row items-center rounded-full bg-white px-3 py-1.5 shadow-sm active:bg-gray-50"
           >
             <Ionicons name="swap-vertical" size={14} color={Colors.gray[500]} />
             <Text className="ml-1 text-xs font-medium text-gray-500">
@@ -183,7 +183,7 @@ export default function ContactsScreen() {
           data={contacts}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => <ContactCard contact={item} />}
-          contentContainerStyle={{ paddingTop: 4, paddingBottom: 100 }}
+          contentContainerStyle={{ paddingTop: 4, paddingBottom: 96 }}
           showsVerticalScrollIndicator={false}
           onRefresh={refresh}
           refreshing={isRefreshing}

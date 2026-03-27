@@ -6,6 +6,7 @@ import { useDashboard } from "@/hooks/useDashboard";
 import { DashboardStats } from "@/components/DashboardStats";
 import { RecentActivity } from "@/components/RecentActivity";
 import { getInitials, formatDate } from "@/lib/utils";
+import { Colors } from "@/constants/colors";
 
 export default function HomeScreen() {
   const { session } = useSession();
@@ -21,10 +22,10 @@ export default function HomeScreen() {
     <ScrollView
       className="flex-1 bg-gray-50"
       refreshControl={
-        <RefreshControl refreshing={false} onRefresh={refetch} tintColor="#2563eb" />
+        <RefreshControl refreshing={false} onRefresh={refetch} tintColor={Colors.brand[600]} />
       }
     >
-      <View className="px-5 pt-4 pb-8">
+      <View className="px-4 pt-5 pb-24">
         {/* Greeting */}
         <Text className="text-2xl font-bold text-gray-900">Hi, {name}</Text>
         <Text className="mt-1 text-gray-500">
@@ -46,7 +47,7 @@ export default function HomeScreen() {
             onPress={() => router.push("/(app)/(tabs)/import")}
             className="flex-1 items-center rounded-xl bg-white py-4 shadow-sm active:bg-gray-50"
           >
-            <Ionicons name="download-outline" size={22} color="#2563eb" />
+            <Ionicons name="download-outline" size={22} color={Colors.brand[600]} />
             <Text className="mt-1 text-sm font-medium text-gray-700">
               Import
             </Text>
@@ -55,7 +56,7 @@ export default function HomeScreen() {
             onPress={() => router.push("/(app)/(tabs)/contacts")}
             className="flex-1 items-center rounded-xl bg-white py-4 shadow-sm active:bg-gray-50"
           >
-            <Ionicons name="search-outline" size={22} color="#2563eb" />
+            <Ionicons name="search-outline" size={22} color={Colors.brand[600]} />
             <Text className="mt-1 text-sm font-medium text-gray-700">
               Search
             </Text>

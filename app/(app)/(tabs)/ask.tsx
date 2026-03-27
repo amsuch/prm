@@ -331,7 +331,7 @@ export default function AskScreen() {
               keyExtractor={keyExtractor}
               contentContainerStyle={{
                 paddingTop: 16,
-                paddingBottom: 8,
+                paddingBottom: 16,
               }}
               onContentSizeChange={() =>
                 flatListRef.current?.scrollToEnd({ animated: true })

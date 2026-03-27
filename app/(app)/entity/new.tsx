@@ -101,7 +101,7 @@ export default function NewEntityScreen() {
           <View className="mb-3">
             <Text className="mb-1 text-sm font-medium text-gray-700">Name *</Text>
             <TextInput
-              className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-base text-gray-900"
+              className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
               placeholder="e.g. Joe's Diner, Planet Fitness"
               placeholderTextColor={Colors.gray[400]}
               value={name}
@@ -114,7 +114,7 @@ export default function NewEntityScreen() {
           <View className="mb-3" style={{ zIndex: 10 }}>
             <Text className="mb-1 text-sm font-medium text-gray-700">Category</Text>
             <TextInput
-              className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-base text-gray-900"
+              className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
               placeholder="e.g. Restaurant, Gym, Company"
               placeholderTextColor={Colors.gray[400]}
               value={category}
@@ -154,7 +154,7 @@ export default function NewEntityScreen() {
           <View className="mb-3">
             <Text className="mb-1 text-sm font-medium text-gray-700">Address</Text>
             <TextInput
-              className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-base text-gray-900"
+              className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
               placeholder="Street address"
               placeholderTextColor={Colors.gray[400]}
               value={address}
@@ -166,7 +166,7 @@ export default function NewEntityScreen() {
           <View className="mb-3">
             <Text className="mb-1 text-sm font-medium text-gray-700">Phone</Text>
             <TextInput
-              className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-base text-gray-900"
+              className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
               placeholder="Phone number"
               placeholderTextColor={Colors.gray[400]}
               value={phone}
@@ -179,7 +179,7 @@ export default function NewEntityScreen() {
           <View className="mb-3">
             <Text className="mb-1 text-sm font-medium text-gray-700">Website</Text>
             <TextInput
-              className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-base text-gray-900"
+              className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
               placeholder="https://example.com"
               placeholderTextColor={Colors.gray[400]}
               value={website}
@@ -193,7 +193,7 @@ export default function NewEntityScreen() {
           <View className="mb-3">
             <Text className="mb-1 text-sm font-medium text-gray-700">Notes</Text>
             <TextInput
-              className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-base text-gray-900"
+              className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
               placeholder="Optional notes about this place"
               placeholderTextColor={Colors.gray[400]}
               value={notes}

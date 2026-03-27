@@ -12,6 +12,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useSession } from "@/lib/auth/ctx";
 import { supabase } from "@/lib/supabase";
+import { Colors } from "@/constants/colors";
 import { getInitials } from "@/lib/utils";
 import { CustomFieldManager } from "@/components/CustomFieldManager";
 import { RelationshipTypeManager } from "@/components/RelationshipTypeManager";
@@ -32,7 +33,7 @@ const TAG_COLORS = [
 
 function SectionHeader({ title }: { title: string }) {
   return (
-    <Text className="mb-2 mt-6 px-5 text-xs font-semibold uppercase tracking-wider text-gray-400">
+    <Text className="mb-2 mt-6 px-4 text-xs font-semibold uppercase tracking-wider text-gray-400">
       {title}
     </Text>
   );
@@ -86,7 +87,7 @@ function ProfileCard() {
   }, [session?.user?.id, fullName]);
 
   return (
-    <View className="mx-5 overflow-hidden rounded-xl bg-white shadow-sm">
+    <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm">
       <View className="items-center px-4 py-6">
         <View className="h-16 w-16 items-center justify-center rounded-full bg-blue-100">
           <Text className="text-xl font-bold text-blue-700">{initials}</Text>
@@ -98,8 +99,8 @@ function ProfileCard() {
               value={fullName}
               onChangeText={setFullName}
               placeholder="Full name"
-              className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-center text-sm text-gray-900"
-              placeholderTextColor="#9ca3af"
+              className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-center text-base text-gray-900"
+              placeholderTextColor={Colors.gray[400]}
               autoFocus
             />
             <View className="mt-3 flex-row justify-center gap-3">
@@ -241,7 +242,7 @@ function TagManager() {
     <View>
       {tags.length === 0 && !isAdding && (
         <View className="items-center py-6">
-          <Ionicons name="pricetag-outline" size={28} color="#d1d5db" />
+          <Ionicons name="pricetag-outline" size={28} color={Colors.gray[300]} />
           <Text className="mt-1 text-sm text-gray-400">No tags created</Text>
         </View>
       )}
@@ -264,7 +265,7 @@ function TagManager() {
               className="rounded-lg p-2 active:bg-red-50"
               hitSlop={8}
             >
-              <Ionicons name="trash-outline" size={16} color="#ef4444" />
+              <Ionicons name="trash-outline" size={16} color={Colors.error} />
             </Pressable>
           </View>
         </View>
@@ -276,8 +277,8 @@ function TagManager() {
             value={newTagName}
             onChangeText={setNewTagName}
             placeholder="Tag name"
-            className="mb-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900"
-            placeholderTextColor="#9ca3af"
+            className="mb-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
+            placeholderTextColor={Colors.gray[400]}
             autoFocus
           />
 
@@ -334,7 +335,7 @@ function TagManager() {
             onPress={() => setIsAdding(true)}
             className="flex-row items-center justify-center rounded-lg border border-dashed border-gray-300 py-2.5 active:bg-gray-50"
           >
-            <Ionicons name="add" size={18} color="#2563eb" />
+            <Ionicons name="add" size={18} color={Colors.brand[600]} />
             <Text className="ml-1 text-sm font-medium text-blue-600">
               Add Tag
             </Text>
@@ -452,7 +453,7 @@ function AIKeyManager() {
       </Text>
 
       {/* Provider toggle */}
-      <View className="mb-3 flex-row overflow-hidden rounded-lg border border-gray-200">
+      <View className="mb-3 flex-row overflow-hidden rounded-xl border border-gray-200">
         <Pressable
           onPress={() => { setProvider("anthropic"); setModel(AI_MODELS.anthropic[0].id); setSaved(false); }}
           className={`flex-1 items-center py-2.5 ${
@@ -515,7 +516,7 @@ function AIKeyManager() {
       </View>
 
       {/* API Key input */}
-      <View className="mb-3 flex-row items-center rounded-lg border border-gray-200 bg-gray-50">
+      <View className="mb-3 flex-row items-center rounded-xl border border-gray-200 bg-gray-50">
         <TextInput
           value={showKey ? apiKey : (apiKey ? maskedKey : "")}
           onChangeText={(t) => { setApiKey(t); setSaved(false); }}
@@ -524,7 +525,7 @@ function AIKeyManager() {
               ? "sk-ant-api03-..."
               : "sk-..."
           }
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor={Colors.gray[400]}
           className="flex-1 px-3 py-2.5 text-sm text-gray-900"
           autoCapitalize="none"
           autoCorrect={false}
@@ -538,7 +539,7 @@ function AIKeyManager() {
             <Ionicons
               name={showKey ? "eye-off-outline" : "eye-outline"}
               size={18}
-              color="#6b7280"
+              color={Colors.gray[500]}
             />
           </Pressable>
         )}
@@ -557,7 +558,7 @@ function AIKeyManager() {
           <Ionicons
             name={showPrompt ? "chevron-up" : "chevron-down"}
             size={14}
-            color="#9ca3af"
+            color={Colors.gray[400]}
           />
         </View>
       </Pressable>
@@ -567,11 +568,11 @@ function AIKeyManager() {
             value={systemPrompt}
             onChangeText={(t) => { setSystemPrompt(t); setSaved(false); }}
             placeholder="Instructions for the AI assistant..."
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor={Colors.gray[400]}
             multiline
             numberOfLines={6}
             textAlignVertical="top"
-            className="mb-2 min-h-[120px] rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900"
+            className="mb-2 min-h-[120px] rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
           />
           {systemPrompt !== DEFAULT_SYSTEM_PROMPT && (
             <Pressable
@@ -620,7 +621,7 @@ function AIKeyManager() {
 
       {saved && (
         <View className="mt-2 flex-row items-center">
-          <Ionicons name="checkmark-circle" size={14} color="#16a34a" />
+          <Ionicons name="checkmark-circle" size={14} color={Colors.success} />
           <Text className="ml-1 text-xs text-green-600">
             Saved — using {AI_MODELS[provider].find((m) => m.id === model)?.label ?? model}
           </Text>
@@ -657,38 +658,38 @@ export default function SettingsScreen() {
   }, [signOut]);
 
   return (
-    <ScrollView className="flex-1 bg-gray-50">
+    <ScrollView className="flex-1 bg-gray-50" contentContainerClassName="pb-24">
       {/* Profile */}
       <SectionHeader title="Profile" />
       <ProfileCard />
 
       {/* Custom Fields */}
       <SectionHeader title="Custom Fields" />
-      <View className="mx-5 overflow-hidden rounded-xl bg-white shadow-sm">
+      <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm">
         <CustomFieldManager />
       </View>
 
       {/* Tags */}
       <SectionHeader title="Tags" />
-      <View className="mx-5 overflow-hidden rounded-xl bg-white shadow-sm">
+      <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm">
         <TagManager />
       </View>
 
       {/* Relationship Types */}
       <SectionHeader title="Relationship Types" />
-      <View className="mx-5 overflow-hidden rounded-xl bg-white shadow-sm">
+      <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm">
         <RelationshipTypeManager />
       </View>
 
       {/* AI API Keys */}
       <SectionHeader title="AI Provider" />
-      <View className="mx-5 overflow-hidden rounded-xl bg-white shadow-sm">
+      <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm">
         <AIKeyManager />
       </View>
 
       {/* About */}
       <SectionHeader title="About" />
-      <View className="mx-5 overflow-hidden rounded-xl bg-white shadow-sm">
+      <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm">
         <View className="px-4 py-4">
           <View className="flex-row items-center justify-between">
             <Text className="text-sm text-gray-500">Version</Text>
@@ -696,7 +697,7 @@ export default function SettingsScreen() {
           </View>
           <View className="mt-3 h-px bg-gray-100" />
           <View className="mt-3 flex-row items-center">
-            <Ionicons name="heart-outline" size={14} color="#6b7280" />
+            <Ionicons name="heart-outline" size={14} color={Colors.gray[500]} />
             <Text className="ml-1.5 text-sm text-gray-500">
               Built with Expo + Supabase
             </Text>
@@ -705,7 +706,7 @@ export default function SettingsScreen() {
       </View>
 
       {/* Sign Out */}
-      <View className="mx-5 mt-6 mb-12">
+      <View className="mx-4 mt-6 mb-12">
         <Pressable
           onPress={handleSignOut}
           disabled={isSigningOut}

@@ -12,6 +12,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { supabase } from "@/lib/supabase";
+import { Colors } from "@/constants/colors";
 
 type Step = "email" | "sent";
 
@@ -130,7 +131,7 @@ export default function SignIn() {
       <View className="flex-1 items-center justify-center bg-gray-50 px-6">
         <View className="w-full max-w-sm items-center">
           <View className="mb-5 h-16 w-16 items-center justify-center rounded-full bg-blue-100">
-            <Ionicons name="mail-outline" size={32} color="#2563eb" />
+            <Ionicons name="mail-outline" size={32} color={Colors.brand[600]} />
           </View>
 
           <Text className="text-xl font-bold text-gray-900">
@@ -151,7 +152,7 @@ export default function SignIn() {
 
           {/* Waiting indicator */}
           <View className="mt-6 flex-row items-center rounded-xl bg-blue-50 px-4 py-3">
-            <ActivityIndicator size="small" color="#2563eb" />
+            <ActivityIndicator size="small" color={Colors.brand[600]} />
             <Text className="ml-3 text-sm text-blue-700">
               Waiting for sign-in...
             </Text>
@@ -211,7 +212,7 @@ export default function SignIn() {
             <TextInput
               className="mb-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
               placeholder="you@example.com"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={Colors.gray[400]}
               value={email}
               onChangeText={(t) => { setEmail(t); setError(""); }}
               autoCapitalize="none"
@@ -224,7 +225,7 @@ export default function SignIn() {
 
             {error ? (
               <View className="mb-3 flex-row items-start rounded-lg bg-red-50 px-3 py-2">
-                <Ionicons name="alert-circle" size={16} color="#ef4444" />
+                <Ionicons name="alert-circle" size={16} color={Colors.error} />
                 <Text className="ml-2 flex-1 text-sm text-red-600">{error}</Text>
               </View>
             ) : null}
@@ -288,7 +289,7 @@ export default function SignIn() {
                 }}
                 className="mt-3 flex-row items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 py-2.5 active:bg-gray-100"
               >
-                <Ionicons name="flash-outline" size={16} color="#6b7280" />
+                <Ionicons name="flash-outline" size={16} color={Colors.gray[500]} />
                 <Text className="ml-1.5 text-sm font-medium text-gray-500">
                   Dev Quick Sign In
                 </Text>

@@ -1,12 +1,13 @@
 import { View, Text, ScrollView, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { Colors } from "@/constants/colors";
 
 export default function ImportScreen() {
   return (
     <ScrollView
       className="flex-1 bg-gray-50"
-      contentContainerClassName="p-4 pb-8"
+      contentContainerClassName="px-4 pt-5 pb-24"
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
@@ -23,7 +24,7 @@ export default function ImportScreen() {
       <ImportCard
         icon="document-text-outline"
         iconBgColor="bg-blue-100"
-        iconColor="#2563eb"
+        iconColor={Colors.brand[600]}
         title="LinkedIn CSV"
         description="Export your LinkedIn connections and import them here. We automatically map columns and detect duplicates."
         features={[
@@ -57,7 +58,7 @@ export default function ImportScreen() {
           <Ionicons
             name="information-circle-outline"
             size={20}
-            color="#6b7280"
+            color={Colors.gray[500]}
           />
           <Text className="text-sm font-medium text-gray-700">
             About Importing
@@ -115,7 +116,7 @@ function ImportCard({
               {title}
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+          <Ionicons name="chevron-forward" size={20} color={Colors.gray[400]} />
         </View>
 
         {/* Description */}
@@ -130,7 +131,7 @@ function ImportCard({
               <Ionicons
                 name="checkmark-circle"
                 size={16}
-                color="#10b981"
+                color={Colors.success}
               />
               <Text className="flex-1 text-xs text-gray-600">{feature}</Text>
             </View>

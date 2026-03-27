@@ -160,7 +160,7 @@ export default function EntityDetailScreen() {
     <View className="flex-1 bg-gray-50">
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 96 }}
       >
         {/* Header Card */}
         <View className="mx-4 mt-4 rounded-xl bg-white p-4 shadow-sm">
