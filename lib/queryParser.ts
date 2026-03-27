@@ -173,14 +173,19 @@ export function parseQuery(input: string): ParsedQuery {
   // --- Link contacts (create relationship) ---
   // "link John and Jane as colleagues"
   // "connect John Smith to Jane Doe as friends"
-  // "John is Jane's manager"
+  // "John is Jane's manager" — nameA=John (the manager), nameB=Jane
+  // "John is Jane's child" — nameA=John (the child), nameB=Jane
   // "make John and Jane siblings"
   // "link John to Jane"
+  // "John and Jane are friends"
+  // "make John Jane's mentor"
   const linkPatterns = [
     /^(?:link|connect)\s+(.+?)\s+(?:and|to|with)\s+(.+?)\s+as\s+['"]?(.+?)['"]?[\s.!]*$/i,
-    /^(?:link|connect)\s+(.+?)\s+(?:and|to|with)\s+(.+?)[\s.!]*$/i,
     /^(?:make|set)\s+(.+?)\s+(?:and)\s+(.+?)\s+(?:as\s+)?['"]?(.+?)['"]?[\s.!]*$/i,
+    /^(?:make|set)\s+(.+?)\s+(.+?)['']s\s+(\w+)[\s.!]*$/i,
+    /^(.+?)\s+(?:and)\s+(.+?)\s+are\s+['"]?(.+?)['"]?[\s.!]*$/i,
     /^(.+?)\s+is\s+(.+?)['']s\s+(\w+)[\s.!]*$/i,
+    /^(?:link|connect)\s+(.+?)\s+(?:and|to|with)\s+(.+?)[\s.!]*$/i,
   ];
 
   for (const pattern of linkPatterns) {

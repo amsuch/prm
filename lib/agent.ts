@@ -1310,18 +1310,42 @@ async function handleLinkContacts(
     return { type: "text", message: "Can't link a contact to themselves." };
   }
 
-  // Find the relationship type
+  // Find the relationship type — check both name and reverse_name for direction
+  type RelType = { id: string; name: string; reverse_name: string | null; is_symmetric: boolean };
   let relTypeId: string | null = null;
+  let swapDirection = false;
+
   if (relationshipName) {
-    const { data: rtData } = await supabase
+    const rn = relationshipName.toLowerCase();
+
+    // Fetch all visible types to find the best match
+    const { data: allTypes } = await supabase
       .from("relationship_types")
-      .select("id, name")
-      .or(`user_id.eq.${userId},is_system.eq.true`)
-      .ilike("name", `%${relationshipName}%`)
-      .limit(1);
-    const types = (rtData as unknown as { id: string; name: string }[]) ?? [];
-    if (types.length > 0) {
-      relTypeId = types[0].id;
+      .select("id, name, reverse_name, is_symmetric")
+      .or(`user_id.eq.${userId},is_system.eq.true`);
+    const types = (allTypes as unknown as RelType[]) ?? [];
+
+    // Try exact match on name first
+    const nameMatch = types.find((t) => t.name.toLowerCase() === rn);
+    if (nameMatch) {
+      relTypeId = nameMatch.id;
+    } else {
+      // Try match on reverse_name — if matched, swap A and B
+      const reverseMatch = types.find(
+        (t) => t.reverse_name && t.reverse_name.toLowerCase() === rn,
+      );
+      if (reverseMatch) {
+        relTypeId = reverseMatch.id;
+        if (!reverseMatch.is_symmetric) {
+          swapDirection = true;
+        }
+      } else {
+        // Fuzzy match on name
+        const fuzzy = types.find((t) => t.name.toLowerCase().includes(rn) || rn.includes(t.name.toLowerCase()));
+        if (fuzzy) {
+          relTypeId = fuzzy.id;
+        }
+      }
     }
   }
 
@@ -1331,32 +1355,28 @@ async function handleLinkContacts(
       .from("relationship_types")
       .select("id")
       .eq("is_system", true)
-      .eq("name", relationshipName ? relationshipName : "Friend")
+      .eq("name", "Friend")
       .limit(1);
     const defaults = (defaultType as unknown as { id: string }[]) ?? [];
     if (defaults.length > 0) {
       relTypeId = defaults[0].id;
     } else {
-      // Grab the first available type
-      const { data: anyType } = await supabase
-        .from("relationship_types")
-        .select("id")
-        .eq("is_system", true)
-        .limit(1);
-      const any = (anyType as unknown as { id: string }[]) ?? [];
-      if (any.length === 0) {
-        return { type: "error", message: "No relationship types available." };
-      }
-      relTypeId = any[0].id;
+      return { type: "error", message: "No relationship types available." };
     }
   }
+
+  // For asymmetric relationships: A is the "name" side, B is the "reverse_name" side
+  // e.g., "John is Jane's parent" → John=A(Parent), Jane=B(Child)
+  // If the user said the reverse_name, swap so the direction is correct
+  const contactA = swapDirection ? b : a;
+  const contactB = swapDirection ? a : b;
 
   // Create the relationship
   const { error: insertErr } = await supabase
     .from("contact_relationships")
     .insert({
-      contact_a_id: a.id,
-      contact_b_id: b.id,
+      contact_a_id: contactA.id,
+      contact_b_id: contactB.id,
       relationship_type_id: relTypeId,
     } as never);
 
