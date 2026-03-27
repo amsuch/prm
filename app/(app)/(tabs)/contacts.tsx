@@ -147,6 +147,13 @@ export default function ContactsScreen() {
         </View>
         <View className="flex-row items-center gap-2">
           <Pressable
+            onPress={() => router.push("/(app)/(tabs)/import")}
+            className="flex-row items-center rounded-full bg-white px-3 py-1.5 shadow-sm"
+          >
+            <Ionicons name="download-outline" size={14} color={Colors.brand[600]} />
+            <Text className="ml-1 text-xs font-medium text-blue-600">Import</Text>
+          </Pressable>
+          <Pressable
             onPress={() => router.push("/(app)/bulk-link")}
             className="flex-row items-center rounded-full bg-white px-3 py-1.5 shadow-sm"
           >

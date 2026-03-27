@@ -7,6 +7,11 @@ import { supabase } from "@/lib/supabase";
 import type { ParsedQuery } from "@/lib/queryParser";
 import { formatRelativeTime } from "@/lib/utils";
 import type { Tables } from "@/types/database";
+import {
+  createEntity,
+  addPersonToEntity,
+  promotePersonToContact,
+} from "@/lib/entities";
 
 export type AgentResultContact = {
   id: string;
@@ -44,7 +49,7 @@ export type StatsResult = {
   sourceBreakdown: { source: string; count: number }[];
 };
 
-export type ActionType = "add" | "update" | "link" | "bulk_tag" | "bulk_update" | "archive" | "enrich";
+export type ActionType = "add" | "update" | "link" | "bulk_tag" | "bulk_update" | "archive" | "enrich" | "create_entity" | "add_entity_person" | "promote_person";
 
 /** A serialized action that can be executed after user approval */
 export type PendingAction = {
@@ -59,6 +64,15 @@ export type PendingAction = {
   };
 };
 
+export type EntityResult = {
+  id: string;
+  name: string;
+  category: string | null;
+  address: string | null;
+  phone: string | null;
+  people_count?: number;
+};
+
 export type AgentResponse =
   | { type: "contacts"; message: string; contacts: AgentResultContact[] }
   | { type: "interaction"; message: string; interaction: InteractionResult | null }
@@ -67,7 +81,8 @@ export type AgentResponse =
   | { type: "text"; message: string }
   | { type: "error"; message: string }
   | { type: "action"; message: string; actionType: ActionType; count?: number; contact?: AgentResultContact }
-  | { type: "pending_action"; message: string; pendingAction: PendingAction };
+  | { type: "pending_action"; message: string; pendingAction: PendingAction }
+  | { type: "entities"; message: string; entities: EntityResult[] };
 
 // Row types used for casting Supabase query results
 type ContactRow = Tables<"contacts">;
@@ -126,6 +141,9 @@ export async function previewAction(
       archive_contacts: "archive",
       enrich_contact: "enrich",
       link_contacts: "link",
+      create_entity: "create_entity",
+      add_entity_person: "add_entity_person",
+      promote_person: "promote_person",
     };
 
     const actionType = actionTypeMap[parsed.intent] ?? "bulk_update";
@@ -191,6 +209,8 @@ export async function executeQuery(
         return await handleStats(userId);
       case "search":
         return await handleSearch(parsed.query, userId);
+      case "entity_lookup":
+        return await handleEntityLookup(parsed.query, userId);
       default:
         return await executeAction(parsed, userId);
     }
@@ -1163,6 +1183,12 @@ async function executeAction(
       return await handleEnrichContact(parsed.name, userId);
     case "link_contacts":
       return await handleLinkContacts(parsed.nameA, parsed.nameB, parsed.relationship, userId);
+    case "create_entity":
+      return await handleCreateEntity(parsed.name, parsed.category, parsed.address, userId);
+    case "add_entity_person":
+      return await handleAddEntityPerson(parsed.entityName, parsed.personName, parsed.role, userId);
+    case "promote_person":
+      return await handlePromotePerson(parsed.personName, parsed.entityName, userId);
     default:
       return { type: "error", message: "Unknown action type." };
   }
@@ -1399,6 +1425,239 @@ async function handleLinkContacts(
 }
 
 // ============================================================
+// Entity handlers
+// ============================================================
+
+type EntityRow = Tables<"entities">;
+type EntityPersonRow = Tables<"entity_people">;
+
+async function handleEntityLookup(
+  query: string,
+  userId: string,
+): Promise<AgentResponse> {
+  let dbQuery = supabase
+    .from("entities")
+    .select("*, entity_people(id)")
+    .eq("user_id", userId)
+    .eq("is_archived", false)
+    .order("name");
+
+  if (query) {
+    // Map common plural/singular words to category search
+    const categoryMap: Record<string, string> = {
+      restaurants: "restaurant",
+      restaurant: "restaurant",
+      gyms: "gym",
+      gym: "gym",
+      companies: "company",
+      company: "company",
+      clubs: "club",
+      club: "club",
+      schools: "school",
+      school: "school",
+      churches: "church",
+      church: "church",
+      stores: "store",
+      store: "store",
+      places: "",
+      place: "",
+      entities: "",
+      entity: "",
+      organizations: "",
+      organization: "",
+    };
+
+    const categorySearch = categoryMap[query.toLowerCase()];
+    if (categorySearch !== undefined && categorySearch !== "") {
+      dbQuery = dbQuery.ilike("category", `%${categorySearch}%`);
+    } else if (categorySearch === undefined) {
+      // Freeform search
+      dbQuery = dbQuery.or(
+        `name.ilike.%${query}%,category.ilike.%${query}%`,
+      );
+    }
+    // If categorySearch === "", show all entities
+  }
+
+  const { data, error } = await dbQuery.limit(20);
+  if (error) throw error;
+
+  type RawEntity = EntityRow & { entity_people: { id: string }[] };
+  const rawEntities = (data ?? []) as unknown as RawEntity[];
+
+  const entities: EntityResult[] = rawEntities.map((e) => ({
+    id: e.id,
+    name: e.name,
+    category: e.category,
+    address: e.address,
+    phone: e.phone,
+    people_count: e.entity_people?.length ?? 0,
+  }));
+
+  if (entities.length === 0) {
+    const suffix = query ? ` matching "${query}"` : "";
+    return {
+      type: "text",
+      message: `No entities found${suffix}. You can add one with "add a restaurant called ..."`,
+    };
+  }
+
+  const plural = entities.length === 1 ? "entity" : "entities";
+  const suffix = query ? ` matching "${query}"` : "";
+  return {
+    type: "entities",
+    message: `Found ${entities.length} ${plural}${suffix}:`,
+    entities,
+  };
+}
+
+async function handleCreateEntity(
+  name: string,
+  category: string | undefined,
+  address: string | undefined,
+  userId: string,
+): Promise<AgentResponse> {
+  const entity = await createEntity(userId, {
+    name,
+    category: category ?? null,
+    address: address ?? null,
+  });
+
+  const details: string[] = [];
+  if (category) details.push(`Category: ${category}`);
+  if (address) details.push(`Address: ${address}`);
+  const detailStr = details.length > 0 ? "\n" + details.join("\n") : "";
+
+  return {
+    type: "action",
+    message: `Created entity "${name}" successfully.${detailStr}`,
+    actionType: "create_entity",
+  };
+}
+
+async function handleAddEntityPerson(
+  entityName: string,
+  personName: string,
+  role: string | undefined,
+  userId: string,
+): Promise<AgentResponse> {
+  // Find the entity by name
+  const { data: entityData, error: entityError } = await supabase
+    .from("entities")
+    .select("id, name")
+    .eq("user_id", userId)
+    .eq("is_archived", false)
+    .ilike("name", `%${entityName}%`)
+    .limit(1);
+
+  if (entityError) throw entityError;
+
+  type EntitySlim = { id: string; name: string };
+  const entities = (entityData as unknown as EntitySlim[]) ?? [];
+
+  if (entities.length === 0) {
+    return {
+      type: "text",
+      message: `Couldn't find an entity matching "${entityName}". Create it first with "add a place called ${entityName}".`,
+    };
+  }
+
+  const entity = entities[0];
+
+  // Parse person name into first/last
+  const nameParts = personName.split(/\s+/);
+  const firstName = nameParts[0];
+  const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : undefined;
+
+  await addPersonToEntity(entity.id, userId, {
+    first_name: firstName,
+    last_name: lastName,
+    role: role ?? null,
+  });
+
+  return {
+    type: "action",
+    message: `Added ${personName} to "${entity.name}"${role ? ` as ${role}` : ""}.`,
+    actionType: "add_entity_person",
+  };
+}
+
+async function handlePromotePerson(
+  personName: string,
+  entityName: string,
+  userId: string,
+): Promise<AgentResponse> {
+  // Find the entity
+  const { data: entityData, error: entityError } = await supabase
+    .from("entities")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("is_archived", false)
+    .ilike("name", `%${entityName}%`)
+    .limit(1);
+
+  if (entityError) throw entityError;
+
+  const entities = (entityData as unknown as EntityRow[]) ?? [];
+  if (entities.length === 0) {
+    return {
+      type: "text",
+      message: `Couldn't find an entity matching "${entityName}".`,
+    };
+  }
+
+  const entity = entities[0];
+
+  // Find the person within the entity
+  const { data: peopleData, error: peopleError } = await supabase
+    .from("entity_people")
+    .select("*")
+    .eq("entity_id", entity.id)
+    .or(
+      `first_name.ilike.%${personName}%,last_name.ilike.%${personName}%`,
+    )
+    .limit(1);
+
+  if (peopleError) throw peopleError;
+
+  const people = (peopleData as unknown as EntityPersonRow[]) ?? [];
+  if (people.length === 0) {
+    return {
+      type: "text",
+      message: `Couldn't find anyone named "${personName}" at "${entity.name}".`,
+    };
+  }
+
+  const person = people[0];
+
+  if (person.promoted_contact_id) {
+    return {
+      type: "text",
+      message: `${personName} has already been promoted to a contact.`,
+    };
+  }
+
+  const contact = await promotePersonToContact(person, entity, userId);
+  const fullName = [contact.first_name, contact.last_name]
+    .filter(Boolean)
+    .join(" ");
+
+  return {
+    type: "action",
+    message: `Promoted ${fullName} from "${entity.name}" to a full contact.`,
+    actionType: "promote_person",
+    contact: {
+      id: contact.id,
+      first_name: contact.first_name,
+      last_name: contact.last_name,
+      company: contact.company,
+      job_title: contact.job_title,
+      avatar_url: contact.avatar_url,
+    },
+  };
+}
+
+// ============================================================
 // HITL helpers: preview what an action will do without executing
 // ============================================================
 
@@ -1406,11 +1665,14 @@ async function getAffectedCount(
   parsed: ParsedQuery,
   userId: string,
 ): Promise<number> {
-  // For add/enrich/link, the count is trivial
+  // For add/enrich/link/entity intents, the count is trivial
   if (parsed.intent === "add_contact") return 1;
   if (parsed.intent === "enrich_contact") return 1;
   if (parsed.intent === "update_contact") return 1;
   if (parsed.intent === "link_contacts") return 2;
+  if (parsed.intent === "create_entity") return 1;
+  if (parsed.intent === "add_entity_person") return 1;
+  if (parsed.intent === "promote_person") return 1;
 
   // For bulk ops, do a count query
   if (parsed.intent === "bulk_tag" || parsed.intent === "bulk_update") {
@@ -1552,6 +1814,36 @@ async function getAffectedContacts(
       return [...a, ...b];
     }
 
+    case "create_entity":
+      return [{
+        id: "new",
+        first_name: parsed.name,
+        last_name: null,
+        company: parsed.category ?? null,
+        job_title: null,
+        avatar_url: null,
+      }];
+
+    case "add_entity_person":
+      return [{
+        id: "new",
+        first_name: parsed.personName,
+        last_name: null,
+        company: parsed.entityName,
+        job_title: parsed.role ?? null,
+        avatar_url: null,
+      }];
+
+    case "promote_person":
+      return [{
+        id: "new",
+        first_name: parsed.personName,
+        last_name: null,
+        company: parsed.entityName,
+        job_title: null,
+        avatar_url: null,
+      }];
+
     default:
       return [];
   }
@@ -1581,6 +1873,12 @@ function describeAction(parsed: ParsedQuery): string {
       return `Research and enrich ${parsed.name}'s profile`;
     case "link_contacts":
       return `Link ${parsed.nameA} and ${parsed.nameB}${parsed.relationship ? ` as ${parsed.relationship}` : ""}`;
+    case "create_entity":
+      return `Create entity: ${parsed.name}${parsed.category ? ` (${parsed.category})` : ""}`;
+    case "add_entity_person":
+      return `Add ${parsed.personName} to ${parsed.entityName}${parsed.role ? ` as ${parsed.role}` : ""}`;
+    case "promote_person":
+      return `Promote ${parsed.personName} from ${parsed.entityName} to a contact`;
     default:
       return "Unknown action";
   }
@@ -1596,6 +1894,10 @@ function describeActionDetails(parsed: ParsedQuery): string | undefined {
       return `${parsed.field} → "${parsed.value}"`;
     case "link_contacts":
       return parsed.relationship ? `Relationship: ${parsed.relationship}` : undefined;
+    case "create_entity":
+      return parsed.category ? `Category: ${parsed.category}` : undefined;
+    case "add_entity_person":
+      return parsed.role ? `Role: ${parsed.role}` : undefined;
     default:
       return undefined;
   }

@@ -1,0 +1,109 @@
+import { View, Text, Pressable } from "react-native";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { Colors } from "@/constants/colors";
+import type { EntityWithCount } from "@/hooks/useEntities";
+
+type EntityCardProps = {
+  entity: EntityWithCount;
+};
+
+const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
+  restaurant: { bg: "#fef3c7", text: "#92400e" },
+  company: { bg: "#dbeafe", text: "#1e40af" },
+  gym: { bg: "#dcfce7", text: "#166534" },
+  club: { bg: "#f3e8ff", text: "#6b21a8" },
+  school: { bg: "#fce7f3", text: "#9d174d" },
+  church: { bg: "#e0e7ff", text: "#3730a3" },
+  store: { bg: "#ffedd5", text: "#9a3412" },
+  default: { bg: "#f3f4f6", text: "#374151" },
+};
+
+function getCategoryColor(category: string | null): { bg: string; text: string } {
+  if (!category) return CATEGORY_COLORS.default;
+  const key = category.toLowerCase();
+  return CATEGORY_COLORS[key] ?? CATEGORY_COLORS.default;
+}
+
+const AVATAR_COLORS = [
+  "#2563eb",
+  "#7c3aed",
+  "#db2777",
+  "#ea580c",
+  "#16a34a",
+  "#0891b2",
+  "#4f46e5",
+  "#c026d3",
+];
+
+function getAvatarColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+export function EntityCard({ entity }: EntityCardProps) {
+  const router = useRouter();
+  const categoryColor = getCategoryColor(entity.category);
+  const avatarBg = getAvatarColor(entity.name);
+  const initial = entity.name.charAt(0).toUpperCase();
+
+  return (
+    <Pressable
+      onPress={() => router.push(`/entity/${entity.id}` as never)}
+      className="mx-4 mb-2 flex-row items-center rounded-xl bg-white p-3 shadow-sm active:bg-gray-50"
+    >
+      {/* Avatar */}
+      <View
+        className="h-12 w-12 items-center justify-center rounded-full"
+        style={{ backgroundColor: avatarBg }}
+      >
+        <Ionicons name="business" size={22} color="white" />
+      </View>
+
+      {/* Info */}
+      <View className="ml-3 flex-1">
+        <Text className="text-base font-semibold text-gray-900" numberOfLines={1}>
+          {entity.name}
+        </Text>
+        {entity.category && (
+          <View className="mt-1 flex-row items-center">
+            <View
+              className="rounded-full px-2 py-0.5"
+              style={{ backgroundColor: categoryColor.bg }}
+            >
+              <Text
+                className="text-xs font-medium"
+                style={{ color: categoryColor.text }}
+              >
+                {entity.category}
+              </Text>
+            </View>
+            <Text className="ml-2 text-xs text-gray-400">
+              {entity.people_count} {entity.people_count === 1 ? "person" : "people"}
+            </Text>
+          </View>
+        )}
+        {!entity.category && entity.people_count > 0 && (
+          <Text className="mt-0.5 text-xs text-gray-400">
+            {entity.people_count} {entity.people_count === 1 ? "person" : "people"}
+          </Text>
+        )}
+        {entity.address && (
+          <Text className="mt-0.5 text-sm text-gray-500" numberOfLines={1}>
+            {entity.address}
+          </Text>
+        )}
+      </View>
+
+      {/* Chevron */}
+      <Ionicons
+        name="chevron-forward"
+        size={16}
+        color={Colors.gray[300]}
+      />
+    </Pressable>
+  );
+}

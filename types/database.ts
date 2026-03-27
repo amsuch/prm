@@ -427,6 +427,106 @@ export type Database = {
           },
         ];
       };
+      entities: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          category: string | null;
+          address: string | null;
+          phone: string | null;
+          website: string | null;
+          notes: string | null;
+          avatar_url: string | null;
+          is_archived: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          name: string;
+          category?: string | null;
+          address?: string | null;
+          phone?: string | null;
+          website?: string | null;
+          notes?: string | null;
+          avatar_url?: string | null;
+          is_archived?: boolean;
+        };
+        Update: {
+          name?: string;
+          category?: string | null;
+          address?: string | null;
+          phone?: string | null;
+          website?: string | null;
+          notes?: string | null;
+          avatar_url?: string | null;
+          is_archived?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "entities_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      entity_people: {
+        Row: {
+          id: string;
+          entity_id: string;
+          user_id: string;
+          first_name: string;
+          last_name: string | null;
+          role: string | null;
+          notes: string | null;
+          promoted_contact_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          entity_id: string;
+          user_id: string;
+          first_name: string;
+          last_name?: string | null;
+          role?: string | null;
+          notes?: string | null;
+          promoted_contact_id?: string | null;
+        };
+        Update: {
+          first_name?: string;
+          last_name?: string | null;
+          role?: string | null;
+          notes?: string | null;
+          promoted_contact_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "entity_people_entity_id_fkey";
+            columns: ["entity_id"];
+            isOneToOne: false;
+            referencedRelation: "entities";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "entity_people_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "entity_people_promoted_contact_id_fkey";
+            columns: ["promoted_contact_id"];
+            isOneToOne: false;
+            referencedRelation: "contacts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {

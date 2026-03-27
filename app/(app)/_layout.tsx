@@ -44,6 +44,18 @@ export default function AppLayout() {
         name="bulk-link"
         options={{ headerShown: true, title: "Bulk Link Contacts" }}
       />
+      <Stack.Screen
+        name="entity/[id]"
+        options={{ headerShown: true, title: "Entity" }}
+      />
+      <Stack.Screen
+        name="entity/new"
+        options={{ headerShown: true, title: "New Entity", presentation: "modal" }}
+      />
+      <Stack.Screen
+        name="entity/[id]/edit"
+        options={{ headerShown: true, title: "Edit Entity", presentation: "modal" }}
+      />
     </Stack>
   );
 }

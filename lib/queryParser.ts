@@ -19,7 +19,11 @@ export type ParsedQuery =
   | { intent: "bulk_update"; field: string; value: string; filter: { company?: string; tag?: string; source?: string } }
   | { intent: "archive_contacts"; filter: { days?: number; tag?: string; company?: string } }
   | { intent: "enrich_contact"; name: string }
-  | { intent: "link_contacts"; nameA: string; nameB: string; relationship?: string };
+  | { intent: "link_contacts"; nameA: string; nameB: string; relationship?: string }
+  | { intent: "create_entity"; name: string; category?: string; address?: string }
+  | { intent: "add_entity_person"; entityName: string; personName: string; role?: string }
+  | { intent: "promote_person"; personName: string; entityName: string }
+  | { intent: "entity_lookup"; query: string };
 
 /** Returns true if the intent mutates data and should go through HITL approval */
 export function isActionIntent(parsed: ParsedQuery): boolean {
@@ -30,6 +34,9 @@ export function isActionIntent(parsed: ParsedQuery): boolean {
     "bulk_update",
     "archive_contacts",
     "link_contacts",
+    "create_entity",
+    "add_entity_person",
+    "promote_person",
   ].includes(parsed.intent);
 }
 
@@ -219,6 +226,113 @@ export function parseQuery(input: string): ParsedQuery {
   for (const pattern of statsPatterns) {
     if (statsPatterns.some((p) => p.test(lower))) {
       return { intent: "stats" };
+    }
+  }
+
+  // --- Entity lookup ---
+  // "who works at Joe's Diner?"
+  // "show me my restaurants"
+  // "list my entities"
+  // "show my gyms"
+  // "what entities do I have?"
+  const entityLookupPatterns = [
+    /(?:show|list|find|get)\s+(?:me\s+)?(?:my\s+)?(?:all\s+)?(restaurants?|gyms?|companies|clubs?|schools?|churches|stores?|entities|places?|organizations?)[\s?!.]*$/i,
+    /(?:what|which)\s+(?:entities|places?|organizations?)\s+(?:do\s+)?i\s+have[\s?!.]*$/i,
+    /(?:my\s+)(restaurants?|gyms?|companies|clubs?|schools?|churches|stores?|entities|places?|organizations?)[\s?!.]*$/i,
+  ];
+
+  for (const pattern of entityLookupPatterns) {
+    const match = lower.match(pattern);
+    if (match) {
+      const query = match[1]?.trim() ?? "";
+      return { intent: "entity_lookup", query };
+    }
+  }
+
+  // --- Promote person from entity to contact ---
+  // "promote Sarah from Joe's Diner to a contact"
+  // "promote Sarah from Joe's Diner"
+  // "make Sarah from Joe's Diner a contact"
+  const promotePersonPatterns = [
+    /^(?:promote|upgrade)\s+(.+?)\s+from\s+(.+?)(?:\s+to\s+(?:a\s+)?contact)?[\s.!]*$/i,
+    /^(?:make)\s+(.+?)\s+from\s+(.+?)\s+(?:a\s+)?contact[\s.!]*$/i,
+  ];
+
+  for (const pattern of promotePersonPatterns) {
+    const match = trimmed.match(pattern);
+    if (match?.[1] && match[2]) {
+      return {
+        intent: "promote_person",
+        personName: match[1].trim(),
+        entityName: match[2].trim(),
+      };
+    }
+  }
+
+  // --- Add entity person ---
+  // "add Sarah as waitress at Joe's Diner"
+  // "add Bob as trainer at Planet Fitness"
+  // "add Jane to Joe's Diner as hostess"
+  const addEntityPersonPatterns = [
+    /^add\s+(.+?)\s+as\s+(.+?)\s+(?:at|to)\s+(.+?)[\s.!]*$/i,
+    /^add\s+(.+?)\s+(?:at|to)\s+(.+?)\s+as\s+(.+?)[\s.!]*$/i,
+    /^add\s+(.+?)\s+(?:at|to)\s+(.+?)[\s.!]*$/i,
+  ];
+
+  for (const pattern of addEntityPersonPatterns) {
+    const match = trimmed.match(pattern);
+    if (match) {
+      if (pattern === addEntityPersonPatterns[0] && match[1] && match[2] && match[3]) {
+        return {
+          intent: "add_entity_person",
+          personName: match[1].trim(),
+          role: match[2].trim(),
+          entityName: match[3].trim(),
+        };
+      }
+      if (pattern === addEntityPersonPatterns[1] && match[1] && match[2] && match[3]) {
+        return {
+          intent: "add_entity_person",
+          personName: match[1].trim(),
+          entityName: match[2].trim(),
+          role: match[3].trim(),
+        };
+      }
+      if (pattern === addEntityPersonPatterns[2] && match[1] && match[2]) {
+        return {
+          intent: "add_entity_person",
+          personName: match[1].trim(),
+          entityName: match[2].trim(),
+        };
+      }
+    }
+  }
+
+  // --- Create entity ---
+  // "add a restaurant called Joe's Diner"
+  // "create an entity called Planet Fitness"
+  // "new restaurant Joe's Diner"
+  // "add a gym called Planet Fitness at 123 Main St"
+  const createEntityPatterns = [
+    /^(?:add|create|new)\s+(?:a\s+|an\s+)?(?:entity|place|organization)\s+(?:called|named)\s+(.+?)[\s.!]*$/i,
+    /^(?:add|create|new)\s+(?:a\s+|an\s+)?(restaurant|gym|company|club|school|church|store|bar|cafe|salon|shop)\s+(?:called|named)\s+(.+?)(?:\s+at\s+(.+?))?[\s.!]*$/i,
+    /^(?:add|create|new)\s+(?:a\s+|an\s+)?(restaurant|gym|company|club|school|church|store|bar|cafe|salon|shop)\s+(.+?)(?:\s+at\s+(.+?))?[\s.!]*$/i,
+  ];
+
+  for (const pattern of createEntityPatterns) {
+    const match = trimmed.match(pattern);
+    if (match) {
+      if (pattern === createEntityPatterns[0] && match[1]) {
+        return { intent: "create_entity", name: match[1].trim() };
+      }
+      if ((pattern === createEntityPatterns[1] || pattern === createEntityPatterns[2]) && match[1] && match[2]) {
+        return {
+          intent: "create_entity",
+          name: match[2].trim(),
+          category: match[1].trim(),
+          address: match[3]?.trim(),
+        };
+      }
     }
   }
 
@@ -492,5 +606,13 @@ export function getQueryDescription(parsed: ParsedQuery): string {
       return `Looking up information for "${parsed.name}"...`;
     case "link_contacts":
       return `Linking ${parsed.nameA} and ${parsed.nameB}${parsed.relationship ? ` as ${parsed.relationship}` : ""}...`;
+    case "create_entity":
+      return `Creating entity "${parsed.name}"${parsed.category ? ` (${parsed.category})` : ""}...`;
+    case "add_entity_person":
+      return `Adding ${parsed.personName} to "${parsed.entityName}"${parsed.role ? ` as ${parsed.role}` : ""}...`;
+    case "promote_person":
+      return `Promoting ${parsed.personName} from "${parsed.entityName}" to a contact...`;
+    case "entity_lookup":
+      return `Looking up entities${parsed.query ? ` matching "${parsed.query}"` : ""}...`;
   }
 }

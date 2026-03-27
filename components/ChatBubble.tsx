@@ -422,6 +422,27 @@ function ActionCard({
       iconColor: "#0891b2",
       label: "Contacts Linked",
     },
+    create_entity: {
+      icon: "business",
+      bgClass: "bg-green-50",
+      borderClass: "border-green-200",
+      iconColor: "#10b981",
+      label: "Entity Created",
+    },
+    add_entity_person: {
+      icon: "person-add",
+      bgClass: "bg-blue-50",
+      borderClass: "border-blue-200",
+      iconColor: "#3b82f6",
+      label: "Person Added",
+    },
+    promote_person: {
+      icon: "arrow-up-circle",
+      bgClass: "bg-purple-50",
+      borderClass: "border-purple-200",
+      iconColor: "#8b5cf6",
+      label: "Person Promoted",
+    },
   };
 
   const config = actionConfig[actionType];
@@ -536,6 +557,9 @@ function PendingActionCard({
     archive: { icon: "archive", color: "#f59e0b", bg: "bg-amber-50", border: "border-amber-200" },
     enrich: { icon: "search", color: "#8b5cf6", bg: "bg-purple-50", border: "border-purple-200" },
     link: { icon: "link", color: "#0891b2", bg: "bg-cyan-50", border: "border-cyan-200" },
+    create_entity: { icon: "business", color: "#10b981", bg: "bg-green-50", border: "border-green-200" },
+    add_entity_person: { icon: "person-add", color: "#3b82f6", bg: "bg-blue-50", border: "border-blue-200" },
+    promote_person: { icon: "arrow-up-circle", color: "#8b5cf6", bg: "bg-purple-50", border: "border-purple-200" },
   };
 
   const config = iconMap[preview.actionType];

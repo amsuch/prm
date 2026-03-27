@@ -36,11 +36,11 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="import"
+        name="entities"
         options={{
-          title: "Import",
+          title: "Entities",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="download-outline" size={size} color={color} />
+            <Ionicons name="business-outline" size={size} color={color} />
           ),
         }}
       />
@@ -60,6 +60,12 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="settings-outline" size={size} color={color} />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="import"
+        options={{
+          href: null,
         }}
       />
     </Tabs>
