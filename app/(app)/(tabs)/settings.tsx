@@ -9,14 +9,17 @@ import {
   Platform,
   ActivityIndicator,
 } from "react-native";
+import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSession } from "@/lib/auth/ctx";
 import { supabase } from "@/lib/supabase";
 import { Colors } from "@/constants/colors";
-import { getInitials } from "@/lib/utils";
+import { getInitials, formatDate } from "@/lib/utils";
 import { CustomFieldManager } from "@/components/CustomFieldManager";
 import { RelationshipTypeManager } from "@/components/RelationshipTypeManager";
 import { useTags } from "@/hooks/useTags";
+import { useUserEmails } from "@/hooks/useUserEmails";
+import { useCalendarSync } from "@/hooks/useCalendarSync";
 
 const TAG_COLORS = [
   "#2563eb",
@@ -342,6 +345,392 @@ function TagManager() {
           </Pressable>
         </View>
       )}
+    </View>
+  );
+}
+
+function UserEmailManager() {
+  const { emails, addEmail, removeEmail, isLoading } = useUserEmails();
+  const [isAdding, setIsAdding] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [newLabel, setNewLabel] = useState<"work" | "personal">("work");
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleAdd = useCallback(async () => {
+    if (!newEmail.trim()) return;
+    setIsSaving(true);
+    try {
+      await addEmail(newEmail.trim().toLowerCase(), newLabel);
+      setNewEmail("");
+      setNewLabel("work");
+      setIsAdding(false);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to add email";
+      if (Platform.OS === "web") {
+        window.alert(message);
+      } else {
+        Alert.alert("Error", message);
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  }, [newEmail, newLabel, addEmail]);
+
+  const handleRemove = useCallback(
+    (id: string, email: string) => {
+      const doRemove = async () => {
+        try {
+          await removeEmail(id);
+        } catch (err) {
+          const message =
+            err instanceof Error ? err.message : "Failed to remove email";
+          if (Platform.OS === "web") {
+            window.alert(message);
+          } else {
+            Alert.alert("Error", message);
+          }
+        }
+      };
+
+      if (Platform.OS === "web") {
+        if (window.confirm(`Remove "${email}"?`)) {
+          doRemove();
+        }
+      } else {
+        Alert.alert("Remove Email", `Remove "${email}"?`, [
+          { text: "Cancel", style: "cancel" },
+          { text: "Remove", style: "destructive", onPress: doRemove },
+        ]);
+      }
+    },
+    [removeEmail],
+  );
+
+  return (
+    <View>
+      <View className="px-4 pt-3 pb-1">
+        <Text className="text-xs text-gray-500">
+          Your emails are filtered out when matching calendar attendees.
+        </Text>
+      </View>
+
+      {isLoading && emails.length === 0 && (
+        <View className="items-center py-6">
+          <ActivityIndicator size="small" color={Colors.brand[600]} />
+        </View>
+      )}
+
+      {!isLoading && emails.length === 0 && !isAdding && (
+        <View className="items-center py-6">
+          <Ionicons name="mail-outline" size={28} color={Colors.gray[300]} />
+          <Text className="mt-1 text-sm text-gray-400">No emails added</Text>
+        </View>
+      )}
+
+      {emails.map((item, index) => (
+        <View key={item.id}>
+          {index > 0 && <View className="ml-4 h-px bg-gray-100" />}
+          <View className="flex-row items-center justify-between px-4 py-3">
+            <View className="flex-1 flex-row items-center">
+              <Ionicons name="mail-outline" size={16} color={Colors.gray[500]} />
+              <Text className="ml-2 flex-1 text-sm font-medium text-gray-900" numberOfLines={1}>
+                {item.email}
+              </Text>
+              <View
+                className={`ml-2 rounded-full px-2 py-0.5 ${
+                  item.label === "work" ? "bg-blue-100" : "bg-purple-100"
+                }`}
+              >
+                <Text
+                  className={`text-xs font-medium ${
+                    item.label === "work" ? "text-blue-700" : "text-purple-700"
+                  }`}
+                >
+                  {item.label}
+                </Text>
+              </View>
+            </View>
+            <Pressable
+              onPress={() => handleRemove(item.id, item.email)}
+              className="ml-2 rounded-lg p-2 active:bg-red-50"
+              hitSlop={8}
+            >
+              <Ionicons name="trash-outline" size={16} color={Colors.error} />
+            </Pressable>
+          </View>
+        </View>
+      ))}
+
+      {isAdding ? (
+        <View className="border-t border-gray-100 px-4 py-3">
+          <TextInput
+            value={newEmail}
+            onChangeText={setNewEmail}
+            placeholder="email@example.com"
+            className="mb-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
+            placeholderTextColor={Colors.gray[400]}
+            autoFocus
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+          />
+
+          <Text className="mb-1.5 text-xs font-medium text-gray-500">Label</Text>
+          <View className="mb-3 flex-row gap-2">
+            <Pressable
+              onPress={() => setNewLabel("work")}
+              className={`flex-1 items-center rounded-lg border py-2 ${
+                newLabel === "work"
+                  ? "border-blue-600 bg-blue-50"
+                  : "border-gray-200 bg-white active:bg-gray-50"
+              }`}
+            >
+              <Text
+                className={`text-sm font-medium ${
+                  newLabel === "work" ? "text-blue-700" : "text-gray-600"
+                }`}
+              >
+                Work
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setNewLabel("personal")}
+              className={`flex-1 items-center rounded-lg border py-2 ${
+                newLabel === "personal"
+                  ? "border-purple-600 bg-purple-50"
+                  : "border-gray-200 bg-white active:bg-gray-50"
+              }`}
+            >
+              <Text
+                className={`text-sm font-medium ${
+                  newLabel === "personal" ? "text-purple-700" : "text-gray-600"
+                }`}
+              >
+                Personal
+              </Text>
+            </Pressable>
+          </View>
+
+          <View className="flex-row gap-2">
+            <Pressable
+              onPress={() => {
+                setIsAdding(false);
+                setNewEmail("");
+                setNewLabel("work");
+              }}
+              className="flex-1 items-center rounded-lg border border-gray-200 py-2.5 active:bg-gray-50"
+            >
+              <Text className="text-sm font-medium text-gray-600">Cancel</Text>
+            </Pressable>
+            <Pressable
+              onPress={handleAdd}
+              disabled={isSaving || !newEmail.trim()}
+              className={`flex-1 items-center rounded-lg py-2.5 ${
+                isSaving || !newEmail.trim()
+                  ? "bg-blue-300"
+                  : "bg-blue-600 active:bg-blue-700"
+              }`}
+            >
+              {isSaving ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Text className="text-sm font-medium text-white">Add</Text>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      ) : (
+        <View className="border-t border-gray-100 px-4 py-3">
+          <Pressable
+            onPress={() => setIsAdding(true)}
+            className="flex-row items-center justify-center rounded-lg border border-dashed border-gray-300 py-2.5 active:bg-gray-50"
+          >
+            <Ionicons name="add" size={18} color={Colors.brand[600]} />
+            <Text className="ml-1 text-sm font-medium text-blue-600">
+              Add Email
+            </Text>
+          </Pressable>
+        </View>
+      )}
+    </View>
+  );
+}
+
+function CalendarManager() {
+  const { session } = useSession();
+  const {
+    isConnected,
+    lastSyncAt,
+    isSyncing,
+    syncResult,
+    syncError,
+    pendingSuggestionsCount,
+    sync,
+    disconnect,
+  } = useCalendarSync();
+
+  const handleConnect = useCallback(async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          scopes: "https://www.googleapis.com/auth/calendar.events.readonly",
+          queryParams: {
+            access_type: "offline",
+            prompt: "consent",
+          },
+          redirectTo: Platform.OS === "web" ? window.location.origin : undefined,
+        },
+      });
+      if (error) throw error;
+      // Token capture happens in SessionProvider's onAuthStateChange
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to connect calendar";
+      if (Platform.OS === "web") {
+        window.alert(message);
+      } else {
+        Alert.alert("Error", message);
+      }
+    }
+  }, []);
+
+  const handleDisconnect = useCallback(() => {
+    const doDisconnect = async () => {
+      try {
+        await disconnect();
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Failed to disconnect calendar";
+        if (Platform.OS === "web") {
+          window.alert(message);
+        } else {
+          Alert.alert("Error", message);
+        }
+      }
+    };
+
+    if (Platform.OS === "web") {
+      if (window.confirm("Disconnect Google Calendar?")) {
+        doDisconnect();
+      }
+    } else {
+      Alert.alert(
+        "Disconnect Calendar",
+        "Disconnect Google Calendar? Existing interactions will be kept.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Disconnect", style: "destructive", onPress: doDisconnect },
+        ],
+      );
+    }
+  }, [disconnect]);
+
+  if (!isConnected) {
+    return (
+      <View className="px-4 py-4">
+        <Text className="mb-3 text-xs text-gray-500">
+          Connect your Google Calendar to auto-create interactions from meeting
+          events.
+        </Text>
+        <Pressable
+          onPress={handleConnect}
+          className="flex-row items-center justify-center rounded-lg bg-blue-600 py-3 active:bg-blue-700"
+        >
+          <Ionicons name="logo-google" size={18} color="white" />
+          <Text className="ml-2 text-sm font-semibold text-white">
+            Connect Google Calendar
+          </Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  return (
+    <View className="px-4 py-4">
+      {/* Connection status */}
+      <View className="mb-3 flex-row items-center">
+        <View className="rounded-full bg-green-100 px-2.5 py-1">
+          <Text className="text-xs font-semibold text-green-700">Connected</Text>
+        </View>
+        {lastSyncAt && (
+          <Text className="ml-2 text-xs text-gray-400">
+            Last sync: {formatDate(lastSyncAt)}
+          </Text>
+        )}
+      </View>
+
+      {/* Sync Now button */}
+      <Pressable
+        onPress={sync}
+        disabled={isSyncing}
+        className={`mb-3 flex-row items-center justify-center rounded-lg py-3 ${
+          isSyncing ? "bg-blue-300" : "bg-blue-600 active:bg-blue-700"
+        }`}
+      >
+        {isSyncing ? (
+          <>
+            <ActivityIndicator size="small" color="white" />
+            <Text className="ml-2 text-sm font-semibold text-white">
+              Syncing...
+            </Text>
+          </>
+        ) : (
+          <>
+            <Ionicons name="sync-outline" size={18} color="white" />
+            <Text className="ml-2 text-sm font-semibold text-white">
+              Sync Now
+            </Text>
+          </>
+        )}
+      </Pressable>
+
+      {/* Sync result */}
+      {syncResult && (
+        <View className="mb-3 rounded-lg bg-green-50 px-3 py-2.5">
+          <Text className="text-xs font-medium text-green-800">
+            Sync complete: {syncResult.eventsProcessed} events processed,{" "}
+            {syncResult.interactionsCreated} interactions created,{" "}
+            {syncResult.suggestionsCreated} suggestions added
+          </Text>
+        </View>
+      )}
+
+      {/* Sync error */}
+      {syncError && (
+        <View className="mb-3 rounded-lg bg-red-50 px-3 py-2.5">
+          <Text className="text-xs font-medium text-red-800">{syncError}</Text>
+        </View>
+      )}
+
+      {/* Pending suggestions */}
+      {pendingSuggestionsCount > 0 && (
+        <Pressable
+          onPress={() => router.push("/(app)/calendar-suggestions" as never)}
+          className="mb-3 flex-row items-center justify-between rounded-lg bg-amber-50 px-3 py-2.5 active:bg-amber-100"
+        >
+          <View className="flex-row items-center">
+            <Ionicons name="people-outline" size={16} color="#b45309" />
+            <Text className="ml-2 text-xs font-medium text-amber-800">
+              {pendingSuggestionsCount} pending suggestion
+              {pendingSuggestionsCount !== 1 ? "s" : ""} to review
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={14} color="#b45309" />
+        </Pressable>
+      )}
+
+      {/* Disconnect */}
+      <Pressable
+        onPress={handleDisconnect}
+        className="flex-row items-center justify-center rounded-lg border border-gray-200 py-2.5 active:bg-gray-50"
+      >
+        <Ionicons name="unlink-outline" size={16} color={Colors.gray[500]} />
+        <Text className="ml-1.5 text-sm font-medium text-gray-500">
+          Disconnect
+        </Text>
+      </Pressable>
     </View>
   );
 }
@@ -679,6 +1068,18 @@ export default function SettingsScreen() {
       <SectionHeader title="Relationship Types" />
       <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm">
         <RelationshipTypeManager />
+      </View>
+
+      {/* My Emails */}
+      <SectionHeader title="My Emails" />
+      <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm">
+        <UserEmailManager />
+      </View>
+
+      {/* Google Calendar */}
+      <SectionHeader title="Google Calendar" />
+      <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm">
+        <CalendarManager />
       </View>
 
       {/* AI API Keys */}

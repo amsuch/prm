@@ -140,7 +140,7 @@ export default function NewEntityScreen() {
                         setCategory(item);
                         setShowCategorySuggestions(false);
                       }}
-                      className="border-b border-gray-50 px-3 py-2 active:bg-gray-50"
+                      className="border-b border-gray-50 px-4 py-2 active:bg-gray-50"
                     >
                       <Text className="text-sm text-gray-700">{item}</Text>
                     </Pressable>

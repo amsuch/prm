@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSession } from "@/lib/auth/ctx";
 import { useDashboard } from "@/hooks/useDashboard";
+import { useCalendarSync } from "@/hooks/useCalendarSync";
 import { DashboardStats } from "@/components/DashboardStats";
 import { RecentActivity } from "@/components/RecentActivity";
 import { getInitials, formatDate } from "@/lib/utils";
@@ -12,6 +13,8 @@ export default function HomeScreen() {
   const { session } = useSession();
   const { stats, recentInteractions, upcomingBirthdays, isLoading, refetch } =
     useDashboard();
+  const { isConnected: calendarConnected, pendingSuggestionsCount } =
+    useCalendarSync();
 
   const name =
     session?.user?.user_metadata?.full_name ||
@@ -68,6 +71,21 @@ export default function HomeScreen() {
           Overview
         </Text>
         <DashboardStats stats={stats} isLoading={isLoading} />
+
+        {/* Calendar Suggestions Card */}
+        {calendarConnected && pendingSuggestionsCount > 0 && (
+          <Pressable
+            onPress={() => router.push("/(app)/calendar-suggestions" as never)}
+            className="mt-6 flex-row items-center rounded-xl bg-amber-50 px-4 py-3.5 shadow-sm active:bg-amber-100"
+          >
+            <Ionicons name="calendar-outline" size={20} color="#b45309" />
+            <Text className="ml-2.5 flex-1 text-sm font-medium text-amber-800">
+              {pendingSuggestionsCount} calendar suggestion
+              {pendingSuggestionsCount !== 1 ? "s" : ""} to review
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color="#b45309" />
+          </Pressable>
+        )}
 
         {/* Recent Activity */}
         <Text className="mb-3 mt-8 text-lg font-semibold text-gray-900">

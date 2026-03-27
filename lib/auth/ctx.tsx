@@ -6,6 +6,7 @@ import {
   type PropsWithChildren,
 } from "react";
 import { supabase } from "@/lib/supabase";
+import { connectCalendar } from "@/lib/calendarSync";
 import type { Session } from "@supabase/supabase-js";
 
 type AuthContextType = {
@@ -40,8 +41,23 @@ export function SessionProvider({ children }: PropsWithChildren) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
+
+      // Capture Google provider tokens after OAuth sign-in
+      if (
+        event === "SIGNED_IN" &&
+        session?.provider_token &&
+        session?.user?.id
+      ) {
+        connectCalendar(
+          session.user.id,
+          session.provider_token,
+          session.provider_refresh_token ?? undefined,
+        ).catch(() => {
+          // Silently fail – token capture is best-effort
+        });
+      }
     });
 
     return () => subscription.unsubscribe();

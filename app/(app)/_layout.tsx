@@ -41,6 +41,10 @@ export default function AppLayout() {
         options={{ headerShown: true, title: "Device Contacts" }}
       />
       <Stack.Screen
+        name="calendar-suggestions"
+        options={{ headerShown: true, title: "Calendar Suggestions" }}
+      />
+      <Stack.Screen
         name="bulk-link"
         options={{ headerShown: true, title: "Bulk Link Contacts" }}
       />

@@ -29,7 +29,7 @@ export function SearchBar({
       {value.length > 0 && (
         <Pressable
           onPress={() => onChangeText("")}
-          className="ml-1 rounded-full bg-gray-100 p-1"
+          className="ml-1 rounded-full bg-gray-100 p-1 active:bg-gray-200"
           hitSlop={8}
         >
           <Ionicons name="close" size={14} color={Colors.gray[500]} />

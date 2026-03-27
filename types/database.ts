@@ -474,6 +474,116 @@ export type Database = {
           },
         ];
       };
+      user_emails: {
+        Row: {
+          id: string;
+          user_id: string;
+          email: string;
+          label: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          email: string;
+          label?: string;
+        };
+        Update: {
+          email?: string;
+          label?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "user_emails_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      calendar_sync_state: {
+        Row: {
+          user_id: string;
+          last_sync_at: string | null;
+          sync_token: string | null;
+          is_connected: boolean;
+          provider_token: string | null;
+          provider_refresh_token: string | null;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          last_sync_at?: string | null;
+          sync_token?: string | null;
+          is_connected?: boolean;
+          provider_token?: string | null;
+          provider_refresh_token?: string | null;
+        };
+        Update: {
+          last_sync_at?: string | null;
+          sync_token?: string | null;
+          is_connected?: boolean;
+          provider_token?: string | null;
+          provider_refresh_token?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "calendar_sync_state_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: true;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      calendar_suggestions: {
+        Row: {
+          id: string;
+          user_id: string;
+          email: string;
+          display_name: string | null;
+          event_title: string | null;
+          event_date: string | null;
+          status: string;
+          created_contact_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          email: string;
+          display_name?: string | null;
+          event_title?: string | null;
+          event_date?: string | null;
+          status?: string;
+          created_contact_id?: string | null;
+        };
+        Update: {
+          email?: string;
+          display_name?: string | null;
+          event_title?: string | null;
+          event_date?: string | null;
+          status?: string;
+          created_contact_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "calendar_suggestions_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "calendar_suggestions_created_contact_id_fkey";
+            columns: ["created_contact_id"];
+            isOneToOne: false;
+            referencedRelation: "contacts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       entity_people: {
         Row: {
           id: string;
