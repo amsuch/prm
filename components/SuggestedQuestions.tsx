@@ -7,10 +7,14 @@ type SuggestedQuestionsProps = {
 
 const SUGGESTIONS = [
   "How many contacts do I have?",
+  "Add a new contact",
   "Who haven't I contacted in 30 days?",
+  "Tag everyone at Google as tech",
   "Who do I know at Google?",
   "Show contacts tagged VIP",
+  "Archive stale contacts",
   "When did I last talk to John?",
+  "Enrich John's profile",
   "Who is connected to Sarah?",
   "Stale contacts",
   "Who works at Apple?",

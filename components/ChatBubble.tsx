@@ -6,6 +6,7 @@ import { Colors } from "@/constants/colors";
 import type {
   AgentResponse,
   AgentResultContact,
+  ActionType,
   InteractionResult,
   RelationshipResult,
   StatsResult,
@@ -76,6 +77,14 @@ function ResponseContent({ response }: { response: AgentResponse }) {
       return <RelationshipCards relationships={response.relationships} />;
     case "stats":
       return <StatsCard stats={response.stats} />;
+    case "action":
+      return (
+        <ActionCard
+          actionType={response.actionType}
+          count={response.count}
+          contact={response.contact}
+        />
+      );
     case "text":
     case "error":
       return null;
@@ -319,6 +328,151 @@ function StatsCard({ stats }: { stats: StatsResult }) {
           </View>
         </View>
       )}
+    </View>
+  );
+}
+
+function ActionCard({
+  actionType,
+  count,
+  contact,
+}: {
+  actionType: ActionType;
+  count?: number;
+  contact?: AgentResultContact;
+}) {
+  const router = useRouter();
+
+  // Action type configuration
+  const actionConfig: Record<
+    ActionType,
+    { icon: string; bgClass: string; borderClass: string; iconColor: string; label: string }
+  > = {
+    add: {
+      icon: "checkmark-circle",
+      bgClass: "bg-green-50",
+      borderClass: "border-green-200",
+      iconColor: "#10b981",
+      label: "Contact Created",
+    },
+    bulk_tag: {
+      icon: "pricetag",
+      bgClass: "bg-blue-50",
+      borderClass: "border-blue-200",
+      iconColor: "#3b82f6",
+      label: "Contacts Tagged",
+    },
+    bulk_update: {
+      icon: "create",
+      bgClass: "bg-blue-50",
+      borderClass: "border-blue-200",
+      iconColor: "#3b82f6",
+      label: "Contacts Updated",
+    },
+    archive: {
+      icon: "archive",
+      bgClass: "bg-amber-50",
+      borderClass: "border-amber-200",
+      iconColor: "#f59e0b",
+      label: "Contacts Archived",
+    },
+    enrich: {
+      icon: "search",
+      bgClass: "bg-purple-50",
+      borderClass: "border-purple-200",
+      iconColor: "#8b5cf6",
+      label: "Contact Enrichment",
+    },
+  };
+
+  const config = actionConfig[actionType];
+
+  // For "add" and "enrich", show the contact card
+  if ((actionType === "add" || actionType === "enrich") && contact) {
+    const fullName = [contact.first_name, contact.last_name]
+      .filter(Boolean)
+      .join(" ");
+    const initials = getInitials(contact.first_name, contact.last_name);
+    const avatarBg = getAvatarColor(fullName);
+    const subtitle = [contact.job_title, contact.company]
+      .filter(Boolean)
+      .join(" at ");
+
+    return (
+      <View className={`mt-3 rounded-xl border ${config.borderClass} ${config.bgClass} p-3`}>
+        <View className="mb-2 flex-row items-center">
+          <Ionicons
+            name={config.icon as keyof typeof Ionicons.glyphMap}
+            size={18}
+            color={config.iconColor}
+          />
+          <Text className="ml-2 text-xs font-semibold uppercase text-gray-500">
+            {config.label}
+          </Text>
+        </View>
+        <Pressable
+          onPress={() => router.push(`/contact/${contact.id}`)}
+          className="flex-row items-center rounded-lg bg-white p-2.5 active:bg-gray-50"
+        >
+          <View
+            className="h-10 w-10 items-center justify-center rounded-full"
+            style={{ backgroundColor: avatarBg }}
+          >
+            <Text className="text-sm font-bold text-white">{initials}</Text>
+          </View>
+          <View className="ml-2.5 flex-1">
+            <Text
+              className="text-sm font-semibold text-gray-900"
+              numberOfLines={1}
+            >
+              {fullName}
+            </Text>
+            {subtitle ? (
+              <Text className="text-xs text-gray-500" numberOfLines={1}>
+                {subtitle}
+              </Text>
+            ) : null}
+          </View>
+          <Ionicons
+            name="chevron-forward"
+            size={14}
+            color={Colors.gray[300]}
+          />
+        </Pressable>
+      </View>
+    );
+  }
+
+  // For bulk actions (bulk_tag, bulk_update, archive), show a summary card
+  return (
+    <View className={`mt-3 rounded-xl border ${config.borderClass} ${config.bgClass} p-3`}>
+      <View className="flex-row items-center">
+        <View
+          className="h-10 w-10 items-center justify-center rounded-full"
+          style={{ backgroundColor: config.iconColor + "20" }}
+        >
+          <Ionicons
+            name={config.icon as keyof typeof Ionicons.glyphMap}
+            size={22}
+            color={config.iconColor}
+          />
+        </View>
+        <View className="ml-3 flex-1">
+          <Text className="text-xs font-semibold uppercase text-gray-500">
+            {config.label}
+          </Text>
+          {count !== undefined && (
+            <Text className="text-2xl font-bold text-gray-900">
+              {count}
+            </Text>
+          )}
+        </View>
+        <Ionicons
+          name="checkmark-circle"
+          size={24}
+          color={config.iconColor}
+        />
+      </View>
     </View>
   );
 }

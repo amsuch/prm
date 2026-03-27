@@ -44,13 +44,16 @@ export type StatsResult = {
   sourceBreakdown: { source: string; count: number }[];
 };
 
+export type ActionType = "add" | "bulk_tag" | "bulk_update" | "archive" | "enrich";
+
 export type AgentResponse =
   | { type: "contacts"; message: string; contacts: AgentResultContact[] }
   | { type: "interaction"; message: string; interaction: InteractionResult | null }
   | { type: "relationships"; message: string; relationships: RelationshipResult[]; contactName: string }
   | { type: "stats"; message: string; stats: StatsResult }
   | { type: "text"; message: string }
-  | { type: "error"; message: string };
+  | { type: "error"; message: string }
+  | { type: "action"; message: string; actionType: ActionType; count?: number; contact?: AgentResultContact; needsConfirmation?: boolean };
 
 // Row types used for casting Supabase query results
 type ContactRow = Tables<"contacts">;
@@ -111,6 +114,16 @@ export async function executeQuery(
         return await handleStats(userId);
       case "search":
         return await handleSearch(parsed.query, userId);
+      case "add_contact":
+        return await handleAddContact(parsed, userId);
+      case "bulk_tag":
+        return await handleBulkTag(parsed.tag, parsed.filter, userId);
+      case "bulk_update":
+        return await handleBulkUpdate(parsed.field, parsed.value, parsed.filter, userId);
+      case "archive_contacts":
+        return await handleArchiveContacts(parsed.filter, userId);
+      case "enrich_contact":
+        return await handleEnrichContact(parsed.name, userId);
     }
   } catch (err) {
     return {
@@ -558,5 +571,475 @@ async function handleSearch(
     type: "contacts",
     message: `Found ${contacts.length} ${plural} for "${query}":`,
     contacts,
+  };
+}
+
+async function handleAddContact(
+  parsed: Extract<ParsedQuery, { intent: "add_contact" }>,
+  userId: string,
+): Promise<AgentResponse> {
+  const { firstName, lastName, company, jobTitle, email, phone } = parsed;
+
+  // Insert the contact
+  const { data: contactData, error: contactError } = await supabase
+    .from("contacts")
+    .insert({
+      user_id: userId,
+      first_name: firstName,
+      last_name: lastName ?? null,
+      company: company ?? null,
+      job_title: jobTitle ?? null,
+      source: "agent",
+    })
+    .select("id, first_name, last_name, company, job_title, avatar_url")
+    .single();
+
+  if (contactError) throw contactError;
+
+  const contact = contactData as unknown as AgentResultContact;
+
+  // Insert email if provided
+  if (email) {
+    const { error: emailError } = await supabase
+      .from("contact_emails")
+      .insert({
+        contact_id: contact.id,
+        email,
+        label: "work",
+        is_primary: true,
+      });
+    if (emailError) throw emailError;
+  }
+
+  // Insert phone if provided
+  if (phone) {
+    const { error: phoneError } = await supabase
+      .from("contact_phones")
+      .insert({
+        contact_id: contact.id,
+        phone,
+        label: "work",
+        is_primary: true,
+      });
+    if (phoneError) throw phoneError;
+  }
+
+  const fullName = [firstName, lastName].filter(Boolean).join(" ");
+  const details: string[] = [];
+  if (company) details.push(`Company: ${company}`);
+  if (jobTitle) details.push(`Title: ${jobTitle}`);
+  if (email) details.push(`Email: ${email}`);
+  if (phone) details.push(`Phone: ${phone}`);
+
+  const detailStr = details.length > 0 ? "\n" + details.join("\n") : "";
+
+  return {
+    type: "action",
+    message: `Created contact "${fullName}" successfully.${detailStr}`,
+    actionType: "add",
+    contact,
+  };
+}
+
+async function handleBulkTag(
+  tagName: string,
+  filter: { company?: string; source?: string },
+  userId: string,
+): Promise<AgentResponse> {
+  // Find or create the tag
+  let tagId: string;
+  const { data: existingTag, error: tagLookupError } = await supabase
+    .from("tags")
+    .select("id")
+    .eq("user_id", userId)
+    .ilike("name", tagName)
+    .limit(1);
+
+  if (tagLookupError) throw tagLookupError;
+
+  type TagIdRow = { id: string };
+  const existingTags = (existingTag as unknown as TagIdRow[]) ?? [];
+
+  if (existingTags.length > 0) {
+    tagId = existingTags[0].id;
+  } else {
+    // Create the tag
+    const { data: newTag, error: tagCreateError } = await supabase
+      .from("tags")
+      .insert({ user_id: userId, name: tagName })
+      .select("id")
+      .single();
+
+    if (tagCreateError) throw tagCreateError;
+    tagId = (newTag as unknown as TagIdRow).id;
+  }
+
+  // Find contacts matching the filter
+  let query = supabase
+    .from("contacts")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("is_archived", false);
+
+  if (filter.company) {
+    query = query.ilike("company", `%${filter.company}%`);
+  }
+  if (filter.source) {
+    query = query.ilike("source", filter.source);
+  }
+
+  const { data: contactData, error: contactError } = await query;
+  if (contactError) throw contactError;
+
+  type ContactIdRow = { id: string };
+  const contacts = (contactData as unknown as ContactIdRow[]) ?? [];
+
+  if (contacts.length === 0) {
+    const filterDesc = filter.company
+      ? `at "${filter.company}"`
+      : `from "${filter.source}"`;
+    return {
+      type: "text",
+      message: `No contacts found ${filterDesc} to tag.`,
+    };
+  }
+
+  // Get existing contact_tags for this tag to avoid duplicates
+  const { data: existingCtData, error: existingCtError } = await supabase
+    .from("contact_tags")
+    .select("contact_id")
+    .eq("tag_id", tagId)
+    .in("contact_id", contacts.map((c) => c.id));
+
+  if (existingCtError) throw existingCtError;
+
+  type ContactIdTagRow = { contact_id: string };
+  const existingContactIds = new Set(
+    ((existingCtData as unknown as ContactIdTagRow[]) ?? []).map((ct) => ct.contact_id),
+  );
+
+  // Insert contact_tags for contacts that don't already have the tag
+  const newContactTags = contacts
+    .filter((c) => !existingContactIds.has(c.id))
+    .map((c) => ({ contact_id: c.id, tag_id: tagId }));
+
+  if (newContactTags.length > 0) {
+    const { error: insertError } = await supabase
+      .from("contact_tags")
+      .insert(newContactTags);
+    if (insertError) throw insertError;
+  }
+
+  const taggedCount = newContactTags.length;
+  const skippedCount = existingContactIds.size;
+  const filterDesc = filter.company
+    ? `at "${filter.company}"`
+    : `from "${filter.source}"`;
+
+  let message = `Tagged ${taggedCount} contact${taggedCount === 1 ? "" : "s"} ${filterDesc} as "${tagName}".`;
+  if (skippedCount > 0) {
+    message += ` (${skippedCount} already had this tag)`;
+  }
+
+  return {
+    type: "action",
+    message,
+    actionType: "bulk_tag",
+    count: taggedCount,
+  };
+}
+
+async function handleBulkUpdate(
+  field: string,
+  value: string,
+  filter: { company?: string; tag?: string; source?: string },
+  userId: string,
+): Promise<AgentResponse> {
+  // Validate that the field is an allowed updatable field on contacts
+  const allowedFields = [
+    "company", "job_title", "department", "notes", "source",
+    "first_name", "last_name",
+  ];
+  // Normalize field name: convert snake_case variants
+  const normalizedField = field.replace(/[\s-]/g, "_").toLowerCase();
+  if (!allowedFields.includes(normalizedField)) {
+    return {
+      type: "error",
+      message: `Cannot update field "${field}". Allowed fields: ${allowedFields.join(", ")}.`,
+    };
+  }
+
+  // Build the contact filter query
+  let contactIds: string[] = [];
+
+  if (filter.tag) {
+    // Find the tag first
+    const { data: tagData, error: tagError } = await supabase
+      .from("tags")
+      .select("id")
+      .eq("user_id", userId)
+      .ilike("name", `%${filter.tag}%`)
+      .limit(1);
+
+    if (tagError) throw tagError;
+
+    type TagIdRow = { id: string };
+    const tags = (tagData as unknown as TagIdRow[]) ?? [];
+    if (tags.length === 0) {
+      return {
+        type: "text",
+        message: `No tag found matching "${filter.tag}".`,
+      };
+    }
+
+    const { data: ctData, error: ctError } = await supabase
+      .from("contact_tags")
+      .select("contact_id")
+      .eq("tag_id", tags[0].id);
+
+    if (ctError) throw ctError;
+
+    type ContactIdTagRow = { contact_id: string };
+    contactIds = ((ctData as unknown as ContactIdTagRow[]) ?? []).map((ct) => ct.contact_id);
+  } else {
+    let query = supabase
+      .from("contacts")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("is_archived", false);
+
+    if (filter.company) {
+      query = query.ilike("company", `%${filter.company}%`);
+    }
+    if (filter.source) {
+      query = query.ilike("source", filter.source);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    type ContactIdRow = { id: string };
+    contactIds = ((data as unknown as ContactIdRow[]) ?? []).map((c) => c.id);
+  }
+
+  if (contactIds.length === 0) {
+    return {
+      type: "text",
+      message: "No contacts matched the filter criteria.",
+    };
+  }
+
+  // Update the field on all matched contacts
+  const { error: updateError } = await supabase
+    .from("contacts")
+    .update({ [normalizedField]: value })
+    .in("id", contactIds);
+
+  if (updateError) throw updateError;
+
+  const filterDesc = filter.company
+    ? `at "${filter.company}"`
+    : filter.tag
+      ? `tagged "${filter.tag}"`
+      : `from "${filter.source}"`;
+
+  return {
+    type: "action",
+    message: `Updated ${normalizedField} to "${value}" for ${contactIds.length} contact${contactIds.length === 1 ? "" : "s"} ${filterDesc}.`,
+    actionType: "bulk_update",
+    count: contactIds.length,
+    needsConfirmation: true,
+  };
+}
+
+async function handleArchiveContacts(
+  filter: { days?: number; tag?: string; company?: string },
+  userId: string,
+): Promise<AgentResponse> {
+  let contactIds: string[] = [];
+
+  if (filter.days) {
+    // Find contacts not contacted in N days
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - filter.days);
+
+    const { data, error } = await supabase
+      .from("contacts")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("is_archived", false)
+      .or(
+        `last_contacted_at.is.null,last_contacted_at.lt.${cutoff.toISOString()}`,
+      );
+
+    if (error) throw error;
+
+    type ContactIdRow = { id: string };
+    contactIds = ((data as unknown as ContactIdRow[]) ?? []).map((c) => c.id);
+  } else if (filter.tag) {
+    // Find contacts by tag
+    const { data: tagData, error: tagError } = await supabase
+      .from("tags")
+      .select("id")
+      .eq("user_id", userId)
+      .ilike("name", `%${filter.tag}%`)
+      .limit(1);
+
+    if (tagError) throw tagError;
+
+    type TagIdRow = { id: string };
+    const tags = (tagData as unknown as TagIdRow[]) ?? [];
+    if (tags.length === 0) {
+      return {
+        type: "text",
+        message: `No tag found matching "${filter.tag}".`,
+      };
+    }
+
+    const { data: ctData, error: ctError } = await supabase
+      .from("contact_tags")
+      .select("contact_id")
+      .eq("tag_id", tags[0].id);
+
+    if (ctError) throw ctError;
+
+    type ContactIdTagRow = { contact_id: string };
+    const taggedContactIds = ((ctData as unknown as ContactIdTagRow[]) ?? []).map(
+      (ct) => ct.contact_id,
+    );
+
+    if (taggedContactIds.length === 0) {
+      return {
+        type: "text",
+        message: `No contacts are tagged "${filter.tag}".`,
+      };
+    }
+
+    // Only archive non-archived contacts
+    const { data: activeData, error: activeError } = await supabase
+      .from("contacts")
+      .select("id")
+      .in("id", taggedContactIds)
+      .eq("user_id", userId)
+      .eq("is_archived", false);
+
+    if (activeError) throw activeError;
+
+    type ContactIdRow = { id: string };
+    contactIds = ((activeData as unknown as ContactIdRow[]) ?? []).map((c) => c.id);
+  } else if (filter.company) {
+    const { data, error } = await supabase
+      .from("contacts")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("is_archived", false)
+      .ilike("company", `%${filter.company}%`);
+
+    if (error) throw error;
+
+    type ContactIdRow = { id: string };
+    contactIds = ((data as unknown as ContactIdRow[]) ?? []).map((c) => c.id);
+  }
+
+  if (contactIds.length === 0) {
+    return {
+      type: "text",
+      message: "No contacts matched the archive criteria.",
+    };
+  }
+
+  // Set is_archived = true on all matched contacts
+  const { error: updateError } = await supabase
+    .from("contacts")
+    .update({ is_archived: true })
+    .in("id", contactIds);
+
+  if (updateError) throw updateError;
+
+  let filterDesc: string;
+  if (filter.days) filterDesc = `not contacted in ${filter.days}+ days`;
+  else if (filter.tag) filterDesc = `tagged "${filter.tag}"`;
+  else if (filter.company) filterDesc = `at "${filter.company}"`;
+  else filterDesc = "matching the criteria";
+
+  return {
+    type: "action",
+    message: `Archived ${contactIds.length} contact${contactIds.length === 1 ? "" : "s"} ${filterDesc}.`,
+    actionType: "archive",
+    count: contactIds.length,
+    needsConfirmation: true,
+  };
+}
+
+async function handleEnrichContact(
+  name: string,
+  userId: string,
+): Promise<AgentResponse> {
+  // Find the contact by name
+  const { data: contactData, error: contactError } = await supabase
+    .from("contacts")
+    .select("id, first_name, last_name, company, job_title, avatar_url")
+    .eq("user_id", userId)
+    .eq("is_archived", false)
+    .or(
+      `first_name.ilike.%${name}%,last_name.ilike.%${name}%`,
+    )
+    .limit(1);
+
+  if (contactError) throw contactError;
+
+  const contacts = (contactData as unknown as AgentResultContact[]) ?? [];
+
+  if (contacts.length === 0) {
+    return {
+      type: "text",
+      message: `I couldn't find anyone named "${name}" in your contacts.`,
+    };
+  }
+
+  const contact = contacts[0];
+  const fullName = [contact.first_name, contact.last_name]
+    .filter(Boolean)
+    .join(" ");
+
+  // Fetch email and phone for current info display
+  const { data: emailData } = await supabase
+    .from("contact_emails")
+    .select("email")
+    .eq("contact_id", contact.id)
+    .eq("is_primary", true)
+    .limit(1);
+
+  const { data: phoneData } = await supabase
+    .from("contact_phones")
+    .select("phone")
+    .eq("contact_id", contact.id)
+    .eq("is_primary", true)
+    .limit(1);
+
+  type EmailRow = { email: string };
+  type PhoneRow = { phone: string };
+  const emails = (emailData as unknown as EmailRow[]) ?? [];
+  const phones = (phoneData as unknown as PhoneRow[]) ?? [];
+
+  const infoLines: string[] = [`Current info for ${fullName}:`];
+  if (contact.company) infoLines.push(`Company: ${contact.company}`);
+  if (contact.job_title) infoLines.push(`Title: ${contact.job_title}`);
+  if (emails.length > 0) infoLines.push(`Email: ${emails[0].email}`);
+  if (phones.length > 0) infoLines.push(`Phone: ${phones[0].phone}`);
+  if (infoLines.length === 1) infoLines.push("No details on file yet.");
+
+  infoLines.push("");
+  // TODO: Future enhancement - use the user's API key + web search to fetch
+  // LinkedIn/company data and auto-populate missing fields on the contact.
+  infoLines.push(
+    "Web research requires an API key. Configure your AI provider in Settings to enable contact enrichment.",
+  );
+
+  return {
+    type: "action",
+    message: infoLines.join("\n"),
+    actionType: "enrich",
+    contact,
   };
 }

@@ -12,7 +12,12 @@ export type ParsedQuery =
   | { intent: "tag_lookup"; tag: string }
   | { intent: "relationships"; name: string }
   | { intent: "stats" }
-  | { intent: "search"; query: string };
+  | { intent: "search"; query: string }
+  | { intent: "add_contact"; firstName: string; lastName?: string; company?: string; jobTitle?: string; email?: string; phone?: string }
+  | { intent: "bulk_tag"; tag: string; filter: { company?: string; source?: string } }
+  | { intent: "bulk_update"; field: string; value: string; filter: { company?: string; tag?: string; source?: string } }
+  | { intent: "archive_contacts"; filter: { days?: number; tag?: string; company?: string } }
+  | { intent: "enrich_contact"; name: string };
 
 /**
  * Parse a natural language question into a structured query intent.
@@ -173,8 +178,202 @@ export function parseQuery(input: string): ParsedQuery {
     }
   }
 
+  // --- Add contact ---
+  // "add John Smith from Google as VP Engineering, john@google.com"
+  // "add Jane Doe"
+  // "create contact Bob Wilson from Apple"
+  // "new contact Alice at Meta as Engineer, alice@meta.com, 555-1234"
+  const addContactPatterns = [
+    /^(?:add|create|new)\s+(?:contact\s+)?(.+?)$/i,
+  ];
+
+  for (const pattern of addContactPatterns) {
+    const match = trimmed.match(pattern);
+    if (match?.[1]) {
+      const parsed = parseAddContactString(match[1]);
+      if (parsed) {
+        return parsed;
+      }
+    }
+  }
+
+  // --- Bulk tag ---
+  // "tag everyone at Google as tech"
+  // "tag all contacts at Apple as partner"
+  // "tag all linkedin contacts as imported"
+  const bulkTagPatterns = [
+    /^tag\s+(?:everyone|all\s+(?:contacts?)?)\s+(?:at|from)\s+(.+?)\s+(?:as|with)\s+['"]?(.+?)['"]?[\s.!]*$/i,
+    /^tag\s+all\s+(\w+)\s+contacts?\s+(?:as|with)\s+['"]?(.+?)['"]?[\s.!]*$/i,
+  ];
+
+  for (const pattern of bulkTagPatterns) {
+    const match = lower.match(pattern);
+    if (match) {
+      // Pattern 1: "tag everyone at Google as tech"
+      if (pattern === bulkTagPatterns[0] && match[1] && match[2]) {
+        return {
+          intent: "bulk_tag",
+          tag: match[2].trim(),
+          filter: { company: match[1].trim() },
+        };
+      }
+      // Pattern 2: "tag all linkedin contacts as imported"
+      if (pattern === bulkTagPatterns[1] && match[1] && match[2]) {
+        return {
+          intent: "bulk_tag",
+          tag: match[2].trim(),
+          filter: { source: match[1].trim() },
+        };
+      }
+    }
+  }
+
+  // --- Bulk update ---
+  // "update company to Alphabet for all contacts at Google"
+  // "update job_title to Engineer for all contacts tagged tech"
+  // "set company to Meta for everyone at Facebook"
+  const bulkUpdatePatterns = [
+    /^(?:update|set|change)\s+(\w+)\s+to\s+['"]?(.+?)['"]?\s+for\s+(?:all\s+)?contacts?\s+(?:at|from)\s+['"]?(.+?)['"]?[\s.!]*$/i,
+    /^(?:update|set|change)\s+(\w+)\s+to\s+['"]?(.+?)['"]?\s+for\s+(?:all\s+)?(?:contacts?\s+)?(?:tagged|with\s+tag)\s+['"]?(.+?)['"]?[\s.!]*$/i,
+    /^(?:update|set|change)\s+(\w+)\s+to\s+['"]?(.+?)['"]?\s+for\s+(?:all\s+)?(?:everyone|contacts?)\s+(?:at|from)\s+['"]?(.+?)['"]?[\s.!]*$/i,
+  ];
+
+  for (const pattern of bulkUpdatePatterns) {
+    const match = lower.match(pattern);
+    if (match?.[1] && match[2] && match[3]) {
+      const field = match[1].trim();
+      const value = match[2].trim();
+      const filterValue = match[3].trim();
+
+      if (pattern === bulkUpdatePatterns[1]) {
+        return {
+          intent: "bulk_update",
+          field,
+          value,
+          filter: { tag: filterValue },
+        };
+      }
+      return {
+        intent: "bulk_update",
+        field,
+        value,
+        filter: { company: filterValue },
+      };
+    }
+  }
+
+  // --- Archive contacts ---
+  // "archive contacts I haven't talked to in a year"
+  // "archive contacts I haven't contacted in 90 days"
+  // "archive all contacts tagged old"
+  // "archive everyone at Defunct Corp"
+  const archivePatterns = [
+    /^archive\s+(?:contacts?\s+)?(?:i\s+)?haven'?t\s+(?:talked?\s+to|contacted|spoken?\s+to|reached\s+out\s+to)\s+in\s+(?:a\s+)?(\d+)?\s*(days?|weeks?|months?|years?)[\s.!]*$/i,
+    /^archive\s+(?:all\s+)?contacts?\s+(?:tagged|with\s+tag)\s+['"]?(.+?)['"]?[\s.!]*$/i,
+    /^archive\s+(?:all\s+)?(?:contacts?\s+|everyone\s+)?(?:at|from)\s+['"]?(.+?)['"]?[\s.!]*$/i,
+    /^archive\s+(?:stale|old|inactive|dormant)\s+contacts?[\s.!]*$/i,
+  ];
+
+  for (const pattern of archivePatterns) {
+    const match = lower.match(pattern);
+    if (match) {
+      // Pattern 0: time-based archive
+      if (pattern === archivePatterns[0]) {
+        let days: number;
+        const num = match[1] ? parseInt(match[1], 10) : 1;
+        const unit = match[2]?.toLowerCase() ?? "year";
+        if (unit.startsWith("day")) days = num;
+        else if (unit.startsWith("week")) days = num * 7;
+        else if (unit.startsWith("month")) days = num * 30;
+        else days = num * 365;
+        return { intent: "archive_contacts", filter: { days } };
+      }
+      // Pattern 1: tag-based archive
+      if (pattern === archivePatterns[1] && match[1]) {
+        return { intent: "archive_contacts", filter: { tag: match[1].trim() } };
+      }
+      // Pattern 2: company-based archive
+      if (pattern === archivePatterns[2] && match[1]) {
+        return { intent: "archive_contacts", filter: { company: match[1].trim() } };
+      }
+      // Pattern 3: generic stale archive
+      if (pattern === archivePatterns[3]) {
+        return { intent: "archive_contacts", filter: { days: 365 } };
+      }
+    }
+  }
+
+  // --- Enrich contact ---
+  // "enrich John Smith"
+  // "research John Smith"
+  // "look up John Smith"
+  const enrichPatterns = [
+    /^(?:enrich|research|look\s+up|lookup)\s+(.+?)(?:'s\s+(?:profile|info|details?))?[\s?!.]*$/i,
+  ];
+
+  for (const pattern of enrichPatterns) {
+    const match = trimmed.match(pattern);
+    if (match?.[1]) {
+      return { intent: "enrich_contact", name: match[1].trim() };
+    }
+  }
+
   // --- Fallback: general search ---
   return { intent: "search", query: trimmed };
+}
+
+/**
+ * Parse an "add contact" string like "John Smith from Google as VP Engineering, john@google.com, 555-1234"
+ */
+function parseAddContactString(raw: string): ParsedQuery | null {
+  // Try to extract structured fields from the raw string
+  const emailMatch = raw.match(/[\w.+-]+@[\w.-]+\.\w+/);
+  const phoneMatch = raw.match(/(?:^|[\s,])(\+?[\d\s()-]{7,})/);
+
+  // Remove email and phone from the string to parse name/company/title
+  let remaining = raw;
+  if (emailMatch) remaining = remaining.replace(emailMatch[0], "");
+  if (phoneMatch) remaining = remaining.replace(phoneMatch[0], "");
+
+  // Clean up commas and extra whitespace
+  remaining = remaining.replace(/,\s*/g, " ").replace(/\s+/g, " ").trim();
+
+  // Extract company: "from Google" or "at Google"
+  let company: string | undefined;
+  const companyMatch = remaining.match(/\s+(?:from|at)\s+(.+?)(?:\s+as\s+|$)/i);
+  if (companyMatch?.[1]) {
+    company = companyMatch[1].trim();
+    remaining = remaining.replace(companyMatch[0], " ");
+  }
+
+  // Extract job title: "as VP Engineering"
+  let jobTitle: string | undefined;
+  const titleMatch = remaining.match(/\s+as\s+(.+?)$/i);
+  if (titleMatch?.[1]) {
+    jobTitle = titleMatch[1].trim();
+    remaining = remaining.replace(titleMatch[0], "");
+  }
+
+  remaining = remaining.trim();
+
+  if (!remaining) return null;
+
+  // Split remaining into first name and last name
+  const nameParts = remaining.split(/\s+/);
+  const firstName = nameParts[0];
+  const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : undefined;
+
+  if (!firstName) return null;
+
+  return {
+    intent: "add_contact",
+    firstName,
+    lastName,
+    company,
+    jobTitle,
+    email: emailMatch?.[0],
+    phone: phoneMatch?.[1]?.trim(),
+  };
 }
 
 /**
@@ -197,5 +396,29 @@ export function getQueryDescription(parsed: ParsedQuery): string {
       return "Calculating your network stats...";
     case "search":
       return `Searching for "${parsed.query}"...`;
+    case "add_contact":
+      return `Adding contact "${parsed.firstName}${parsed.lastName ? " " + parsed.lastName : ""}"...`;
+    case "bulk_tag": {
+      const target = parsed.filter.company
+        ? `contacts at "${parsed.filter.company}"`
+        : `${parsed.filter.source} contacts`;
+      return `Tagging ${target} as "${parsed.tag}"...`;
+    }
+    case "bulk_update": {
+      const target = parsed.filter.company
+        ? `contacts at "${parsed.filter.company}"`
+        : parsed.filter.tag
+          ? `contacts tagged "${parsed.filter.tag}"`
+          : `${parsed.filter.source} contacts`;
+      return `Updating ${parsed.field} to "${parsed.value}" for ${target}...`;
+    }
+    case "archive_contacts": {
+      if (parsed.filter.days) return `Archiving contacts not reached in ${parsed.filter.days}+ days...`;
+      if (parsed.filter.tag) return `Archiving contacts tagged "${parsed.filter.tag}"...`;
+      if (parsed.filter.company) return `Archiving contacts at "${parsed.filter.company}"...`;
+      return "Archiving contacts...";
+    }
+    case "enrich_contact":
+      return `Looking up information for "${parsed.name}"...`;
   }
 }
