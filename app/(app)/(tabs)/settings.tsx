@@ -344,6 +344,291 @@ function TagManager() {
   );
 }
 
+type AIProvider = "openai" | "anthropic";
+
+const AI_MODELS: Record<AIProvider, { id: string; label: string; tier: string }[]> = {
+  anthropic: [
+    { id: "claude-opus-4-6", label: "Opus 4.6", tier: "Most capable" },
+    { id: "claude-sonnet-4-6", label: "Sonnet 4.6", tier: "Fast + smart" },
+    { id: "claude-opus-4-5-20250220", label: "Opus 4.5", tier: "Coding + agents" },
+    { id: "claude-sonnet-4-5-20250514", label: "Sonnet 4.5", tier: "Balanced" },
+    { id: "claude-haiku-4-5-20251001", label: "Haiku 4.5", tier: "Fastest" },
+  ],
+  openai: [
+    { id: "gpt-5.4-pro-2026-03-05", label: "GPT-5.4 Pro", tier: "Max performance" },
+    { id: "gpt-5.4-2026-03-05", label: "GPT-5.4", tier: "Most capable" },
+    { id: "gpt-5.4-mini", label: "GPT-5.4 Mini", tier: "Fast + cheap" },
+    { id: "gpt-5.3-instant", label: "GPT-5.3 Instant", tier: "Everyday fast" },
+    { id: "gpt-5.3-codex", label: "GPT-5.3 Codex", tier: "Coding agent" },
+  ],
+};
+
+const DEFAULT_SYSTEM_PROMPT = `You are a personal relationship manager assistant. You have access to the user's contact database including names, companies, job titles, emails, phones, tags, interaction history, and relationships between contacts.
+
+Answer questions about the user's network concisely and helpfully. When listing contacts, include their name, company, and relevant details. When asked about interactions, include dates and context.
+
+If you don't have enough information to answer, say so clearly. Never make up contacts or interactions that don't exist in the data provided.`;
+
+function AIKeyManager() {
+  const { session } = useSession();
+  const [provider, setProvider] = useState<AIProvider>(
+    (session?.user?.user_metadata?.ai_provider as AIProvider) || "anthropic",
+  );
+  const [model, setModel] = useState<string>(
+    (session?.user?.user_metadata?.ai_model as string) || AI_MODELS.anthropic[0].id,
+  );
+  const [apiKey, setApiKey] = useState(
+    (session?.user?.user_metadata?.ai_api_key as string) || "",
+  );
+  const [systemPrompt, setSystemPrompt] = useState(
+    (session?.user?.user_metadata?.ai_system_prompt as string) || DEFAULT_SYSTEM_PROMPT,
+  );
+  const [showPrompt, setShowPrompt] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showKey, setShowKey] = useState(false);
+  const [saved, setSaved] = useState(!!session?.user?.user_metadata?.ai_api_key);
+
+  const handleSave = useCallback(async () => {
+    if (!apiKey.trim()) return;
+    setIsSaving(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          ai_provider: provider,
+          ai_model: model,
+          ai_api_key: apiKey.trim(),
+          ai_system_prompt: systemPrompt.trim() || DEFAULT_SYSTEM_PROMPT,
+        },
+      });
+      if (error) throw error;
+      setSaved(true);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to save API key";
+      if (Platform.OS === "web") {
+        window.alert(message);
+      } else {
+        Alert.alert("Error", message);
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  }, [provider, apiKey]);
+
+  const handleClear = useCallback(async () => {
+    setIsSaving(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: { ai_provider: null, ai_model: null, ai_api_key: null, ai_system_prompt: null },
+      });
+      if (error) throw error;
+      setApiKey("");
+      setSystemPrompt(DEFAULT_SYSTEM_PROMPT);
+      setModel(AI_MODELS.anthropic[0].id);
+      setProvider("anthropic");
+      setSaved(false);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to clear API key";
+      if (Platform.OS === "web") {
+        window.alert(message);
+      } else {
+        Alert.alert("Error", message);
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  }, []);
+
+  const maskedKey = apiKey
+    ? apiKey.slice(0, 7) + "\u2022".repeat(20) + apiKey.slice(-4)
+    : "";
+
+  return (
+    <View className="px-4 py-4">
+      <Text className="mb-3 text-xs text-gray-500">
+        Add an API key to enable AI-powered answers in the Ask tab.
+      </Text>
+
+      {/* Provider toggle */}
+      <View className="mb-3 flex-row overflow-hidden rounded-lg border border-gray-200">
+        <Pressable
+          onPress={() => { setProvider("anthropic"); setModel(AI_MODELS.anthropic[0].id); setSaved(false); }}
+          className={`flex-1 items-center py-2.5 ${
+            provider === "anthropic" ? "bg-blue-600" : "bg-white active:bg-gray-50"
+          }`}
+        >
+          <Text
+            className={`text-sm font-medium ${
+              provider === "anthropic" ? "text-white" : "text-gray-600"
+            }`}
+          >
+            Claude
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => { setProvider("openai"); setModel(AI_MODELS.openai[0].id); setSaved(false); }}
+          className={`flex-1 items-center py-2.5 ${
+            provider === "openai" ? "bg-blue-600" : "bg-white active:bg-gray-50"
+          }`}
+        >
+          <Text
+            className={`text-sm font-medium ${
+              provider === "openai" ? "text-white" : "text-gray-600"
+            }`}
+          >
+            GPT
+          </Text>
+        </Pressable>
+      </View>
+
+      {/* Model picker */}
+      <Text className="mb-1.5 text-xs font-medium text-gray-500">Model</Text>
+      <View className="mb-3 flex-row flex-wrap gap-2">
+        {AI_MODELS[provider].map((m) => (
+          <Pressable
+            key={m.id}
+            onPress={() => { setModel(m.id); setSaved(false); }}
+            className={`rounded-lg border px-3 py-2 ${
+              model === m.id
+                ? "border-blue-600 bg-blue-50"
+                : "border-gray-200 bg-white active:bg-gray-50"
+            }`}
+          >
+            <Text
+              className={`text-sm font-medium ${
+                model === m.id ? "text-blue-700" : "text-gray-700"
+              }`}
+            >
+              {m.label}
+            </Text>
+            <Text
+              className={`text-xs ${
+                model === m.id ? "text-blue-500" : "text-gray-400"
+              }`}
+            >
+              {m.tier}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {/* API Key input */}
+      <View className="mb-3 flex-row items-center rounded-lg border border-gray-200 bg-gray-50">
+        <TextInput
+          value={showKey ? apiKey : (apiKey ? maskedKey : "")}
+          onChangeText={(t) => { setApiKey(t); setSaved(false); }}
+          placeholder={
+            provider === "anthropic"
+              ? "sk-ant-api03-..."
+              : "sk-..."
+          }
+          placeholderTextColor="#9ca3af"
+          className="flex-1 px-3 py-2.5 text-sm text-gray-900"
+          autoCapitalize="none"
+          autoCorrect={false}
+          secureTextEntry={!showKey && !!apiKey}
+        />
+        {apiKey.length > 0 && (
+          <Pressable
+            onPress={() => setShowKey(!showKey)}
+            className="px-3 py-2.5"
+          >
+            <Ionicons
+              name={showKey ? "eye-off-outline" : "eye-outline"}
+              size={18}
+              color="#6b7280"
+            />
+          </Pressable>
+        )}
+      </View>
+
+      {/* System Prompt */}
+      <Pressable
+        onPress={() => setShowPrompt(!showPrompt)}
+        className="mb-2 flex-row items-center justify-between"
+      >
+        <Text className="text-xs font-medium text-gray-500">System Prompt</Text>
+        <View className="flex-row items-center">
+          {systemPrompt !== DEFAULT_SYSTEM_PROMPT && (
+            <Text className="mr-2 text-xs text-blue-500">Customized</Text>
+          )}
+          <Ionicons
+            name={showPrompt ? "chevron-up" : "chevron-down"}
+            size={14}
+            color="#9ca3af"
+          />
+        </View>
+      </Pressable>
+      {showPrompt && (
+        <View className="mb-3">
+          <TextInput
+            value={systemPrompt}
+            onChangeText={(t) => { setSystemPrompt(t); setSaved(false); }}
+            placeholder="Instructions for the AI assistant..."
+            placeholderTextColor="#9ca3af"
+            multiline
+            numberOfLines={6}
+            textAlignVertical="top"
+            className="mb-2 min-h-[120px] rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900"
+          />
+          {systemPrompt !== DEFAULT_SYSTEM_PROMPT && (
+            <Pressable
+              onPress={() => { setSystemPrompt(DEFAULT_SYSTEM_PROMPT); setSaved(false); }}
+              className="self-start"
+            >
+              <Text className="text-xs text-blue-600">Reset to default</Text>
+            </Pressable>
+          )}
+        </View>
+      )}
+
+      {/* Actions */}
+      <View className="flex-row gap-2">
+        <Pressable
+          onPress={handleSave}
+          disabled={isSaving || !apiKey.trim() || saved}
+          className={`flex-1 items-center rounded-lg py-2.5 ${
+            isSaving || !apiKey.trim() || saved
+              ? "bg-gray-200"
+              : "bg-blue-600 active:bg-blue-700"
+          }`}
+        >
+          {isSaving ? (
+            <ActivityIndicator size="small" color="white" />
+          ) : (
+            <Text
+              className={`text-sm font-medium ${
+                !apiKey.trim() || saved ? "text-gray-400" : "text-white"
+              }`}
+            >
+              {saved ? "Saved" : "Save Key"}
+            </Text>
+          )}
+        </Pressable>
+        {apiKey.length > 0 && (
+          <Pressable
+            onPress={handleClear}
+            disabled={isSaving}
+            className="items-center rounded-lg border border-gray-200 px-4 py-2.5 active:bg-gray-50"
+          >
+            <Text className="text-sm font-medium text-gray-500">Clear</Text>
+          </Pressable>
+        )}
+      </View>
+
+      {saved && (
+        <View className="mt-2 flex-row items-center">
+          <Ionicons name="checkmark-circle" size={14} color="#16a34a" />
+          <Text className="ml-1 text-xs text-green-600">
+            Saved — using {AI_MODELS[provider].find((m) => m.id === model)?.label ?? model}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
 export default function SettingsScreen() {
   const { signOut } = useSession();
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -386,6 +671,12 @@ export default function SettingsScreen() {
       <SectionHeader title="Tags" />
       <View className="mx-5 overflow-hidden rounded-xl bg-white shadow-sm">
         <TagManager />
+      </View>
+
+      {/* AI API Keys */}
+      <SectionHeader title="AI Provider" />
+      <View className="mx-5 overflow-hidden rounded-xl bg-white shadow-sm">
+        <AIKeyManager />
       </View>
 
       {/* About */}
