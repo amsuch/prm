@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import {
   View,
   Text,
@@ -8,111 +8,107 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { supabase } from "@/lib/supabase";
 
+type Mode = "sign_in" | "create_account";
+
 export default function SignIn() {
+  const [mode, setMode] = useState<Mode>("sign_in");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState<"email" | "waiting" | "code">("email");
-  const [code, setCode] = useState(["", "", "", "", "", ""]);
-  const [codeError, setCodeError] = useState("");
-  const inputRefs = useRef<(TextInput | null)[]>([]);
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
 
-  // Listen for auth state changes — handles magic link sign-in
-  useEffect(() => {
-    if (step !== "waiting" && step !== "code") return;
+  const handleSubmit = async () => {
+    setError("");
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedName = fullName.trim();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (event === "SIGNED_IN" && session) {
-          router.replace("/(app)/(tabs)");
-        }
-      },
-    );
-
-    return () => subscription.unsubscribe();
-  }, [step]);
-
-  const handleSendOtp = async () => {
-    const trimmed = email.trim();
-    if (!trimmed) {
-      Alert.alert("Error", "Please enter your email");
+    if (!trimmedEmail) {
+      setError("Please enter your email.");
       return;
     }
+    if (!password || password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+    if (mode === "create_account" && !trimmedName) {
+      setError("Please enter your name.");
+      return;
+    }
+
     setLoading(true);
+
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: trimmed,
-        options: {
-          shouldCreateUser: true,
-        },
-      });
-      if (error) throw error;
-      setStep("waiting");
-      setCode(["", "", "", "", "", ""]);
-      setCodeError("");
+      if (mode === "create_account") {
+        const { data, error: signUpErr } = await supabase.auth.signUp({
+          email: trimmedEmail,
+          password,
+          options: {
+            data: { full_name: trimmedName },
+          },
+        });
+
+        if (signUpErr) throw signUpErr;
+
+        // Check if user was auto-confirmed or needs email verification
+        if (data.session) {
+          // Auto-confirmed — we're in
+          router.replace("/(app)/(tabs)");
+        } else if (data.user && !data.user.confirmed_at) {
+          // Needs email confirmation — try to sign in anyway
+          // (some Supabase configs allow immediate sign-in)
+          const { error: signInErr } = await supabase.auth.signInWithPassword({
+            email: trimmedEmail,
+            password,
+          });
+          if (signInErr) {
+            // Can't sign in yet — show confirmation message
+            Alert.alert(
+              "Check your email",
+              `We sent a confirmation link to ${trimmedEmail}. Click it to activate your account, then come back and sign in.`,
+              [{ text: "OK", onPress: () => setMode("sign_in") }],
+            );
+          } else {
+            router.replace("/(app)/(tabs)");
+          }
+        } else {
+          // User already exists
+          setError("An account with this email already exists. Try signing in.");
+          setMode("sign_in");
+        }
+      } else {
+        const { error: signInErr } = await supabase.auth.signInWithPassword({
+          email: trimmedEmail,
+          password,
+        });
+        if (signInErr) throw signInErr;
+        router.replace("/(app)/(tabs)");
+      }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Something went wrong";
-      Alert.alert("Error", msg);
+      if (msg.includes("Invalid login")) {
+        setError("Incorrect email or password.");
+      } else if (msg.includes("already registered")) {
+        setError("This email is already registered. Try signing in.");
+        setMode("sign_in");
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleVerifyCode = async (fullCode: string) => {
-    if (fullCode.length !== 6) return;
-    setLoading(true);
-    setCodeError("");
-    try {
-      const { error } = await supabase.auth.verifyOtp({
-        email: email.trim(),
-        token: fullCode,
-        type: "email",
-      });
-      if (error) throw error;
-      router.replace("/(app)/(tabs)");
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Invalid code";
-      setCodeError(msg);
-      setCode(["", "", "", "", "", ""]);
-      inputRefs.current[0]?.focus();
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCodeChange = (index: number, value: string) => {
-    const digit = value.replace(/[^0-9]/g, "").slice(-1);
-    const newCode = [...code];
-    newCode[index] = digit;
-    setCode(newCode);
-    setCodeError("");
-
-    if (digit && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
-
-    const fullCode = newCode.join("");
-    if (fullCode.length === 6 && newCode.every((d) => d !== "")) {
-      handleVerifyCode(fullCode);
-    }
-  };
-
-  const handleCodeKeyPress = (index: number, key: string) => {
-    if (key === "Backspace" && !code[index] && index > 0) {
-      const newCode = [...code];
-      newCode[index - 1] = "";
-      setCode(newCode);
-      inputRefs.current[index - 1]?.focus();
     }
   };
 
   const handleGoogleSignIn = async () => {
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { data, error: oauthErr } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo:
@@ -121,7 +117,7 @@ export default function SignIn() {
               : "prm-sc://auth/callback",
         },
       });
-      if (error) throw error;
+      if (oauthErr) throw oauthErr;
       if (data.url) {
         if (Platform.OS === "web") {
           window.location.href = data.url;
@@ -132,261 +128,196 @@ export default function SignIn() {
       }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Google sign-in failed";
-      Alert.alert("Error", msg);
+      setError(msg);
     }
   };
 
-  const handleResend = async () => {
-    setLoading(true);
-    setCodeError("");
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
-        options: { shouldCreateUser: true },
-      });
-      if (error) throw error;
-      setCode(["", "", "", "", "", ""]);
-      Alert.alert("Sent", "A new sign-in email has been sent.");
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Failed to resend";
-      Alert.alert("Error", msg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ============================================================
-  // Step 2: Waiting for magic link or code entry
-  // ============================================================
-  if (step === "waiting" || step === "code") {
-    return (
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1 bg-gray-50"
-      >
-        <View className="flex-1 items-center justify-center px-6">
-          <View className="w-full max-w-sm items-center">
-            <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-blue-100">
-              <Ionicons name="mail-outline" size={32} color="#2563eb" />
-            </View>
-            <Text className="text-xl font-bold text-gray-900">
-              Check your email
-            </Text>
-            <Text className="mt-2 text-center text-sm text-gray-500">
-              We sent a sign-in link to
-            </Text>
-            <Text className="mt-1 font-medium text-gray-700">{email}</Text>
-
-            {/* Primary action: click the link */}
-            <View className="mt-6 w-full rounded-xl border border-blue-200 bg-blue-50 p-4">
-              <View className="flex-row items-center">
-                <Ionicons name="link-outline" size={20} color="#2563eb" />
-                <Text className="ml-2 text-sm font-medium text-blue-800">
-                  Click the link in your email to sign in
-                </Text>
-              </View>
-              <Text className="mt-2 text-xs text-blue-600">
-                The link will sign you in automatically.
-                {Platform.OS === "web"
-                  ? " Make sure to open it in this browser."
-                  : ""}
-              </Text>
-            </View>
-
-            {/* Alternative: enter code */}
-            <Pressable
-              onPress={() => setStep(step === "code" ? "waiting" : "code")}
-              className="mt-4"
-            >
-              <Text className="text-sm text-blue-600">
-                {step === "code"
-                  ? "Hide code input"
-                  : "Have a 6-digit code instead?"}
-              </Text>
-            </Pressable>
-
-            {step === "code" && (
-              <View className="mt-4 items-center">
-                <View className="flex-row gap-2">
-                  {code.map((digit, index) => (
-                    <TextInput
-                      key={index}
-                      ref={(ref) => {
-                        inputRefs.current[index] = ref;
-                      }}
-                      value={digit}
-                      onChangeText={(value) => {
-                        if (value.length > 1) {
-                          // Handle paste
-                          const digits = value
-                            .replace(/[^0-9]/g, "")
-                            .slice(0, 6);
-                          const newCode = [...code];
-                          for (let i = 0; i < digits.length; i++) {
-                            newCode[i] = digits[i];
-                          }
-                          setCode(newCode);
-                          if (digits.length === 6) handleVerifyCode(digits);
-                          else inputRefs.current[digits.length]?.focus();
-                        } else {
-                          handleCodeChange(index, value);
-                        }
-                      }}
-                      onKeyPress={({ nativeEvent }) =>
-                        handleCodeKeyPress(index, nativeEvent.key)
-                      }
-                      keyboardType="number-pad"
-                      maxLength={1}
-                      autoFocus={index === 0}
-                      selectTextOnFocus
-                      className={`h-12 w-10 rounded-lg border-2 text-center text-lg font-bold ${
-                        codeError
-                          ? "border-red-300 bg-red-50 text-red-600"
-                          : digit
-                            ? "border-blue-400 bg-blue-50 text-blue-700"
-                            : "border-gray-200 bg-gray-50 text-gray-900"
-                      }`}
-                    />
-                  ))}
-                </View>
-                {codeError && (
-                  <Text className="mt-2 text-xs text-red-500">{codeError}</Text>
-                )}
-              </View>
-            )}
-
-            {loading && (
-              <ActivityIndicator className="mt-4" color="#2563eb" />
-            )}
-
-            {/* Bottom actions */}
-            <View className="mt-8 items-center gap-3">
-              <Pressable onPress={handleResend} disabled={loading}>
-                <Text className="text-sm font-medium text-blue-600">
-                  Resend email
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={() => {
-                  setStep("email");
-                  setCode(["", "", "", "", "", ""]);
-                  setCodeError("");
-                }}
-              >
-                <Text className="text-sm text-gray-500">
-                  Use a different email
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
-    );
-  }
-
-  // ============================================================
-  // Step 1: Enter email
-  // ============================================================
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       className="flex-1 bg-gray-50"
     >
-      <View className="flex-1 items-center justify-center px-6">
-        <View className="w-full max-w-sm">
-          {/* Logo */}
-          <View className="mb-10 items-center">
-            <View className="mb-4 h-16 w-16 items-center justify-center rounded-2xl bg-blue-600">
-              <Text className="text-2xl font-bold text-white">P</Text>
-            </View>
-            <Text className="text-2xl font-bold text-gray-900">
-              Personal RM
-            </Text>
-            <Text className="mt-1 text-gray-500">
-              Your relationship manager
-            </Text>
-          </View>
-
-          {/* Form */}
-          <View className="rounded-2xl bg-white p-6 shadow-sm">
-            <TextInput
-              className="mb-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-base text-gray-900"
-              placeholder="Enter your email"
-              placeholderTextColor="#9ca3af"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              autoComplete="email"
-              autoFocus
-            />
-
-            <Pressable
-              onPress={handleSendOtp}
-              disabled={loading}
-              className="mb-3 items-center rounded-xl bg-blue-600 py-3.5 active:bg-blue-700"
-            >
-              {loading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text className="text-base font-semibold text-white">
-                  Continue with Email
-                </Text>
-              )}
-            </Pressable>
-
-            <Text className="text-center text-xs text-gray-400">
-              We'll send you a sign-in link. No password needed.
-            </Text>
-
-            {/* Divider */}
-            <View className="my-5 flex-row items-center">
-              <View className="h-px flex-1 bg-gray-200" />
-              <Text className="mx-3 text-xs text-gray-400">OR</Text>
-              <View className="h-px flex-1 bg-gray-200" />
-            </View>
-
-            {/* Google */}
-            <Pressable
-              onPress={handleGoogleSignIn}
-              className="mb-3 flex-row items-center justify-center rounded-xl border border-gray-200 bg-white py-3.5 active:bg-gray-50"
-            >
-              <Ionicons name="logo-google" size={20} color="#4285F4" />
-              <Text className="ml-2 text-base font-medium text-gray-700">
-                Continue with Google
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View className="items-center px-6 py-12">
+          <View className="w-full max-w-sm">
+            {/* Logo */}
+            <View className="mb-8 items-center">
+              <View className="mb-3 h-14 w-14 items-center justify-center rounded-2xl bg-blue-600">
+                <Text className="text-xl font-bold text-white">P</Text>
+              </View>
+              <Text className="text-2xl font-bold text-gray-900">
+                Personal RM
               </Text>
-            </Pressable>
+              <Text className="mt-1 text-sm text-gray-500">
+                {mode === "create_account"
+                  ? "Create your account"
+                  : "Welcome back"}
+              </Text>
+            </View>
 
-            {/* Dev quick sign-in */}
-            {__DEV__ && (
+            {/* Form */}
+            <View className="rounded-2xl bg-white p-5 shadow-sm">
+              {/* Name field (create mode only) */}
+              {mode === "create_account" && (
+                <View className="mb-3">
+                  <Text className="mb-1 text-xs font-medium text-gray-500">
+                    Full Name
+                  </Text>
+                  <TextInput
+                    className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
+                    placeholder="Jane Smith"
+                    placeholderTextColor="#9ca3af"
+                    value={fullName}
+                    onChangeText={(t) => { setFullName(t); setError(""); }}
+                    autoCapitalize="words"
+                    autoComplete="name"
+                  />
+                </View>
+              )}
+
+              {/* Email */}
+              <View className="mb-3">
+                <Text className="mb-1 text-xs font-medium text-gray-500">
+                  Email
+                </Text>
+                <TextInput
+                  className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
+                  placeholder="you@example.com"
+                  placeholderTextColor="#9ca3af"
+                  value={email}
+                  onChangeText={(t) => { setEmail(t); setError(""); }}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  autoComplete="email"
+                  autoFocus={mode === "sign_in"}
+                />
+              </View>
+
+              {/* Password */}
+              <View className="mb-4">
+                <Text className="mb-1 text-xs font-medium text-gray-500">
+                  Password
+                </Text>
+                <View className="flex-row items-center rounded-xl border border-gray-200 bg-gray-50">
+                  <TextInput
+                    className="flex-1 px-4 py-3 text-base text-gray-900"
+                    placeholder={mode === "create_account" ? "At least 6 characters" : "Enter password"}
+                    placeholderTextColor="#9ca3af"
+                    value={password}
+                    onChangeText={(t) => { setPassword(t); setError(""); }}
+                    secureTextEntry={!showPassword}
+                    autoComplete={mode === "create_account" ? "new-password" : "current-password"}
+                  />
+                  <Pressable
+                    onPress={() => setShowPassword(!showPassword)}
+                    className="px-3 py-3"
+                  >
+                    <Ionicons
+                      name={showPassword ? "eye-off-outline" : "eye-outline"}
+                      size={20}
+                      color="#9ca3af"
+                    />
+                  </Pressable>
+                </View>
+              </View>
+
+              {/* Error */}
+              {error ? (
+                <View className="mb-3 flex-row items-center rounded-lg bg-red-50 px-3 py-2">
+                  <Ionicons name="alert-circle" size={16} color="#ef4444" />
+                  <Text className="ml-2 flex-1 text-sm text-red-600">
+                    {error}
+                  </Text>
+                </View>
+              ) : null}
+
+              {/* Submit */}
               <Pressable
-                onPress={async () => {
-                  setLoading(true);
-                  try {
-                    const { error } = await supabase.auth.signInWithPassword({
-                      email: "dev@prm.local",
-                      password: "password123",
-                    });
-                    if (error) throw error;
-                    router.replace("/(app)/(tabs)");
-                  } catch (e: unknown) {
-                    const msg = e instanceof Error ? e.message : "Failed";
-                    Alert.alert("Error", msg);
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-                className="flex-row items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 py-3 active:bg-gray-100"
+                onPress={handleSubmit}
+                disabled={loading}
+                className={`items-center rounded-xl py-3.5 ${
+                  loading ? "bg-blue-400" : "bg-blue-600 active:bg-blue-700"
+                }`}
               >
-                <Ionicons name="flash-outline" size={18} color="#6b7280" />
-                <Text className="ml-2 text-sm font-medium text-gray-500">
-                  Dev Quick Sign In
+                {loading ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text className="text-base font-semibold text-white">
+                    {mode === "create_account" ? "Create Account" : "Sign In"}
+                  </Text>
+                )}
+              </Pressable>
+
+              {/* Toggle mode */}
+              <Pressable
+                onPress={() => {
+                  setMode(mode === "sign_in" ? "create_account" : "sign_in");
+                  setError("");
+                }}
+                className="mt-3 py-2"
+              >
+                <Text className="text-center text-sm text-blue-600">
+                  {mode === "sign_in"
+                    ? "Don't have an account? Create one"
+                    : "Already have an account? Sign in"}
                 </Text>
               </Pressable>
-            )}
+
+              {/* Divider */}
+              <View className="my-4 flex-row items-center">
+                <View className="h-px flex-1 bg-gray-200" />
+                <Text className="mx-3 text-xs text-gray-400">OR</Text>
+                <View className="h-px flex-1 bg-gray-200" />
+              </View>
+
+              {/* Google */}
+              <Pressable
+                onPress={handleGoogleSignIn}
+                className="flex-row items-center justify-center rounded-xl border border-gray-200 bg-white py-3.5 active:bg-gray-50"
+              >
+                <Ionicons name="logo-google" size={20} color="#4285F4" />
+                <Text className="ml-2 text-base font-medium text-gray-700">
+                  Continue with Google
+                </Text>
+              </Pressable>
+
+              {/* Dev quick sign-in */}
+              {__DEV__ && (
+                <Pressable
+                  onPress={async () => {
+                    setLoading(true);
+                    setError("");
+                    try {
+                      const { error: devErr } =
+                        await supabase.auth.signInWithPassword({
+                          email: "dev@prm.local",
+                          password: "password123",
+                        });
+                      if (devErr) throw devErr;
+                      router.replace("/(app)/(tabs)");
+                    } catch (e: unknown) {
+                      setError(
+                        e instanceof Error ? e.message : "Dev sign-in failed",
+                      );
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  className="mt-3 flex-row items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 py-3 active:bg-gray-100"
+                >
+                  <Ionicons name="flash-outline" size={18} color="#6b7280" />
+                  <Text className="ml-2 text-sm font-medium text-gray-500">
+                    Dev Quick Sign In
+                  </Text>
+                </Pressable>
+              )}
+            </View>
           </View>
         </View>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
