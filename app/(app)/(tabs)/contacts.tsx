@@ -145,15 +145,24 @@ export default function ContactsScreen() {
             tags={tags}
           />
         </View>
-        <Pressable
-          onPress={cycleSortOption}
-          className="flex-row items-center rounded-full bg-white px-3 py-1.5 shadow-sm"
-        >
-          <Ionicons name="swap-vertical" size={14} color={Colors.gray[500]} />
-          <Text className="ml-1 text-xs font-medium text-gray-500">
-            {sortLabel[sortBy]}
-          </Text>
-        </Pressable>
+        <View className="flex-row items-center gap-2">
+          <Pressable
+            onPress={() => router.push("/(app)/bulk-link")}
+            className="flex-row items-center rounded-full bg-white px-3 py-1.5 shadow-sm"
+          >
+            <Ionicons name="link" size={14} color={Colors.brand[600]} />
+            <Text className="ml-1 text-xs font-medium text-blue-600">Link</Text>
+          </Pressable>
+          <Pressable
+            onPress={cycleSortOption}
+            className="flex-row items-center rounded-full bg-white px-3 py-1.5 shadow-sm"
+          >
+            <Ionicons name="swap-vertical" size={14} color={Colors.gray[500]} />
+            <Text className="ml-1 text-xs font-medium text-gray-500">
+              {sortLabel[sortBy]}
+            </Text>
+          </Pressable>
+        </View>
       </View>
 
       {/* Loading State */}

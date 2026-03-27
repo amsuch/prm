@@ -40,6 +40,10 @@ export default function AppLayout() {
         name="import/device"
         options={{ headerShown: true, title: "Device Contacts" }}
       />
+      <Stack.Screen
+        name="bulk-link"
+        options={{ headerShown: true, title: "Bulk Link Contacts" }}
+      />
     </Stack>
   );
 }
