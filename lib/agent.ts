@@ -44,7 +44,19 @@ export type StatsResult = {
   sourceBreakdown: { source: string; count: number }[];
 };
 
-export type ActionType = "add" | "bulk_tag" | "bulk_update" | "archive" | "enrich";
+export type ActionType = "add" | "update" | "bulk_tag" | "bulk_update" | "archive" | "enrich";
+
+/** A serialized action that can be executed after user approval */
+export type PendingAction = {
+  parsedQuery: ParsedQuery;
+  userId: string;
+  preview: {
+    actionType: ActionType;
+    description: string;
+    affectedContacts: AgentResultContact[];
+    details?: string;
+  };
+};
 
 export type AgentResponse =
   | { type: "contacts"; message: string; contacts: AgentResultContact[] }
@@ -53,7 +65,8 @@ export type AgentResponse =
   | { type: "stats"; message: string; stats: StatsResult }
   | { type: "text"; message: string }
   | { type: "error"; message: string }
-  | { type: "action"; message: string; actionType: ActionType; count?: number; contact?: AgentResultContact; needsConfirmation?: boolean };
+  | { type: "action"; message: string; actionType: ActionType; count?: number; contact?: AgentResultContact }
+  | { type: "pending_action"; message: string; pendingAction: PendingAction };
 
 // Row types used for casting Supabase query results
 type ContactRow = Tables<"contacts">;
@@ -92,7 +105,64 @@ type RelationshipRpcRow = {
 };
 
 /**
- * Execute a parsed query and return formatted results.
+ * Preview an action intent: show what will happen without executing.
+ * Used in HITL mode to get user approval before mutations.
+ */
+export async function previewAction(
+  parsed: ParsedQuery,
+  userId: string,
+): Promise<AgentResponse> {
+  try {
+    const affected = await getAffectedContacts(parsed, userId);
+
+    const actionTypeMap: Record<string, ActionType> = {
+      add_contact: "add",
+      update_contact: "update",
+      bulk_tag: "bulk_tag",
+      bulk_update: "bulk_update",
+      archive_contacts: "archive",
+      enrich_contact: "enrich",
+    };
+
+    const actionType = actionTypeMap[parsed.intent] ?? "bulk_update";
+    const description = describeAction(parsed);
+
+    return {
+      type: "pending_action",
+      message: `${description}\n\nThis will affect ${affected.length} contact${affected.length === 1 ? "" : "s"}. Approve?`,
+      pendingAction: {
+        parsedQuery: parsed,
+        userId,
+        preview: {
+          actionType,
+          description,
+          affectedContacts: affected,
+          details: describeActionDetails(parsed),
+        },
+      },
+    };
+  } catch (err) {
+    return {
+      type: "error",
+      message: err instanceof Error ? err.message : "Failed to preview action.",
+    };
+  }
+}
+
+/**
+ * Execute a confirmed action. Called after user approves in HITL mode,
+ * or directly in Auto mode.
+ */
+export async function confirmAction(
+  pendingAction: PendingAction,
+): Promise<AgentResponse> {
+  const { parsedQuery: parsed, userId } = pendingAction;
+  return executeAction(parsed, userId);
+}
+
+/**
+ * Execute a parsed query. Read intents run directly.
+ * Action intents run directly (used in Auto mode or after HITL approval).
  */
 export async function executeQuery(
   parsed: ParsedQuery,
@@ -114,16 +184,8 @@ export async function executeQuery(
         return await handleStats(userId);
       case "search":
         return await handleSearch(parsed.query, userId);
-      case "add_contact":
-        return await handleAddContact(parsed, userId);
-      case "bulk_tag":
-        return await handleBulkTag(parsed.tag, parsed.filter, userId);
-      case "bulk_update":
-        return await handleBulkUpdate(parsed.field, parsed.value, parsed.filter, userId);
-      case "archive_contacts":
-        return await handleArchiveContacts(parsed.filter, userId);
-      case "enrich_contact":
-        return await handleEnrichContact(parsed.name, userId);
+      default:
+        return await executeAction(parsed, userId);
     }
   } catch (err) {
     return {
@@ -1042,4 +1104,216 @@ async function handleEnrichContact(
     actionType: "enrich",
     contact,
   };
+}
+
+// ============================================================
+// Action execution router (used by both Auto mode and after HITL approval)
+// ============================================================
+
+async function executeAction(
+  parsed: ParsedQuery,
+  userId: string,
+): Promise<AgentResponse> {
+  switch (parsed.intent) {
+    case "add_contact":
+      return await handleAddContact(parsed, userId);
+    case "update_contact":
+      return await handleUpdateContact(parsed.name, parsed.field, parsed.value, userId);
+    case "bulk_tag":
+      return await handleBulkTag(parsed.tag, parsed.filter, userId);
+    case "bulk_update":
+      return await handleBulkUpdate(parsed.field, parsed.value, parsed.filter, userId);
+    case "archive_contacts":
+      return await handleArchiveContacts(parsed.filter, userId);
+    case "enrich_contact":
+      return await handleEnrichContact(parsed.name, userId);
+    default:
+      return { type: "error", message: "Unknown action type." };
+  }
+}
+
+// ============================================================
+// Update single contact
+// ============================================================
+
+async function handleUpdateContact(
+  name: string,
+  field: string,
+  value: string,
+  userId: string,
+): Promise<AgentResponse> {
+  const allowedFields = ["company", "job_title", "department", "notes", "email", "phone"];
+  if (!allowedFields.includes(field)) {
+    return { type: "error", message: `Cannot update field "${field}". Allowed: ${allowedFields.join(", ")}` };
+  }
+
+  const { data: contactData, error: findError } = await supabase
+    .from("contacts")
+    .select("id, first_name, last_name, company, job_title, avatar_url")
+    .eq("user_id", userId)
+    .eq("is_archived", false)
+    .or(`first_name.ilike.%${name}%,last_name.ilike.%${name}%`)
+    .limit(1);
+
+  if (findError) throw findError;
+  const contacts = (contactData as unknown as AgentResultContact[]) ?? [];
+  if (contacts.length === 0) {
+    return { type: "text", message: `Couldn't find a contact matching "${name}".` };
+  }
+
+  const contact = contacts[0];
+  const fullName = [contact.first_name, contact.last_name].filter(Boolean).join(" ");
+
+  // Handle email and phone as separate table updates
+  if (field === "email") {
+    await supabase.from("contact_emails").upsert(
+      { contact_id: contact.id, email: value, label: "work", is_primary: true } as never,
+      { onConflict: "contact_id,email" as never }
+    );
+  } else if (field === "phone") {
+    await supabase.from("contact_phones").upsert(
+      { contact_id: contact.id, phone: value, label: "mobile", is_primary: true } as never,
+      { onConflict: "contact_id,phone" as never }
+    );
+  } else {
+    const { error: updateError } = await supabase
+      .from("contacts")
+      .update({ [field]: value } as never)
+      .eq("id", contact.id);
+    if (updateError) throw updateError;
+  }
+
+  return {
+    type: "action",
+    message: `Updated ${field} to "${value}" for ${fullName}.`,
+    actionType: "update",
+    contact: { ...contact, [field === "job_title" ? "job_title" : field]: value },
+  };
+}
+
+// ============================================================
+// HITL helpers: preview what an action will do without executing
+// ============================================================
+
+async function getAffectedContacts(
+  parsed: ParsedQuery,
+  userId: string,
+): Promise<AgentResultContact[]> {
+  switch (parsed.intent) {
+    case "add_contact":
+      return [{
+        id: "new",
+        first_name: parsed.firstName,
+        last_name: parsed.lastName ?? null,
+        company: parsed.company ?? null,
+        job_title: parsed.jobTitle ?? null,
+        avatar_url: null,
+      }];
+
+    case "update_contact": {
+      const { data } = await supabase
+        .from("contacts")
+        .select("id, first_name, last_name, company, job_title, avatar_url")
+        .eq("user_id", userId)
+        .eq("is_archived", false)
+        .or(`first_name.ilike.%${parsed.name}%,last_name.ilike.%${parsed.name}%`)
+        .limit(5);
+      return (data as unknown as AgentResultContact[]) ?? [];
+    }
+
+    case "bulk_tag":
+    case "bulk_update": {
+      const filter = parsed.intent === "bulk_tag" ? parsed.filter : parsed.filter;
+      let query = supabase
+        .from("contacts")
+        .select("id, first_name, last_name, company, job_title, avatar_url")
+        .eq("user_id", userId)
+        .eq("is_archived", false);
+      if (filter.company) query = query.ilike("company", `%${filter.company}%`);
+      if (filter.source) query = query.eq("source", filter.source);
+      if ("tag" in filter && filter.tag) {
+        const { data: tagData } = await supabase
+          .from("tags").select("id").eq("user_id", userId).ilike("name", `%${filter.tag}%`).limit(1);
+        const tags = (tagData as unknown as { id: string }[]) ?? [];
+        if (tags[0]) {
+          const { data: ctData } = await supabase
+            .from("contact_tags").select("contact_id").eq("tag_id", tags[0].id);
+          const ids = ((ctData as unknown as { contact_id: string }[]) ?? []).map(c => c.contact_id);
+          if (ids.length > 0) query = query.in("id", ids);
+          else return [];
+        }
+      }
+      const { data } = await query.order("first_name").limit(20);
+      return (data as unknown as AgentResultContact[]) ?? [];
+    }
+
+    case "archive_contacts": {
+      let query = supabase
+        .from("contacts")
+        .select("id, first_name, last_name, company, job_title, avatar_url")
+        .eq("user_id", userId)
+        .eq("is_archived", false);
+      if (parsed.filter.days) {
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - parsed.filter.days);
+        query = query.or(`last_contacted_at.is.null,last_contacted_at.lt.${cutoff.toISOString()}`);
+      }
+      if (parsed.filter.company) query = query.ilike("company", `%${parsed.filter.company}%`);
+      const { data } = await query.order("first_name").limit(20);
+      return (data as unknown as AgentResultContact[]) ?? [];
+    }
+
+    case "enrich_contact": {
+      const { data } = await supabase
+        .from("contacts")
+        .select("id, first_name, last_name, company, job_title, avatar_url")
+        .eq("user_id", userId)
+        .or(`first_name.ilike.%${parsed.name}%,last_name.ilike.%${parsed.name}%`)
+        .limit(1);
+      return (data as unknown as AgentResultContact[]) ?? [];
+    }
+
+    default:
+      return [];
+  }
+}
+
+function describeAction(parsed: ParsedQuery): string {
+  switch (parsed.intent) {
+    case "add_contact":
+      return `Add new contact: ${parsed.firstName}${parsed.lastName ? " " + parsed.lastName : ""}${parsed.company ? " at " + parsed.company : ""}`;
+    case "update_contact":
+      return `Update ${parsed.field} to "${parsed.value}" for ${parsed.name}`;
+    case "bulk_tag": {
+      const target = parsed.filter.company ? `contacts at ${parsed.filter.company}` : `${parsed.filter.source} contacts`;
+      return `Tag ${target} as "${parsed.tag}"`;
+    }
+    case "bulk_update": {
+      const target = parsed.filter.company ? `contacts at ${parsed.filter.company}` : parsed.filter.tag ? `contacts tagged ${parsed.filter.tag}` : `${parsed.filter.source} contacts`;
+      return `Update ${parsed.field} to "${parsed.value}" for ${target}`;
+    }
+    case "archive_contacts": {
+      if (parsed.filter.days) return `Archive contacts not reached in ${parsed.filter.days}+ days`;
+      if (parsed.filter.tag) return `Archive contacts tagged "${parsed.filter.tag}"`;
+      if (parsed.filter.company) return `Archive contacts at "${parsed.filter.company}"`;
+      return "Archive contacts";
+    }
+    case "enrich_contact":
+      return `Research and enrich ${parsed.name}'s profile`;
+    default:
+      return "Unknown action";
+  }
+}
+
+function describeActionDetails(parsed: ParsedQuery): string | undefined {
+  switch (parsed.intent) {
+    case "update_contact":
+      return `${parsed.field} → "${parsed.value}"`;
+    case "bulk_tag":
+      return `Tag: "${parsed.tag}"`;
+    case "bulk_update":
+      return `${parsed.field} → "${parsed.value}"`;
+    default:
+      return undefined;
+  }
 }

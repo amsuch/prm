@@ -7,6 +7,7 @@ import type {
   AgentResponse,
   AgentResultContact,
   ActionType,
+  PendingAction,
   InteractionResult,
   RelationshipResult,
   StatsResult,
@@ -17,6 +18,8 @@ type ChatBubbleProps = {
   text: string;
   response?: AgentResponse;
   isLoading?: boolean;
+  onApprove?: (pendingAction: PendingAction) => void;
+  onReject?: () => void;
 };
 
 const AVATAR_COLORS = [
@@ -32,7 +35,7 @@ function getAvatarColor(name: string): string {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
-export function ChatBubble({ role, text, response, isLoading }: ChatBubbleProps) {
+export function ChatBubble({ role, text, response, isLoading, onApprove, onReject }: ChatBubbleProps) {
   if (role === "user") {
     return (
       <View className="mb-3 flex-row justify-end px-4">
@@ -57,7 +60,13 @@ export function ChatBubble({ role, text, response, isLoading }: ChatBubbleProps)
         ) : (
           <>
             <Text className="text-base text-gray-900">{text}</Text>
-            {response && <ResponseContent response={response} />}
+            {response && (
+              <ResponseContent
+                response={response}
+                onApprove={onApprove}
+                onReject={onReject}
+              />
+            )}
           </>
         )}
       </View>
@@ -65,7 +74,15 @@ export function ChatBubble({ role, text, response, isLoading }: ChatBubbleProps)
   );
 }
 
-function ResponseContent({ response }: { response: AgentResponse }) {
+function ResponseContent({
+  response,
+  onApprove,
+  onReject,
+}: {
+  response: AgentResponse;
+  onApprove?: (pendingAction: PendingAction) => void;
+  onReject?: () => void;
+}) {
   switch (response.type) {
     case "contacts":
       return <ContactCards contacts={response.contacts} />;
@@ -83,6 +100,14 @@ function ResponseContent({ response }: { response: AgentResponse }) {
           actionType={response.actionType}
           count={response.count}
           contact={response.contact}
+        />
+      );
+    case "pending_action":
+      return (
+        <PendingActionCard
+          pendingAction={response.pendingAction}
+          onApprove={onApprove}
+          onReject={onReject}
         />
       );
     case "text":
@@ -472,6 +497,105 @@ function ActionCard({
           size={24}
           color={config.iconColor}
         />
+      </View>
+    </View>
+  );
+}
+
+function PendingActionCard({
+  pendingAction,
+  onApprove,
+  onReject,
+}: {
+  pendingAction: PendingAction;
+  onApprove?: (pendingAction: PendingAction) => void;
+  onReject?: () => void;
+}) {
+  const router = useRouter();
+  const { preview } = pendingAction;
+
+  const iconMap: Record<ActionType, { icon: string; color: string; bg: string; border: string }> = {
+    add: { icon: "add-circle", color: "#10b981", bg: "bg-green-50", border: "border-green-200" },
+    update: { icon: "create", color: "#3b82f6", bg: "bg-blue-50", border: "border-blue-200" },
+    bulk_tag: { icon: "pricetag", color: "#3b82f6", bg: "bg-blue-50", border: "border-blue-200" },
+    bulk_update: { icon: "create", color: "#3b82f6", bg: "bg-blue-50", border: "border-blue-200" },
+    archive: { icon: "archive", color: "#f59e0b", bg: "bg-amber-50", border: "border-amber-200" },
+    enrich: { icon: "search", color: "#8b5cf6", bg: "bg-purple-50", border: "border-purple-200" },
+  };
+
+  const config = iconMap[preview.actionType];
+
+  return (
+    <View className={`mt-3 rounded-xl border ${config.border} ${config.bg} p-3`}>
+      {/* Header */}
+      <View className="mb-2 flex-row items-center">
+        <Ionicons
+          name={config.icon as keyof typeof Ionicons.glyphMap}
+          size={18}
+          color={config.color}
+        />
+        <Text className="ml-2 text-xs font-semibold uppercase text-gray-500">
+          Pending Action
+        </Text>
+      </View>
+
+      {/* Description */}
+      <Text className="mb-2 text-sm font-medium text-gray-800">
+        {preview.description}
+      </Text>
+      {preview.details && (
+        <Text className="mb-2 text-xs text-gray-500">{preview.details}</Text>
+      )}
+
+      {/* Affected contacts preview */}
+      {preview.affectedContacts.length > 0 && (
+        <View className="mb-3 rounded-lg bg-white p-2">
+          <Text className="mb-1 text-xs font-medium text-gray-400">
+            {preview.affectedContacts.length} contact{preview.affectedContacts.length === 1 ? "" : "s"} affected:
+          </Text>
+          {preview.affectedContacts.slice(0, 5).map((contact) => {
+            const fullName = [contact.first_name, contact.last_name].filter(Boolean).join(" ");
+            const initials = getInitials(contact.first_name, contact.last_name);
+            const avatarBg = getAvatarColor(fullName);
+            return (
+              <View key={contact.id} className="mt-1 flex-row items-center py-1">
+                <View
+                  className="h-7 w-7 items-center justify-center rounded-full"
+                  style={{ backgroundColor: avatarBg }}
+                >
+                  <Text className="text-xs font-bold text-white">{initials}</Text>
+                </View>
+                <Text className="ml-2 text-xs text-gray-700" numberOfLines={1}>
+                  {fullName}
+                  {contact.company ? ` - ${contact.company}` : ""}
+                </Text>
+              </View>
+            );
+          })}
+          {preview.affectedContacts.length > 5 && (
+            <Text className="mt-1 text-xs text-gray-400">
+              +{preview.affectedContacts.length - 5} more
+            </Text>
+          )}
+        </View>
+      )}
+
+      {/* Approve / Cancel buttons */}
+      <View className="flex-row gap-2">
+        <Pressable
+          onPress={() => onApprove?.(pendingAction)}
+          className="flex-1 flex-row items-center justify-center rounded-lg bg-green-600 py-2.5 active:bg-green-700"
+        >
+          <Ionicons name="checkmark" size={16} color="white" />
+          <Text className="ml-1 text-sm font-semibold text-white">Approve</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => onReject?.()}
+          className="flex-1 flex-row items-center justify-center rounded-lg border border-gray-200 bg-white py-2.5 active:bg-gray-50"
+        >
+          <Ionicons name="close" size={16} color="#6b7280" />
+          <Text className="ml-1 text-sm font-semibold text-gray-600">Cancel</Text>
+        </Pressable>
       </View>
     </View>
   );

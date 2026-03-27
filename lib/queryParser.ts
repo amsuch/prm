@@ -14,10 +14,22 @@ export type ParsedQuery =
   | { intent: "stats" }
   | { intent: "search"; query: string }
   | { intent: "add_contact"; firstName: string; lastName?: string; company?: string; jobTitle?: string; email?: string; phone?: string }
+  | { intent: "update_contact"; name: string; field: string; value: string }
   | { intent: "bulk_tag"; tag: string; filter: { company?: string; source?: string } }
   | { intent: "bulk_update"; field: string; value: string; filter: { company?: string; tag?: string; source?: string } }
   | { intent: "archive_contacts"; filter: { days?: number; tag?: string; company?: string } }
   | { intent: "enrich_contact"; name: string };
+
+/** Returns true if the intent mutates data and should go through HITL approval */
+export function isActionIntent(parsed: ParsedQuery): boolean {
+  return [
+    "add_contact",
+    "update_contact",
+    "bulk_tag",
+    "bulk_update",
+    "archive_contacts",
+  ].includes(parsed.intent);
+}
 
 /**
  * Parse a natural language question into a structured query intent.
@@ -193,6 +205,30 @@ export function parseQuery(input: string): ParsedQuery {
       const parsed = parseAddContactString(match[1]);
       if (parsed) {
         return parsed;
+      }
+    }
+  }
+
+  // --- Update single contact ---
+  // "update John Smith's company to Google"
+  // "change John's title to VP Engineering"
+  // "set John Smith's email to john@google.com"
+  // "update company for John to Google"
+  const updateContactPatterns = [
+    /^(?:update|change|set)\s+(.+?)['']?s?\s+(company|title|job_title|email|phone|department|notes)\s+to\s+['"]?(.+?)['"]?[\s.!]*$/i,
+    /^(?:update|change|set)\s+(company|title|job_title|email|phone|department|notes)\s+(?:for|of)\s+(.+?)\s+to\s+['"]?(.+?)['"]?[\s.!]*$/i,
+  ];
+
+  for (const pattern of updateContactPatterns) {
+    const match = trimmed.match(pattern);
+    if (match) {
+      if (pattern === updateContactPatterns[0] && match[1] && match[2] && match[3]) {
+        const field = match[2].toLowerCase() === "title" ? "job_title" : match[2].toLowerCase();
+        return { intent: "update_contact", name: match[1].trim(), field, value: match[3].trim() };
+      }
+      if (pattern === updateContactPatterns[1] && match[1] && match[2] && match[3]) {
+        const field = match[1].toLowerCase() === "title" ? "job_title" : match[1].toLowerCase();
+        return { intent: "update_contact", name: match[2].trim(), field, value: match[3].trim() };
       }
     }
   }
@@ -398,6 +434,8 @@ export function getQueryDescription(parsed: ParsedQuery): string {
       return `Searching for "${parsed.query}"...`;
     case "add_contact":
       return `Adding contact "${parsed.firstName}${parsed.lastName ? " " + parsed.lastName : ""}"...`;
+    case "update_contact":
+      return `Updating ${parsed.field} for "${parsed.name}"...`;
     case "bulk_tag": {
       const target = parsed.filter.company
         ? `contacts at "${parsed.filter.company}"`

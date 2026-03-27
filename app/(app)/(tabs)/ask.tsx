@@ -12,16 +12,23 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/colors";
 import { useSession } from "@/lib/auth/ctx";
-import { parseQuery, getQueryDescription } from "@/lib/queryParser";
-import { executeQuery, type AgentResponse } from "@/lib/agent";
+import { parseQuery, getQueryDescription, isActionIntent } from "@/lib/queryParser";
+import {
+  executeQuery,
+  previewAction,
+  confirmAction,
+  type AgentResponse,
+  type PendingAction,
+} from "@/lib/agent";
 import { ChatBubble } from "@/components/ChatBubble";
 import { SuggestedQuestions } from "@/components/SuggestedQuestions";
 import { AdvancedFilters } from "@/components/AdvancedFilters";
 import {
   useSearch,
-  DEFAULT_FILTERS,
   type SearchFilters,
 } from "@/hooks/useSearch";
+
+type AgentMode = "hitl" | "auto";
 
 type ChatMessage = {
   id: string;
@@ -45,6 +52,7 @@ export default function AskScreen() {
   const [inputText, setInputText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [agentMode, setAgentMode] = useState<AgentMode>("hitl");
 
   const flatListRef = useRef<FlatList<ChatMessage>>(null);
   const inputRef = useRef<TextInput>(null);
@@ -59,7 +67,6 @@ export default function AskScreen() {
       setInputText("");
       setIsProcessing(true);
 
-      // Add user message
       const userMsgId = nextId();
       const agentMsgId = nextId();
 
@@ -69,11 +76,9 @@ export default function AskScreen() {
         text: messageText,
       };
 
-      // Parse the query
       const parsed = parseQuery(messageText);
       const loadingText = getQueryDescription(parsed);
 
-      // Add loading agent message
       const loadingMsg: ChatMessage = {
         id: agentMsgId,
         role: "agent",
@@ -84,18 +89,19 @@ export default function AskScreen() {
       setMessages((prev) => [...prev, userMsg, loadingMsg]);
 
       try {
-        const response = await executeQuery(parsed, userId);
+        let response: AgentResponse;
 
-        // Replace loading message with real response
+        // In HITL mode, action intents get previewed first
+        if (agentMode === "hitl" && isActionIntent(parsed)) {
+          response = await previewAction(parsed, userId);
+        } else {
+          response = await executeQuery(parsed, userId);
+        }
+
         setMessages((prev) =>
           prev.map((msg) =>
             msg.id === agentMsgId
-              ? {
-                  ...msg,
-                  text: response.message,
-                  response,
-                  isLoading: false,
-                }
+              ? { ...msg, text: response.message, response, isLoading: false }
               : msg,
           ),
         );
@@ -107,10 +113,7 @@ export default function AskScreen() {
                   ...msg,
                   text: "Something went wrong. Please try again.",
                   isLoading: false,
-                  response: {
-                    type: "error",
-                    message: "Something went wrong. Please try again.",
-                  },
+                  response: { type: "error" as const, message: "Something went wrong." },
                 }
               : msg,
           ),
@@ -119,8 +122,65 @@ export default function AskScreen() {
         setIsProcessing(false);
       }
     },
-    [inputText, userId, isProcessing],
+    [inputText, userId, isProcessing, agentMode],
   );
+
+  const handleApprove = useCallback(
+    async (pendingAction: PendingAction) => {
+      setIsProcessing(true);
+      const agentMsgId = nextId();
+
+      const loadingMsg: ChatMessage = {
+        id: agentMsgId,
+        role: "agent",
+        text: "Executing...",
+        isLoading: true,
+      };
+
+      setMessages((prev) => [...prev, loadingMsg]);
+
+      try {
+        const response = await confirmAction(pendingAction);
+
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === agentMsgId
+              ? { ...msg, text: response.message, response, isLoading: false }
+              : msg,
+          ),
+        );
+      } catch {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === agentMsgId
+              ? {
+                  ...msg,
+                  text: "Action failed. Please try again.",
+                  isLoading: false,
+                  response: { type: "error" as const, message: "Action failed." },
+                }
+              : msg,
+          ),
+        );
+      } finally {
+        setIsProcessing(false);
+      }
+    },
+    [],
+  );
+
+  const handleReject = useCallback(() => {
+    const cancelMsgId = nextId();
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: cancelMsgId,
+        role: "agent",
+        text: "Action cancelled.",
+        response: { type: "text" as const, message: "Action cancelled." },
+      },
+    ]);
+  }, []);
 
   const handleSuggestionSelect = useCallback(
     (question: string) => {
@@ -149,9 +209,11 @@ export default function AskScreen() {
         text={item.text}
         response={item.response}
         isLoading={item.isLoading}
+        onApprove={handleApprove}
+        onReject={handleReject}
       />
     ),
-    [],
+    [handleApprove, handleReject],
   );
 
   const keyExtractor = useCallback((item: ChatMessage) => item.id, []);
@@ -163,47 +225,84 @@ export default function AskScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       >
-        {/* Header area with filter button */}
+        {/* Header with mode toggle and filter */}
         <View className="flex-row items-center justify-between border-b border-gray-200 bg-white px-4 py-2">
           <Text className="text-lg font-bold text-gray-900">
             Ask your Network
           </Text>
-          <Pressable
-            onPress={() => setShowFilters(true)}
-            className="flex-row items-center rounded-lg border border-gray-200 px-3 py-1.5 active:bg-gray-50"
-          >
-            <Ionicons
-              name="filter-outline"
-              size={16}
-              color={
-                activeFilterCount > 0
-                  ? Colors.brand[600]
-                  : Colors.gray[500]
+          <View className="flex-row items-center gap-2">
+            {/* HITL / Auto toggle */}
+            <Pressable
+              onPress={() =>
+                setAgentMode((m) => (m === "hitl" ? "auto" : "hitl"))
               }
-            />
-            <Text
-              className={`ml-1 text-sm font-medium ${
-                activeFilterCount > 0
-                  ? "text-brand-600"
-                  : "text-gray-500"
+              className={`flex-row items-center rounded-lg border px-2.5 py-1.5 ${
+                agentMode === "hitl"
+                  ? "border-amber-300 bg-amber-50"
+                  : "border-green-300 bg-green-50"
               }`}
             >
-              Filters
-            </Text>
-            {activeFilterCount > 0 && (
-              <View className="ml-1.5 h-5 w-5 items-center justify-center rounded-full bg-brand-600">
-                <Text className="text-xs font-bold text-white">
-                  {activeFilterCount}
-                </Text>
-              </View>
-            )}
-          </Pressable>
+              <Ionicons
+                name={agentMode === "hitl" ? "shield-checkmark" : "flash"}
+                size={14}
+                color={agentMode === "hitl" ? "#d97706" : "#16a34a"}
+              />
+              <Text
+                className={`ml-1 text-xs font-semibold ${
+                  agentMode === "hitl" ? "text-amber-700" : "text-green-700"
+                }`}
+              >
+                {agentMode === "hitl" ? "HITL" : "Auto"}
+              </Text>
+            </Pressable>
+
+            {/* Filter button */}
+            <Pressable
+              onPress={() => setShowFilters(true)}
+              className="flex-row items-center rounded-lg border border-gray-200 px-3 py-1.5 active:bg-gray-50"
+            >
+              <Ionicons
+                name="filter-outline"
+                size={16}
+                color={
+                  activeFilterCount > 0
+                    ? Colors.brand[600]
+                    : Colors.gray[500]
+                }
+              />
+              {activeFilterCount > 0 && (
+                <View className="ml-1 h-4 w-4 items-center justify-center rounded-full bg-blue-600">
+                  <Text className="text-[10px] font-bold text-white">
+                    {activeFilterCount}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Mode description bar */}
+        <View className={`flex-row items-center px-4 py-1.5 ${
+          agentMode === "hitl" ? "bg-amber-50" : "bg-green-50"
+        }`}>
+          <Ionicons
+            name="information-circle-outline"
+            size={13}
+            color={agentMode === "hitl" ? "#92400e" : "#166534"}
+          />
+          <Text className={`ml-1 text-[11px] ${
+            agentMode === "hitl" ? "text-amber-800" : "text-green-800"
+          }`}>
+            {agentMode === "hitl"
+              ? "Actions require your approval before executing"
+              : "Actions execute immediately without confirmation"}
+          </Text>
         </View>
 
         {/* Chat area */}
         {!hasMessages ? (
           <View className="flex-1 items-center justify-center px-6">
-            <View className="mb-6 h-16 w-16 items-center justify-center rounded-full bg-brand-100">
+            <View className="mb-6 h-16 w-16 items-center justify-center rounded-full bg-blue-100">
               <Ionicons
                 name="chatbubble-ellipses-outline"
                 size={32}
@@ -214,8 +313,8 @@ export default function AskScreen() {
               Ask about your network
             </Text>
             <Text className="mb-8 text-center text-base text-gray-500">
-              Ask questions in plain English about your contacts,
-              interactions, and relationships.
+              Ask questions or give commands in plain English.{"\n"}
+              The agent can read and modify your contacts.
             </Text>
             <SuggestedQuestions onSelect={handleSuggestionSelect} />
           </View>
@@ -235,7 +334,6 @@ export default function AskScreen() {
               }
               showsVerticalScrollIndicator={false}
             />
-            {/* Suggested questions at the bottom when there are messages */}
             <SuggestedQuestions onSelect={handleSuggestionSelect} />
           </View>
         )}
@@ -247,7 +345,7 @@ export default function AskScreen() {
               <TextInput
                 ref={inputRef}
                 className="max-h-24 flex-1 text-base text-gray-900"
-                placeholder="Ask a question..."
+                placeholder="Ask a question or give a command..."
                 placeholderTextColor={Colors.gray[400]}
                 value={inputText}
                 onChangeText={setInputText}
@@ -263,7 +361,7 @@ export default function AskScreen() {
               disabled={!inputText.trim() || isProcessing}
               className={`h-11 w-11 items-center justify-center rounded-full ${
                 inputText.trim() && !isProcessing
-                  ? "bg-brand-600 active:bg-brand-700"
+                  ? "bg-blue-600 active:bg-blue-700"
                   : "bg-gray-200"
               }`}
             >
@@ -281,7 +379,6 @@ export default function AskScreen() {
         </View>
       </KeyboardAvoidingView>
 
-      {/* Advanced Filters Modal */}
       <AdvancedFilters
         visible={showFilters}
         onClose={() => setShowFilters(false)}
