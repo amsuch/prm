@@ -1,0 +1,715 @@
+import { useState } from "react";
+import type { Json } from "@/types/database";
+import {
+  View,
+  Text,
+  TextInput,
+  ScrollView,
+  Pressable,
+  Alert,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { supabase } from "@/lib/supabase";
+import { useSession } from "@/lib/auth/ctx";
+import { useCustomFieldDefinitions } from "@/hooks/useCustomFieldDefinitions";
+import { useTags } from "@/hooks/useTags";
+import { Colors } from "@/constants/colors";
+import { validateContactForm, type ContactFormData, type ValidationError } from "@/lib/validation";
+import { CustomFieldInput } from "@/components/CustomFieldInput";
+import { TagSelector } from "@/components/TagSelector";
+import type { ContactFull } from "@/hooks/useContact";
+
+type ContactFormProps = {
+  existingContact?: ContactFull | null;
+  mode: "create" | "edit";
+};
+
+type EmailEntry = { id?: string; label: string; email: string; is_primary: boolean };
+type PhoneEntry = { id?: string; label: string; phone: string; is_primary: boolean };
+type UrlEntry = { id?: string; label: string; url: string };
+
+const EMAIL_LABELS = ["personal", "work", "other"];
+const PHONE_LABELS = ["mobile", "home", "work", "other"];
+const URL_LABELS = ["linkedin", "twitter", "website", "github", "other"];
+
+export function ContactForm({ existingContact, mode }: ContactFormProps) {
+  const router = useRouter();
+  const { session } = useSession();
+  const { definitions } = useCustomFieldDefinitions();
+  const { tags: allTags, createTag } = useTags();
+
+  const userId = session?.user?.id;
+
+  // Basic info
+  const [firstName, setFirstName] = useState(existingContact?.first_name ?? "");
+  const [lastName, setLastName] = useState(existingContact?.last_name ?? "");
+  const [company, setCompany] = useState(existingContact?.company ?? "");
+  const [jobTitle, setJobTitle] = useState(existingContact?.job_title ?? "");
+  const [department, setDepartment] = useState(existingContact?.department ?? "");
+  const [birthday, setBirthday] = useState(existingContact?.birthday ?? "");
+  const [notes, setNotes] = useState(existingContact?.notes ?? "");
+
+  // Multi-value fields
+  const [emails, setEmails] = useState<EmailEntry[]>(() => {
+    if (existingContact?.contact_emails?.length) {
+      return existingContact.contact_emails.map((e) => ({
+        id: e.id,
+        label: e.label,
+        email: e.email,
+        is_primary: e.is_primary,
+      }));
+    }
+    return [{ label: "personal", email: "", is_primary: true }];
+  });
+
+  const [phones, setPhones] = useState<PhoneEntry[]>(() => {
+    if (existingContact?.contact_phones?.length) {
+      return existingContact.contact_phones.map((p) => ({
+        id: p.id,
+        label: p.label,
+        phone: p.phone,
+        is_primary: p.is_primary,
+      }));
+    }
+    return [{ label: "mobile", phone: "", is_primary: true }];
+  });
+
+  const [urls, setUrls] = useState<UrlEntry[]>(() => {
+    if (existingContact?.contact_urls?.length) {
+      return existingContact.contact_urls.map((u) => ({
+        id: u.id,
+        label: u.label,
+        url: u.url,
+      }));
+    }
+    return [];
+  });
+
+  // Tags
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(() => {
+    return existingContact?.contact_tags?.map((ct) => ct.tag_id) ?? [];
+  });
+
+  // Custom fields
+  const [customFields, setCustomFields] = useState<Record<string, unknown>>(() => {
+    const cf = existingContact?.custom_fields;
+    if (cf && typeof cf === "object" && !Array.isArray(cf)) {
+      return cf as Record<string, unknown>;
+    }
+    return {};
+  });
+
+  // Form state
+  const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState<ValidationError[]>([]);
+
+  const handleToggleTag = (tagId: string) => {
+    setSelectedTagIds((prev) =>
+      prev.includes(tagId)
+        ? prev.filter((id) => id !== tagId)
+        : [...prev, tagId],
+    );
+  };
+
+  const handleAddEmail = () => {
+    setEmails((prev) => [...prev, { label: "work", email: "", is_primary: false }]);
+  };
+
+  const handleRemoveEmail = (index: number) => {
+    setEmails((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateEmail = (index: number, field: keyof EmailEntry, value: string | boolean) => {
+    setEmails((prev) =>
+      prev.map((e, i) => (i === index ? { ...e, [field]: value } : e)),
+    );
+  };
+
+  const handleAddPhone = () => {
+    setPhones((prev) => [...prev, { label: "work", phone: "", is_primary: false }]);
+  };
+
+  const handleRemovePhone = (index: number) => {
+    setPhones((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdatePhone = (index: number, field: keyof PhoneEntry, value: string | boolean) => {
+    setPhones((prev) =>
+      prev.map((p, i) => (i === index ? { ...p, [field]: value } : p)),
+    );
+  };
+
+  const handleAddUrl = () => {
+    setUrls((prev) => [...prev, { label: "website", url: "" }]);
+  };
+
+  const handleRemoveUrl = (index: number) => {
+    setUrls((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateUrl = (index: number, field: keyof UrlEntry, value: string) => {
+    setUrls((prev) =>
+      prev.map((u, i) => (i === index ? { ...u, [field]: value } : u)),
+    );
+  };
+
+  const handleCustomFieldChange = (fieldKey: string, value: unknown) => {
+    setCustomFields((prev) => ({ ...prev, [fieldKey]: value }));
+  };
+
+  const getFieldError = (field: string): string | undefined => {
+    return errors.find((e) => e.field === field)?.message;
+  };
+
+  const handleSave = async () => {
+    if (!userId) return;
+
+    // Build form data for validation
+    const formData: ContactFormData = {
+      first_name: firstName,
+      last_name: lastName,
+      company,
+      job_title: jobTitle,
+      department,
+      birthday,
+      notes,
+      emails: emails.filter((e) => e.email.trim()),
+      phones: phones.filter((p) => p.phone.trim()),
+      urls: urls.filter((u) => u.url.trim()),
+      tagIds: selectedTagIds,
+      custom_fields: customFields,
+    };
+
+    const validationErrors = validateContactForm(formData);
+    if (validationErrors.length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    setErrors([]);
+    setIsSaving(true);
+
+    try {
+      let contactId: string;
+
+      if (mode === "edit" && existingContact) {
+        // Update existing contact
+        const { error: updateError } = await supabase
+          .from("contacts")
+          .update({
+            first_name: firstName.trim(),
+            last_name: lastName.trim() || null,
+            company: company.trim() || null,
+            job_title: jobTitle.trim() || null,
+            department: department.trim() || null,
+            birthday: birthday.trim() || null,
+            notes: notes.trim() || null,
+            custom_fields: customFields as Json,
+          })
+          .eq("id", existingContact.id);
+
+        if (updateError) throw updateError;
+        contactId = existingContact.id;
+      } else {
+        // Create new contact
+        const { data, error: insertError } = await supabase
+          .from("contacts")
+          .insert({
+            user_id: userId,
+            first_name: firstName.trim(),
+            last_name: lastName.trim() || null,
+            company: company.trim() || null,
+            job_title: jobTitle.trim() || null,
+            department: department.trim() || null,
+            birthday: birthday.trim() || null,
+            notes: notes.trim() || null,
+            custom_fields: customFields as Json,
+          })
+          .select("id")
+          .single();
+
+        if (insertError) throw insertError;
+        contactId = data.id;
+      }
+
+      // Handle emails: delete existing (for edit), then insert non-empty
+      if (mode === "edit") {
+        await supabase.from("contact_emails").delete().eq("contact_id", contactId);
+      }
+      const validEmails = emails.filter((e) => e.email.trim());
+      if (validEmails.length > 0) {
+        const { error: emailError } = await supabase
+          .from("contact_emails")
+          .insert(
+            validEmails.map((e) => ({
+              contact_id: contactId,
+              label: e.label,
+              email: e.email.trim(),
+              is_primary: e.is_primary,
+            })),
+          );
+        if (emailError) throw emailError;
+      }
+
+      // Handle phones
+      if (mode === "edit") {
+        await supabase.from("contact_phones").delete().eq("contact_id", contactId);
+      }
+      const validPhones = phones.filter((p) => p.phone.trim());
+      if (validPhones.length > 0) {
+        const { error: phoneError } = await supabase
+          .from("contact_phones")
+          .insert(
+            validPhones.map((p) => ({
+              contact_id: contactId,
+              label: p.label,
+              phone: p.phone.trim(),
+              is_primary: p.is_primary,
+            })),
+          );
+        if (phoneError) throw phoneError;
+      }
+
+      // Handle URLs
+      if (mode === "edit") {
+        await supabase.from("contact_urls").delete().eq("contact_id", contactId);
+      }
+      const validUrls = urls.filter((u) => u.url.trim());
+      if (validUrls.length > 0) {
+        const { error: urlError } = await supabase
+          .from("contact_urls")
+          .insert(
+            validUrls.map((u) => ({
+              contact_id: contactId,
+              label: u.label,
+              url: u.url.trim(),
+            })),
+          );
+        if (urlError) throw urlError;
+      }
+
+      // Handle tags: delete existing, then insert
+      if (mode === "edit") {
+        await supabase.from("contact_tags").delete().eq("contact_id", contactId);
+      }
+      if (selectedTagIds.length > 0) {
+        const { error: tagError } = await supabase
+          .from("contact_tags")
+          .insert(
+            selectedTagIds.map((tagId) => ({
+              contact_id: contactId,
+              tag_id: tagId,
+            })),
+          );
+        if (tagError) throw tagError;
+      }
+
+      // Navigate back
+      if (mode === "create") {
+        router.replace(`/contact/${contactId}`);
+      } else {
+        router.back();
+      }
+    } catch (err) {
+      Alert.alert(
+        "Error",
+        err instanceof Error ? err.message : "Failed to save contact",
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      className="flex-1"
+    >
+      <ScrollView
+        className="flex-1 bg-gray-50"
+        contentContainerStyle={{ paddingBottom: 100 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Basic Info Section */}
+        <View className="mx-4 mt-4 rounded-xl bg-white p-4 shadow-sm">
+          <Text className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-400">
+            Basic Information
+          </Text>
+
+          {/* First Name */}
+          <View className="mb-3">
+            <Text className="mb-1 text-sm font-medium text-gray-700">
+              First Name <Text className="text-red-500">*</Text>
+            </Text>
+            <TextInput
+              className={`rounded-lg border bg-white px-3 py-2.5 text-sm text-gray-900 ${
+                getFieldError("first_name") ? "border-red-400" : "border-gray-200"
+              }`}
+              placeholder="First name"
+              placeholderTextColor={Colors.gray[400]}
+              value={firstName}
+              onChangeText={setFirstName}
+              autoCapitalize="words"
+            />
+            {getFieldError("first_name") && (
+              <Text className="mt-1 text-xs text-red-500">
+                {getFieldError("first_name")}
+              </Text>
+            )}
+          </View>
+
+          {/* Last Name */}
+          <View className="mb-3">
+            <Text className="mb-1 text-sm font-medium text-gray-700">Last Name</Text>
+            <TextInput
+              className="rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900"
+              placeholder="Last name"
+              placeholderTextColor={Colors.gray[400]}
+              value={lastName}
+              onChangeText={setLastName}
+              autoCapitalize="words"
+            />
+          </View>
+
+          {/* Company */}
+          <View className="mb-3">
+            <Text className="mb-1 text-sm font-medium text-gray-700">Company</Text>
+            <TextInput
+              className="rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900"
+              placeholder="Company"
+              placeholderTextColor={Colors.gray[400]}
+              value={company}
+              onChangeText={setCompany}
+              autoCapitalize="words"
+            />
+          </View>
+
+          {/* Job Title */}
+          <View className="mb-3">
+            <Text className="mb-1 text-sm font-medium text-gray-700">Job Title</Text>
+            <TextInput
+              className="rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900"
+              placeholder="Job title"
+              placeholderTextColor={Colors.gray[400]}
+              value={jobTitle}
+              onChangeText={setJobTitle}
+              autoCapitalize="words"
+            />
+          </View>
+
+          {/* Department */}
+          <View className="mb-3">
+            <Text className="mb-1 text-sm font-medium text-gray-700">Department</Text>
+            <TextInput
+              className="rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900"
+              placeholder="Department"
+              placeholderTextColor={Colors.gray[400]}
+              value={department}
+              onChangeText={setDepartment}
+              autoCapitalize="words"
+            />
+          </View>
+
+          {/* Birthday */}
+          <View className="mb-3">
+            <Text className="mb-1 text-sm font-medium text-gray-700">Birthday</Text>
+            <TextInput
+              className="rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900"
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor={Colors.gray[400]}
+              value={birthday}
+              onChangeText={setBirthday}
+            />
+          </View>
+
+          {/* Notes */}
+          <View>
+            <Text className="mb-1 text-sm font-medium text-gray-700">Notes</Text>
+            <TextInput
+              className="rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900"
+              placeholder="Add notes..."
+              placeholderTextColor={Colors.gray[400]}
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+              style={{ minHeight: 72 }}
+            />
+          </View>
+        </View>
+
+        {/* Emails Section */}
+        <View className="mx-4 mt-3 rounded-xl bg-white p-4 shadow-sm">
+          <View className="mb-3 flex-row items-center justify-between">
+            <Text className="text-sm font-semibold uppercase tracking-wide text-gray-400">
+              Email Addresses
+            </Text>
+            <Pressable
+              onPress={handleAddEmail}
+              className="flex-row items-center rounded-lg bg-blue-50 px-2.5 py-1"
+            >
+              <Ionicons name="add" size={14} color={Colors.brand[600]} />
+              <Text className="ml-0.5 text-xs font-medium text-blue-700">Add</Text>
+            </Pressable>
+          </View>
+
+          {emails.map((entry, index) => (
+            <View key={index} className="mb-2">
+              <View className="flex-row items-center gap-2">
+                {/* Label picker */}
+                <View className="flex-row">
+                  {EMAIL_LABELS.map((label) => (
+                    <Pressable
+                      key={label}
+                      onPress={() => handleUpdateEmail(index, "label", label)}
+                      className={`rounded-l-none rounded-r-none border-b-2 px-2 py-1 ${
+                        entry.label === label
+                          ? "border-blue-600"
+                          : "border-transparent"
+                      }`}
+                    >
+                      <Text
+                        className={`text-xs capitalize ${
+                          entry.label === label
+                            ? "font-semibold text-blue-600"
+                            : "text-gray-400"
+                        }`}
+                      >
+                        {label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+
+                {emails.length > 1 && (
+                  <Pressable
+                    onPress={() => handleRemoveEmail(index)}
+                    hitSlop={8}
+                  >
+                    <Ionicons name="trash-outline" size={16} color={Colors.error} />
+                  </Pressable>
+                )}
+              </View>
+              <TextInput
+                className={`mt-1 rounded-lg border bg-white px-3 py-2.5 text-sm text-gray-900 ${
+                  getFieldError(`email_${index}`)
+                    ? "border-red-400"
+                    : "border-gray-200"
+                }`}
+                placeholder="email@example.com"
+                placeholderTextColor={Colors.gray[400]}
+                value={entry.email}
+                onChangeText={(text) => handleUpdateEmail(index, "email", text)}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+              {getFieldError(`email_${index}`) && (
+                <Text className="mt-1 text-xs text-red-500">
+                  {getFieldError(`email_${index}`)}
+                </Text>
+              )}
+            </View>
+          ))}
+        </View>
+
+        {/* Phones Section */}
+        <View className="mx-4 mt-3 rounded-xl bg-white p-4 shadow-sm">
+          <View className="mb-3 flex-row items-center justify-between">
+            <Text className="text-sm font-semibold uppercase tracking-wide text-gray-400">
+              Phone Numbers
+            </Text>
+            <Pressable
+              onPress={handleAddPhone}
+              className="flex-row items-center rounded-lg bg-blue-50 px-2.5 py-1"
+            >
+              <Ionicons name="add" size={14} color={Colors.brand[600]} />
+              <Text className="ml-0.5 text-xs font-medium text-blue-700">Add</Text>
+            </Pressable>
+          </View>
+
+          {phones.map((entry, index) => (
+            <View key={index} className="mb-2">
+              <View className="flex-row items-center gap-2">
+                <View className="flex-row">
+                  {PHONE_LABELS.map((label) => (
+                    <Pressable
+                      key={label}
+                      onPress={() => handleUpdatePhone(index, "label", label)}
+                      className={`rounded-l-none rounded-r-none border-b-2 px-2 py-1 ${
+                        entry.label === label
+                          ? "border-blue-600"
+                          : "border-transparent"
+                      }`}
+                    >
+                      <Text
+                        className={`text-xs capitalize ${
+                          entry.label === label
+                            ? "font-semibold text-blue-600"
+                            : "text-gray-400"
+                        }`}
+                      >
+                        {label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+
+                {phones.length > 1 && (
+                  <Pressable
+                    onPress={() => handleRemovePhone(index)}
+                    hitSlop={8}
+                  >
+                    <Ionicons name="trash-outline" size={16} color={Colors.error} />
+                  </Pressable>
+                )}
+              </View>
+              <TextInput
+                className={`mt-1 rounded-lg border bg-white px-3 py-2.5 text-sm text-gray-900 ${
+                  getFieldError(`phone_${index}`)
+                    ? "border-red-400"
+                    : "border-gray-200"
+                }`}
+                placeholder="+1 (555) 123-4567"
+                placeholderTextColor={Colors.gray[400]}
+                value={entry.phone}
+                onChangeText={(text) => handleUpdatePhone(index, "phone", text)}
+                keyboardType="phone-pad"
+              />
+              {getFieldError(`phone_${index}`) && (
+                <Text className="mt-1 text-xs text-red-500">
+                  {getFieldError(`phone_${index}`)}
+                </Text>
+              )}
+            </View>
+          ))}
+        </View>
+
+        {/* URLs Section */}
+        <View className="mx-4 mt-3 rounded-xl bg-white p-4 shadow-sm">
+          <View className="mb-3 flex-row items-center justify-between">
+            <Text className="text-sm font-semibold uppercase tracking-wide text-gray-400">
+              URLs
+            </Text>
+            <Pressable
+              onPress={handleAddUrl}
+              className="flex-row items-center rounded-lg bg-blue-50 px-2.5 py-1"
+            >
+              <Ionicons name="add" size={14} color={Colors.brand[600]} />
+              <Text className="ml-0.5 text-xs font-medium text-blue-700">Add</Text>
+            </Pressable>
+          </View>
+
+          {urls.length === 0 && (
+            <Text className="py-2 text-center text-sm text-gray-400">
+              No URLs added
+            </Text>
+          )}
+
+          {urls.map((entry, index) => (
+            <View key={index} className="mb-2">
+              <View className="flex-row items-center gap-2">
+                <View className="flex-row">
+                  {URL_LABELS.map((label) => (
+                    <Pressable
+                      key={label}
+                      onPress={() => handleUpdateUrl(index, "label", label)}
+                      className={`rounded-l-none rounded-r-none border-b-2 px-2 py-1 ${
+                        entry.label === label
+                          ? "border-blue-600"
+                          : "border-transparent"
+                      }`}
+                    >
+                      <Text
+                        className={`text-xs capitalize ${
+                          entry.label === label
+                            ? "font-semibold text-blue-600"
+                            : "text-gray-400"
+                        }`}
+                      >
+                        {label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+
+                <Pressable onPress={() => handleRemoveUrl(index)} hitSlop={8}>
+                  <Ionicons name="trash-outline" size={16} color={Colors.error} />
+                </Pressable>
+              </View>
+              <TextInput
+                className={`mt-1 rounded-lg border bg-white px-3 py-2.5 text-sm text-gray-900 ${
+                  getFieldError(`url_${index}`)
+                    ? "border-red-400"
+                    : "border-gray-200"
+                }`}
+                placeholder="https://..."
+                placeholderTextColor={Colors.gray[400]}
+                value={entry.url}
+                onChangeText={(text) => handleUpdateUrl(index, "url", text)}
+                keyboardType="url"
+                autoCapitalize="none"
+              />
+              {getFieldError(`url_${index}`) && (
+                <Text className="mt-1 text-xs text-red-500">
+                  {getFieldError(`url_${index}`)}
+                </Text>
+              )}
+            </View>
+          ))}
+        </View>
+
+        {/* Tags Section */}
+        <View className="mx-4 mt-3 rounded-xl bg-white p-4 shadow-sm">
+          <Text className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-400">
+            Tags
+          </Text>
+          <TagSelector
+            allTags={allTags}
+            selectedTagIds={selectedTagIds}
+            onToggleTag={handleToggleTag}
+            onCreateTag={createTag}
+          />
+        </View>
+
+        {/* Custom Fields Section */}
+        {definitions.length > 0 && (
+          <View className="mx-4 mt-3 rounded-xl bg-white p-4 shadow-sm">
+            <Text className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-400">
+              Custom Fields
+            </Text>
+            {definitions.map((def) => (
+              <CustomFieldInput
+                key={def.id}
+                definition={def}
+                value={customFields[def.field_key]}
+                onChange={(val) => handleCustomFieldChange(def.field_key, val)}
+              />
+            ))}
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Save Button */}
+      <View className="absolute bottom-0 left-0 right-0 border-t border-gray-100 bg-white px-4 pb-8 pt-3">
+        <Pressable
+          onPress={handleSave}
+          disabled={isSaving}
+          className="items-center rounded-xl bg-blue-600 py-3.5 active:bg-blue-700 disabled:opacity-50"
+        >
+          {isSaving ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <Text className="text-base font-semibold text-white">
+              {mode === "create" ? "Create Contact" : "Save Changes"}
+            </Text>
+          )}
+        </Pressable>
+      </View>
+    </KeyboardAvoidingView>
+  );
+}

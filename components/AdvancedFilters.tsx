@@ -1,0 +1,315 @@
+import { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  Pressable,
+  ScrollView,
+  TextInput,
+  Modal,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Colors } from "@/constants/colors";
+import { useTags } from "@/hooks/useTags";
+import type {
+  SearchFilters,
+  LastContactedRange,
+  SourceFilter,
+  SearchSortOption,
+} from "@/lib/search";
+
+type AdvancedFiltersProps = {
+  visible: boolean;
+  onClose: () => void;
+  filters: SearchFilters;
+  onApply: (filters: SearchFilters) => void;
+  onClear: () => void;
+};
+
+const LAST_CONTACTED_OPTIONS: { value: LastContactedRange; label: string }[] = [
+  { value: "any", label: "Any time" },
+  { value: "7d", label: "Last 7 days" },
+  { value: "30d", label: "Last 30 days" },
+  { value: "90d", label: "Last 90 days" },
+  { value: "over_90d", label: "More than 90 days" },
+];
+
+const SOURCE_OPTIONS: { value: SourceFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "linkedin", label: "LinkedIn" },
+  { value: "device", label: "Device" },
+  { value: "manual", label: "Manual" },
+];
+
+const SORT_OPTIONS: { value: SearchSortOption; label: string }[] = [
+  { value: "relevance", label: "Relevance" },
+  { value: "name_asc", label: "Name A-Z" },
+  { value: "last_contacted", label: "Last Contacted" },
+  { value: "recently_added", label: "Recently Added" },
+];
+
+export function AdvancedFilters({
+  visible,
+  onClose,
+  filters,
+  onApply,
+  onClear,
+}: AdvancedFiltersProps) {
+  const { tags } = useTags();
+  const [localFilters, setLocalFilters] = useState<SearchFilters>(filters);
+
+  // Sync local state when filters prop changes
+  useEffect(() => {
+    setLocalFilters(filters);
+  }, [filters]);
+
+  const toggleTag = (tagId: string) => {
+    setLocalFilters((prev) => {
+      const existing = prev.tagIds.includes(tagId);
+      return {
+        ...prev,
+        tagIds: existing
+          ? prev.tagIds.filter((id) => id !== tagId)
+          : [...prev.tagIds, tagId],
+      };
+    });
+  };
+
+  const handleApply = () => {
+    onApply(localFilters);
+    onClose();
+  };
+
+  const handleClear = () => {
+    onClear();
+    onClose();
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <View className="flex-1 bg-gray-50">
+        {/* Header */}
+        <View className="flex-row items-center justify-between border-b border-gray-200 bg-white px-4 pb-3 pt-4">
+          <Pressable onPress={onClose} hitSlop={8}>
+            <Ionicons name="close" size={24} color={Colors.gray[600]} />
+          </Pressable>
+          <Text className="text-lg font-bold text-gray-900">
+            Filters
+          </Text>
+          <Pressable onPress={handleClear} hitSlop={8}>
+            <Text className="text-sm font-medium text-brand-600">
+              Clear All
+            </Text>
+          </Pressable>
+        </View>
+
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ paddingBottom: 100 }}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Tags */}
+          <View className="mt-4 px-4">
+            <Text className="mb-2 text-sm font-semibold uppercase tracking-wider text-gray-500">
+              Tags
+            </Text>
+            <View className="flex-row flex-wrap gap-2">
+              {tags.length === 0 ? (
+                <Text className="text-sm text-gray-400">
+                  No tags created yet
+                </Text>
+              ) : (
+                tags.map((tag) => {
+                  const isSelected = localFilters.tagIds.includes(tag.id);
+                  return (
+                    <Pressable
+                      key={tag.id}
+                      onPress={() => toggleTag(tag.id)}
+                      className={`rounded-full border px-3 py-1.5 ${
+                        isSelected
+                          ? "border-brand-500 bg-brand-50"
+                          : "border-gray-200 bg-white"
+                      }`}
+                    >
+                      <Text
+                        className={`text-sm font-medium ${
+                          isSelected ? "text-brand-700" : "text-gray-700"
+                        }`}
+                      >
+                        {tag.name}
+                      </Text>
+                    </Pressable>
+                  );
+                })
+              )}
+            </View>
+          </View>
+
+          {/* Company */}
+          <View className="mt-6 px-4">
+            <Text className="mb-2 text-sm font-semibold uppercase tracking-wider text-gray-500">
+              Company
+            </Text>
+            <View className="flex-row items-center rounded-lg border border-gray-200 bg-white px-3 py-2">
+              <Ionicons
+                name="business-outline"
+                size={18}
+                color={Colors.gray[400]}
+              />
+              <TextInput
+                className="ml-2 flex-1 text-base text-gray-900"
+                placeholder="Filter by company..."
+                placeholderTextColor={Colors.gray[400]}
+                value={localFilters.company}
+                onChangeText={(text) =>
+                  setLocalFilters((prev) => ({ ...prev, company: text }))
+                }
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              {localFilters.company.length > 0 && (
+                <Pressable
+                  onPress={() =>
+                    setLocalFilters((prev) => ({ ...prev, company: "" }))
+                  }
+                  hitSlop={8}
+                >
+                  <Ionicons
+                    name="close-circle"
+                    size={18}
+                    color={Colors.gray[400]}
+                  />
+                </Pressable>
+              )}
+            </View>
+          </View>
+
+          {/* Last Contacted */}
+          <View className="mt-6 px-4">
+            <Text className="mb-2 text-sm font-semibold uppercase tracking-wider text-gray-500">
+              Last Contacted
+            </Text>
+            <View className="flex-row flex-wrap gap-2">
+              {LAST_CONTACTED_OPTIONS.map((option) => {
+                const isSelected =
+                  localFilters.lastContactedRange === option.value;
+                return (
+                  <Pressable
+                    key={option.value}
+                    onPress={() =>
+                      setLocalFilters((prev) => ({
+                        ...prev,
+                        lastContactedRange: option.value,
+                      }))
+                    }
+                    className={`rounded-full border px-3 py-1.5 ${
+                      isSelected
+                        ? "border-brand-500 bg-brand-50"
+                        : "border-gray-200 bg-white"
+                    }`}
+                  >
+                    <Text
+                      className={`text-sm font-medium ${
+                        isSelected ? "text-brand-700" : "text-gray-700"
+                      }`}
+                    >
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* Source */}
+          <View className="mt-6 px-4">
+            <Text className="mb-2 text-sm font-semibold uppercase tracking-wider text-gray-500">
+              Source
+            </Text>
+            <View className="flex-row flex-wrap gap-2">
+              {SOURCE_OPTIONS.map((option) => {
+                const isSelected = localFilters.source === option.value;
+                return (
+                  <Pressable
+                    key={option.value}
+                    onPress={() =>
+                      setLocalFilters((prev) => ({
+                        ...prev,
+                        source: option.value,
+                      }))
+                    }
+                    className={`rounded-full border px-3 py-1.5 ${
+                      isSelected
+                        ? "border-brand-500 bg-brand-50"
+                        : "border-gray-200 bg-white"
+                    }`}
+                  >
+                    <Text
+                      className={`text-sm font-medium ${
+                        isSelected ? "text-brand-700" : "text-gray-700"
+                      }`}
+                    >
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* Sort By */}
+          <View className="mt-6 px-4">
+            <Text className="mb-2 text-sm font-semibold uppercase tracking-wider text-gray-500">
+              Sort By
+            </Text>
+            <View className="flex-row flex-wrap gap-2">
+              {SORT_OPTIONS.map((option) => {
+                const isSelected = localFilters.sortBy === option.value;
+                return (
+                  <Pressable
+                    key={option.value}
+                    onPress={() =>
+                      setLocalFilters((prev) => ({
+                        ...prev,
+                        sortBy: option.value,
+                      }))
+                    }
+                    className={`rounded-full border px-3 py-1.5 ${
+                      isSelected
+                        ? "border-brand-500 bg-brand-50"
+                        : "border-gray-200 bg-white"
+                    }`}
+                  >
+                    <Text
+                      className={`text-sm font-medium ${
+                        isSelected ? "text-brand-700" : "text-gray-700"
+                      }`}
+                    >
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        </ScrollView>
+
+        {/* Apply Button */}
+        <View className="border-t border-gray-200 bg-white px-4 pb-8 pt-3">
+          <Pressable
+            onPress={handleApply}
+            className="items-center rounded-xl bg-brand-600 py-3.5 active:bg-brand-700"
+          >
+            <Text className="text-base font-semibold text-white">
+              Apply Filters
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}

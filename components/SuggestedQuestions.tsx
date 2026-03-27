@@ -1,0 +1,43 @@
+import { ScrollView, Text, Pressable } from "react-native";
+import { Colors } from "@/constants/colors";
+
+type SuggestedQuestionsProps = {
+  onSelect: (question: string) => void;
+};
+
+const SUGGESTIONS = [
+  "How many contacts do I have?",
+  "Who haven't I contacted in 30 days?",
+  "Who do I know at Google?",
+  "Show contacts tagged VIP",
+  "When did I last talk to John?",
+  "Who is connected to Sarah?",
+  "Stale contacts",
+  "Who works at Apple?",
+];
+
+export function SuggestedQuestions({ onSelect }: SuggestedQuestionsProps) {
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        gap: 8,
+      }}
+    >
+      {SUGGESTIONS.map((question) => (
+        <Pressable
+          key={question}
+          onPress={() => onSelect(question)}
+          className="rounded-full border border-brand-200 bg-brand-50 px-4 py-2 active:bg-brand-100"
+        >
+          <Text className="text-sm font-medium text-brand-700">
+            {question}
+          </Text>
+        </Pressable>
+      ))}
+    </ScrollView>
+  );
+}
