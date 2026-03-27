@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { Json } from "@/types/database";
 import {
   View,
@@ -17,6 +17,7 @@ import { supabase } from "@/lib/supabase";
 import { useSession } from "@/lib/auth/ctx";
 import { useCustomFieldDefinitions } from "@/hooks/useCustomFieldDefinitions";
 import { useTags } from "@/hooks/useTags";
+import { useCompanies } from "@/hooks/useCompanies";
 import { Colors } from "@/constants/colors";
 import { validateContactForm, type ContactFormData, type ValidationError } from "@/lib/validation";
 import { CustomFieldInput } from "@/components/CustomFieldInput";
@@ -41,6 +42,7 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
   const { session } = useSession();
   const { definitions } = useCustomFieldDefinitions();
   const { tags: allTags, createTag } = useTags();
+  const { companies: allCompanies } = useCompanies();
 
   const userId = session?.user?.id;
 
@@ -102,6 +104,16 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
     }
     return {};
   });
+
+  // Company autocomplete
+  const [showCompanySuggestions, setShowCompanySuggestions] = useState(false);
+  const filteredCompanies = useMemo(() => {
+    if (!company.trim()) return [];
+    const query = company.toLowerCase();
+    return allCompanies.filter(
+      (c) => c.toLowerCase().includes(query) && c.toLowerCase() !== query,
+    );
+  }, [company, allCompanies]);
 
   // Form state
   const [isSaving, setIsSaving] = useState(false);
@@ -375,17 +387,59 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
             />
           </View>
 
-          {/* Company */}
-          <View className="mb-3">
+          {/* Company with autocomplete */}
+          <View className="mb-3" style={{ zIndex: 10 }}>
             <Text className="mb-1 text-sm font-medium text-gray-700">Company</Text>
             <TextInput
               className="rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900"
               placeholder="Company"
               placeholderTextColor={Colors.gray[400]}
               value={company}
-              onChangeText={setCompany}
+              onChangeText={(text) => {
+                setCompany(text);
+                setShowCompanySuggestions(true);
+              }}
+              onFocus={() => setShowCompanySuggestions(true)}
+              onBlur={() => {
+                // Delay hide to allow tap on suggestion
+                setTimeout(() => setShowCompanySuggestions(false), 200);
+              }}
               autoCapitalize="words"
             />
+            {showCompanySuggestions && filteredCompanies.length > 0 && (
+              <View
+                className="rounded-lg border border-gray-200 bg-white shadow-md"
+                style={{
+                  position: Platform.OS === "web" ? ("absolute" as const) : ("relative" as const),
+                  top: Platform.OS === "web" ? 68 : 0,
+                  left: 0,
+                  right: 0,
+                  zIndex: 20,
+                  maxHeight: 160,
+                }}
+              >
+                <ScrollView
+                  keyboardShouldPersistTaps="handled"
+                  nestedScrollEnabled
+                  style={{ maxHeight: 160 }}
+                >
+                  {filteredCompanies.map((c, idx) => (
+                    <Pressable
+                      key={c}
+                      onPress={() => {
+                        setCompany(c);
+                        setShowCompanySuggestions(false);
+                      }}
+                      className={`px-3 py-2.5 active:bg-blue-50 ${
+                        idx > 0 ? "border-t border-gray-100" : ""
+                      }`}
+                    >
+                      <Text className="text-sm text-gray-900">{c}</Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
           </View>
 
           {/* Job Title */}

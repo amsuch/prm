@@ -14,6 +14,7 @@ import { useSession } from "@/lib/auth/ctx";
 import { supabase } from "@/lib/supabase";
 import { getInitials } from "@/lib/utils";
 import { CustomFieldManager } from "@/components/CustomFieldManager";
+import { RelationshipTypeManager } from "@/components/RelationshipTypeManager";
 import { useTags } from "@/hooks/useTags";
 
 const TAG_COLORS = [
@@ -671,6 +672,12 @@ export default function SettingsScreen() {
       <SectionHeader title="Tags" />
       <View className="mx-5 overflow-hidden rounded-xl bg-white shadow-sm">
         <TagManager />
+      </View>
+
+      {/* Relationship Types */}
+      <SectionHeader title="Relationship Types" />
+      <View className="mx-5 overflow-hidden rounded-xl bg-white shadow-sm">
+        <RelationshipTypeManager />
       </View>
 
       {/* AI API Keys */}
