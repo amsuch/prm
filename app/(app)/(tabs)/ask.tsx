@@ -20,6 +20,7 @@ import {
   type AgentResponse,
   type PendingAction,
 } from "@/lib/agent";
+import { getLLMConfigFromSession } from "@/lib/llm";
 import { ChatBubble } from "@/components/ChatBubble";
 import { SuggestedQuestions } from "@/components/SuggestedQuestions";
 import { AdvancedFilters } from "@/components/AdvancedFilters";
@@ -91,11 +92,14 @@ export default function AskScreen() {
       try {
         let response: AgentResponse;
 
+        // Get LLM config from session for AI-powered responses
+        const llmConfig = getLLMConfigFromSession(session);
+
         // In HITL mode, action intents get previewed first
         if (agentMode === "hitl" && isActionIntent(parsed)) {
           response = await previewAction(parsed, userId);
         } else {
-          response = await executeQuery(parsed, userId);
+          response = await executeQuery(parsed, userId, llmConfig);
         }
 
         setMessages((prev) =>

@@ -12,6 +12,7 @@ import {
   addPersonToEntity,
   promotePersonToContact,
 } from "@/lib/entities";
+import { callLLM, type LLMConfig } from "@/lib/llm";
 
 export type AgentResultContact = {
   id: string;
@@ -188,10 +189,12 @@ export async function confirmAction(
 /**
  * Execute a parsed query. Read intents run directly.
  * Action intents run directly (used in Auto mode or after HITL approval).
+ * If llmConfig is provided, fallback queries use the LLM instead of plain search.
  */
 export async function executeQuery(
   parsed: ParsedQuery,
   userId: string,
+  llmConfig?: LLMConfig | null,
 ): Promise<AgentResponse> {
   try {
     switch (parsed.intent) {
@@ -208,6 +211,9 @@ export async function executeQuery(
       case "stats":
         return await handleStats(userId);
       case "search":
+        if (llmConfig) {
+          return await handleLLMQuery(parsed.query, userId, llmConfig);
+        }
         return await handleSearch(parsed.query, userId);
       case "entity_lookup":
         return await handleEntityLookup(parsed.query, userId);
@@ -620,6 +626,118 @@ async function handleStats(userId: string): Promise<AgentResponse> {
     message: lines.join("\n"),
     stats,
   };
+}
+
+async function handleLLMQuery(
+  query: string,
+  userId: string,
+  llmConfig: LLMConfig,
+): Promise<AgentResponse> {
+  // Gather context from the user's contacts
+  const context = await buildContactContext(userId, query);
+
+  try {
+    const response = await callLLM(
+      llmConfig,
+      [{ role: "user", content: query }],
+      context,
+    );
+
+    return {
+      type: "text",
+      message: response.content,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "LLM request failed";
+    // If LLM fails, fall back to structured search
+    if (msg.includes("API") || msg.includes("401") || msg.includes("403")) {
+      return {
+        type: "error",
+        message: `AI provider error: ${msg}\n\nCheck your API key in Settings.`,
+      };
+    }
+    return await handleSearch(query, userId);
+  }
+}
+
+async function buildContactContext(userId: string, query: string): Promise<string> {
+  const lines: string[] = [];
+
+  // Get relevant contacts via search
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: searchResults } = await (supabase.rpc as any)(
+    "search_contacts",
+    { search_query: query, p_user_id: userId },
+  );
+  const results = (searchResults as unknown as SearchContactRow[]) ?? [];
+
+  if (results.length > 0) {
+    lines.push("## Matching Contacts");
+    for (const c of results.slice(0, 15)) {
+      const name = [c.first_name, c.last_name].filter(Boolean).join(" ");
+      const parts = [name];
+      if (c.company) parts.push(`at ${c.company}`);
+      if (c.job_title) parts.push(`(${c.job_title})`);
+      if (c.email) parts.push(`email: ${c.email}`);
+      if (c.last_contacted_at) parts.push(`last contacted: ${formatRelativeTime(c.last_contacted_at)}`);
+      lines.push(`- ${parts.join(" ")}`);
+    }
+  }
+
+  // Get overall stats for context
+  const { count: totalContacts } = await supabase
+    .from("contacts")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("is_archived", false);
+
+  const { data: recentInteractions } = await supabase
+    .from("interactions")
+    .select("type, title, occurred_at, contact_id")
+    .eq("user_id", userId)
+    .order("occurred_at", { ascending: false })
+    .limit(10);
+
+  lines.push("");
+  lines.push(`## Network Summary`);
+  lines.push(`Total contacts: ${totalContacts ?? 0}`);
+
+  if (recentInteractions && recentInteractions.length > 0) {
+    lines.push("");
+    lines.push("## Recent Interactions");
+    for (const i of recentInteractions as unknown as { type: string; title: string | null; occurred_at: string; contact_id: string }[]) {
+      lines.push(`- ${i.type}: ${i.title ?? "(no title)"} (${formatRelativeTime(i.occurred_at)})`);
+    }
+  }
+
+  // Get tags
+  const { data: tags } = await supabase
+    .from("tags")
+    .select("name")
+    .eq("user_id", userId);
+
+  if (tags && tags.length > 0) {
+    lines.push("");
+    lines.push(`## Tags: ${(tags as unknown as { name: string }[]).map(t => t.name).join(", ")}`);
+  }
+
+  // Get entities
+  const { data: entities } = await supabase
+    .from("entities")
+    .select("name, category")
+    .eq("user_id", userId)
+    .eq("is_archived", false)
+    .limit(20);
+
+  if (entities && entities.length > 0) {
+    lines.push("");
+    lines.push("## Entities (Places)");
+    for (const e of entities as unknown as { name: string; category: string | null }[]) {
+      lines.push(`- ${e.name}${e.category ? ` (${e.category})` : ""}`);
+    }
+  }
+
+  return lines.join("\n");
 }
 
 async function handleSearch(
