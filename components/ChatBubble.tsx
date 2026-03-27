@@ -555,18 +555,31 @@ function PendingActionCard({
       </View>
 
       {/* Description */}
-      <Text className="mb-2 text-sm font-medium text-gray-800">
+      <Text className="mb-1 text-sm font-medium text-gray-800">
         {preview.description}
       </Text>
       {preview.details && (
         <Text className="mb-2 text-xs text-gray-500">{preview.details}</Text>
       )}
 
+      {/* Total count — prominent for large sets */}
+      {preview.totalCount > 5 && (
+        <View className="mb-2 flex-row items-center rounded-lg bg-white px-3 py-2">
+          <Ionicons name="alert-circle" size={16} color={config.color} />
+          <Text className="ml-2 text-sm font-bold text-gray-800">
+            {preview.totalCount.toLocaleString()} contacts
+          </Text>
+          <Text className="ml-1 text-sm text-gray-500">will be affected</Text>
+        </View>
+      )}
+
       {/* Affected contacts preview */}
       {preview.affectedContacts.length > 0 && (
         <View className="mb-3 rounded-lg bg-white p-2">
           <Text className="mb-1 text-xs font-medium text-gray-400">
-            {preview.affectedContacts.length} contact{preview.affectedContacts.length === 1 ? "" : "s"} affected:
+            {preview.totalCount <= 5
+              ? `${preview.totalCount} contact${preview.totalCount === 1 ? "" : "s"} affected:`
+              : `Showing ${Math.min(preview.affectedContacts.length, 5)} of ${preview.totalCount.toLocaleString()}:`}
           </Text>
           {preview.affectedContacts.slice(0, 5).map((contact) => {
             const fullName = [contact.first_name, contact.last_name].filter(Boolean).join(" ");
@@ -587,9 +600,9 @@ function PendingActionCard({
               </View>
             );
           })}
-          {preview.affectedContacts.length > 5 && (
+          {preview.totalCount > 5 && (
             <Text className="mt-1 text-xs text-gray-400">
-              +{preview.affectedContacts.length - 5} more
+              +{(preview.totalCount - 5).toLocaleString()} more
             </Text>
           )}
         </View>

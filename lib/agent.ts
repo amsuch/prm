@@ -54,6 +54,7 @@ export type PendingAction = {
     actionType: ActionType;
     description: string;
     affectedContacts: AgentResultContact[];
+    totalCount: number;
     details?: string;
   };
 };
@@ -114,6 +115,8 @@ export async function previewAction(
 ): Promise<AgentResponse> {
   try {
     const affected = await getAffectedContacts(parsed, userId);
+    // For bulk ops, get the real total count (getAffectedContacts caps at 20 for preview)
+    const totalCount = await getAffectedCount(parsed, userId);
 
     const actionTypeMap: Record<string, ActionType> = {
       add_contact: "add",
@@ -128,9 +131,11 @@ export async function previewAction(
     const actionType = actionTypeMap[parsed.intent] ?? "bulk_update";
     const description = describeAction(parsed);
 
+    const countLabel = totalCount === 1 ? "1 contact" : `${totalCount} contacts`;
+
     return {
       type: "pending_action",
-      message: `${description}\n\nThis will affect ${affected.length} contact${affected.length === 1 ? "" : "s"}. Approve?`,
+      message: `${description}\n\nThis will affect ${countLabel}. Approve?`,
       pendingAction: {
         parsedQuery: parsed,
         userId,
@@ -138,6 +143,7 @@ export async function previewAction(
           actionType,
           description,
           affectedContacts: affected,
+          totalCount,
           details: describeActionDetails(parsed),
         },
       },
@@ -818,18 +824,27 @@ async function handleBulkUpdate(
   filter: { company?: string; tag?: string; source?: string },
   userId: string,
 ): Promise<AgentResponse> {
-  // Validate that the field is an allowed updatable field on contacts
-  const allowedFields = [
-    "company", "job_title", "department", "notes", "source",
-    "first_name", "last_name",
-  ];
-  // Normalize field name: convert snake_case variants
   const normalizedField = field.replace(/[\s-]/g, "_").toLowerCase();
-  if (!allowedFields.includes(normalizedField)) {
-    return {
-      type: "error",
-      message: `Cannot update field "${field}". Allowed fields: ${allowedFields.join(", ")}.`,
-    };
+  const isStandardField = STANDARD_CONTACT_FIELDS.includes(normalizedField);
+
+  // For bulk updates, check if it's a custom field
+  let isCustomField = false;
+  if (!isStandardField) {
+    const { data: cfData } = await supabase
+      .from("custom_field_definitions")
+      .select("field_key")
+      .eq("user_id", userId)
+      .ilike("field_key", normalizedField)
+      .limit(1);
+    const defs = (cfData as unknown as { field_key: string }[]) ?? [];
+    if (defs.length > 0) {
+      isCustomField = true;
+    } else {
+      return {
+        type: "error",
+        message: `Unknown field "${field}". Standard: ${STANDARD_CONTACT_FIELDS.join(", ")}. Or use a custom field from Settings.`,
+      };
+    }
   }
 
   // Build the contact filter query
@@ -892,13 +907,31 @@ async function handleBulkUpdate(
     };
   }
 
-  // Update the field on all matched contacts
-  const { error: updateError } = await supabase
-    .from("contacts")
-    .update({ [normalizedField]: value })
-    .in("id", contactIds);
+  // Batch update in chunks of 200 to avoid URL length limits
+  const BATCH_SIZE = 200;
+  for (let i = 0; i < contactIds.length; i += BATCH_SIZE) {
+    const batch = contactIds.slice(i, i + BATCH_SIZE);
 
-  if (updateError) throw updateError;
+    if (isCustomField) {
+      // Custom fields require per-contact JSONB merge — fetch, merge, update
+      const { data: batchContacts } = await supabase
+        .from("contacts")
+        .select("id, custom_fields")
+        .in("id", batch);
+      type CfRow = { id: string; custom_fields: Record<string, unknown> | null };
+      const rows = (batchContacts as unknown as CfRow[]) ?? [];
+      for (const row of rows) {
+        const merged = { ...(row.custom_fields ?? {}), [normalizedField]: value };
+        await supabase.from("contacts").update({ custom_fields: merged } as never).eq("id", row.id);
+      }
+    } else {
+      const { error: updateError } = await supabase
+        .from("contacts")
+        .update({ [normalizedField]: value } as never)
+        .in("id", batch);
+      if (updateError) throw updateError;
+    }
+  }
 
   const filterDesc = filter.company
     ? `at "${filter.company}"`
@@ -1139,27 +1172,60 @@ async function executeAction(
 // Update single contact
 // ============================================================
 
+const STANDARD_CONTACT_FIELDS = [
+  "company", "job_title", "department", "notes", "email", "phone",
+  "first_name", "last_name", "source", "birthday",
+];
+
 async function handleUpdateContact(
   name: string,
   field: string,
   value: string,
   userId: string,
 ): Promise<AgentResponse> {
-  const allowedFields = ["company", "job_title", "department", "notes", "email", "phone"];
-  if (!allowedFields.includes(field)) {
-    return { type: "error", message: `Cannot update field "${field}". Allowed: ${allowedFields.join(", ")}` };
+  const normalizedField = field.replace(/[\s-]/g, "_").toLowerCase();
+  const isStandardField = STANDARD_CONTACT_FIELDS.includes(normalizedField);
+
+  // If not a standard field, check if it's a custom field
+  let isCustomField = false;
+  if (!isStandardField) {
+    const { data: cfData } = await supabase
+      .from("custom_field_definitions")
+      .select("field_key")
+      .eq("user_id", userId)
+      .ilike("field_key", normalizedField)
+      .limit(1);
+    const defs = (cfData as unknown as { field_key: string }[]) ?? [];
+    if (defs.length > 0) {
+      isCustomField = true;
+    } else {
+      // Also try matching by display name
+      const { data: cfByName } = await supabase
+        .from("custom_field_definitions")
+        .select("field_key")
+        .eq("user_id", userId)
+        .ilike("name", `%${field}%`)
+        .limit(1);
+      const defsByName = (cfByName as unknown as { field_key: string }[]) ?? [];
+      if (defsByName.length > 0) {
+        isCustomField = true;
+      } else {
+        return { type: "error", message: `Unknown field "${field}". Standard fields: ${STANDARD_CONTACT_FIELDS.join(", ")}. You can also update any custom field you've defined in Settings.` };
+      }
+    }
   }
 
   const { data: contactData, error: findError } = await supabase
     .from("contacts")
-    .select("id, first_name, last_name, company, job_title, avatar_url")
+    .select("id, first_name, last_name, company, job_title, avatar_url, custom_fields")
     .eq("user_id", userId)
     .eq("is_archived", false)
     .or(`first_name.ilike.%${name}%,last_name.ilike.%${name}%`)
     .limit(1);
 
   if (findError) throw findError;
-  const contacts = (contactData as unknown as AgentResultContact[]) ?? [];
+  type ContactWithCustom = AgentResultContact & { custom_fields: Record<string, unknown> };
+  const contacts = (contactData as unknown as ContactWithCustom[]) ?? [];
   if (contacts.length === 0) {
     return { type: "text", message: `Couldn't find a contact matching "${name}".` };
   }
@@ -1167,21 +1233,28 @@ async function handleUpdateContact(
   const contact = contacts[0];
   const fullName = [contact.first_name, contact.last_name].filter(Boolean).join(" ");
 
-  // Handle email and phone as separate table updates
-  if (field === "email") {
+  if (normalizedField === "email") {
     await supabase.from("contact_emails").upsert(
       { contact_id: contact.id, email: value, label: "work", is_primary: true } as never,
       { onConflict: "contact_id,email" as never }
     );
-  } else if (field === "phone") {
+  } else if (normalizedField === "phone") {
     await supabase.from("contact_phones").upsert(
       { contact_id: contact.id, phone: value, label: "mobile", is_primary: true } as never,
       { onConflict: "contact_id,phone" as never }
     );
+  } else if (isCustomField) {
+    const existingCustom = (contact.custom_fields as Record<string, unknown>) ?? {};
+    const updated = { ...existingCustom, [normalizedField]: value };
+    const { error: updateError } = await supabase
+      .from("contacts")
+      .update({ custom_fields: updated } as never)
+      .eq("id", contact.id);
+    if (updateError) throw updateError;
   } else {
     const { error: updateError } = await supabase
       .from("contacts")
-      .update({ [field]: value } as never)
+      .update({ [normalizedField]: value } as never)
       .eq("id", contact.id);
     if (updateError) throw updateError;
   }
@@ -1190,7 +1263,7 @@ async function handleUpdateContact(
     type: "action",
     message: `Updated ${field} to "${value}" for ${fullName}.`,
     actionType: "update",
-    contact: { ...contact, [field === "job_title" ? "job_title" : field]: value },
+    contact,
   };
 }
 
@@ -1308,6 +1381,60 @@ async function handleLinkContacts(
 // ============================================================
 // HITL helpers: preview what an action will do without executing
 // ============================================================
+
+async function getAffectedCount(
+  parsed: ParsedQuery,
+  userId: string,
+): Promise<number> {
+  // For add/enrich/link, the count is trivial
+  if (parsed.intent === "add_contact") return 1;
+  if (parsed.intent === "enrich_contact") return 1;
+  if (parsed.intent === "update_contact") return 1;
+  if (parsed.intent === "link_contacts") return 2;
+
+  // For bulk ops, do a count query
+  if (parsed.intent === "bulk_tag" || parsed.intent === "bulk_update") {
+    const filter = parsed.filter;
+    let query = supabase
+      .from("contacts")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("is_archived", false);
+    if (filter.company) query = query.ilike("company", `%${filter.company}%`);
+    if (filter.source) query = query.eq("source", filter.source);
+    if ("tag" in filter && filter.tag) {
+      const { data: tagData } = await supabase
+        .from("tags").select("id").eq("user_id", userId).ilike("name", `%${filter.tag}%`).limit(1);
+      const tags = (tagData as unknown as { id: string }[]) ?? [];
+      if (tags[0]) {
+        const { count } = await supabase
+          .from("contact_tags").select("contact_id", { count: "exact", head: true }).eq("tag_id", tags[0].id);
+        return count ?? 0;
+      }
+      return 0;
+    }
+    const { count } = await query;
+    return count ?? 0;
+  }
+
+  if (parsed.intent === "archive_contacts") {
+    let query = supabase
+      .from("contacts")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("is_archived", false);
+    if (parsed.filter.days) {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - parsed.filter.days);
+      query = query.or(`last_contacted_at.is.null,last_contacted_at.lt.${cutoff.toISOString()}`);
+    }
+    if (parsed.filter.company) query = query.ilike("company", `%${parsed.filter.company}%`);
+    const { count } = await query;
+    return count ?? 0;
+  }
+
+  return 0;
+}
 
 async function getAffectedContacts(
   parsed: ParsedQuery,
