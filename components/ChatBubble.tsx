@@ -408,6 +408,20 @@ function ActionCard({
       iconColor: "#8b5cf6",
       label: "Contact Enrichment",
     },
+    update: {
+      icon: "create",
+      bgClass: "bg-blue-50",
+      borderClass: "border-blue-200",
+      iconColor: "#3b82f6",
+      label: "Contact Updated",
+    },
+    link: {
+      icon: "link",
+      bgClass: "bg-cyan-50",
+      borderClass: "border-cyan-200",
+      iconColor: "#0891b2",
+      label: "Contacts Linked",
+    },
   };
 
   const config = actionConfig[actionType];
@@ -521,6 +535,7 @@ function PendingActionCard({
     bulk_update: { icon: "create", color: "#3b82f6", bg: "bg-blue-50", border: "border-blue-200" },
     archive: { icon: "archive", color: "#f59e0b", bg: "bg-amber-50", border: "border-amber-200" },
     enrich: { icon: "search", color: "#8b5cf6", bg: "bg-purple-50", border: "border-purple-200" },
+    link: { icon: "link", color: "#0891b2", bg: "bg-cyan-50", border: "border-cyan-200" },
   };
 
   const config = iconMap[preview.actionType];

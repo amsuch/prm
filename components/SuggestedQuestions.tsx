@@ -14,9 +14,10 @@ const SUGGESTIONS = [
   "Show contacts tagged VIP",
   "Archive stale contacts",
   "When did I last talk to John?",
+  "Link John and Jane as colleagues",
   "Enrich John's profile",
   "Who is connected to Sarah?",
-  "Stale contacts",
+  "Update John's company to Acme",
   "Who works at Apple?",
 ];
 

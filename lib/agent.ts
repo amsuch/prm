@@ -44,7 +44,7 @@ export type StatsResult = {
   sourceBreakdown: { source: string; count: number }[];
 };
 
-export type ActionType = "add" | "update" | "bulk_tag" | "bulk_update" | "archive" | "enrich";
+export type ActionType = "add" | "update" | "link" | "bulk_tag" | "bulk_update" | "archive" | "enrich";
 
 /** A serialized action that can be executed after user approval */
 export type PendingAction = {
@@ -122,6 +122,7 @@ export async function previewAction(
       bulk_update: "bulk_update",
       archive_contacts: "archive",
       enrich_contact: "enrich",
+      link_contacts: "link",
     };
 
     const actionType = actionTypeMap[parsed.intent] ?? "bulk_update";
@@ -1127,6 +1128,8 @@ async function executeAction(
       return await handleArchiveContacts(parsed.filter, userId);
     case "enrich_contact":
       return await handleEnrichContact(parsed.name, userId);
+    case "link_contacts":
+      return await handleLinkContacts(parsed.nameA, parsed.nameB, parsed.relationship, userId);
     default:
       return { type: "error", message: "Unknown action type." };
   }
@@ -1188,6 +1191,117 @@ async function handleUpdateContact(
     message: `Updated ${field} to "${value}" for ${fullName}.`,
     actionType: "update",
     contact: { ...contact, [field === "job_title" ? "job_title" : field]: value },
+  };
+}
+
+// ============================================================
+// Link two contacts with a relationship
+// ============================================================
+
+async function handleLinkContacts(
+  nameA: string,
+  nameB: string,
+  relationshipName: string | undefined,
+  userId: string,
+): Promise<AgentResponse> {
+  // Find contact A
+  const { data: dataA, error: errA } = await supabase
+    .from("contacts")
+    .select("id, first_name, last_name, company, job_title, avatar_url")
+    .eq("user_id", userId).eq("is_archived", false)
+    .or(`first_name.ilike.%${nameA}%,last_name.ilike.%${nameA}%`)
+    .limit(1);
+  if (errA) throw errA;
+  const contactsA = (dataA as unknown as AgentResultContact[]) ?? [];
+  if (contactsA.length === 0) {
+    return { type: "text", message: `Couldn't find a contact matching "${nameA}".` };
+  }
+
+  // Find contact B
+  const { data: dataB, error: errB } = await supabase
+    .from("contacts")
+    .select("id, first_name, last_name, company, job_title, avatar_url")
+    .eq("user_id", userId).eq("is_archived", false)
+    .or(`first_name.ilike.%${nameB}%,last_name.ilike.%${nameB}%`)
+    .limit(1);
+  if (errB) throw errB;
+  const contactsB = (dataB as unknown as AgentResultContact[]) ?? [];
+  if (contactsB.length === 0) {
+    return { type: "text", message: `Couldn't find a contact matching "${nameB}".` };
+  }
+
+  const a = contactsA[0];
+  const b = contactsB[0];
+
+  if (a.id === b.id) {
+    return { type: "text", message: "Can't link a contact to themselves." };
+  }
+
+  // Find the relationship type
+  let relTypeId: string | null = null;
+  if (relationshipName) {
+    const { data: rtData } = await supabase
+      .from("relationship_types")
+      .select("id, name")
+      .or(`user_id.eq.${userId},is_system.eq.true`)
+      .ilike("name", `%${relationshipName}%`)
+      .limit(1);
+    const types = (rtData as unknown as { id: string; name: string }[]) ?? [];
+    if (types.length > 0) {
+      relTypeId = types[0].id;
+    }
+  }
+
+  // Default to "Friend" if no type specified or not found
+  if (!relTypeId) {
+    const { data: defaultType } = await supabase
+      .from("relationship_types")
+      .select("id")
+      .eq("is_system", true)
+      .eq("name", relationshipName ? relationshipName : "Friend")
+      .limit(1);
+    const defaults = (defaultType as unknown as { id: string }[]) ?? [];
+    if (defaults.length > 0) {
+      relTypeId = defaults[0].id;
+    } else {
+      // Grab the first available type
+      const { data: anyType } = await supabase
+        .from("relationship_types")
+        .select("id")
+        .eq("is_system", true)
+        .limit(1);
+      const any = (anyType as unknown as { id: string }[]) ?? [];
+      if (any.length === 0) {
+        return { type: "error", message: "No relationship types available." };
+      }
+      relTypeId = any[0].id;
+    }
+  }
+
+  // Create the relationship
+  const { error: insertErr } = await supabase
+    .from("contact_relationships")
+    .insert({
+      contact_a_id: a.id,
+      contact_b_id: b.id,
+      relationship_type_id: relTypeId,
+    } as never);
+
+  if (insertErr) {
+    if (insertErr.message?.includes("duplicate") || insertErr.message?.includes("unique")) {
+      return { type: "text", message: `${[a.first_name, a.last_name].filter(Boolean).join(" ")} and ${[b.first_name, b.last_name].filter(Boolean).join(" ")} are already linked.` };
+    }
+    throw insertErr;
+  }
+
+  const nameAFull = [a.first_name, a.last_name].filter(Boolean).join(" ");
+  const nameBFull = [b.first_name, b.last_name].filter(Boolean).join(" ");
+
+  return {
+    type: "action",
+    message: `Linked ${nameAFull} and ${nameBFull}${relationshipName ? ` as ${relationshipName}` : ""}.`,
+    actionType: "link",
+    count: 2,
   };
 }
 
@@ -1273,6 +1387,24 @@ async function getAffectedContacts(
       return (data as unknown as AgentResultContact[]) ?? [];
     }
 
+    case "link_contacts": {
+      const { data: dataA } = await supabase
+        .from("contacts")
+        .select("id, first_name, last_name, company, job_title, avatar_url")
+        .eq("user_id", userId).eq("is_archived", false)
+        .or(`first_name.ilike.%${parsed.nameA}%,last_name.ilike.%${parsed.nameA}%`)
+        .limit(1);
+      const { data: dataB } = await supabase
+        .from("contacts")
+        .select("id, first_name, last_name, company, job_title, avatar_url")
+        .eq("user_id", userId).eq("is_archived", false)
+        .or(`first_name.ilike.%${parsed.nameB}%,last_name.ilike.%${parsed.nameB}%`)
+        .limit(1);
+      const a = (dataA as unknown as AgentResultContact[]) ?? [];
+      const b = (dataB as unknown as AgentResultContact[]) ?? [];
+      return [...a, ...b];
+    }
+
     default:
       return [];
   }
@@ -1300,6 +1432,8 @@ function describeAction(parsed: ParsedQuery): string {
     }
     case "enrich_contact":
       return `Research and enrich ${parsed.name}'s profile`;
+    case "link_contacts":
+      return `Link ${parsed.nameA} and ${parsed.nameB}${parsed.relationship ? ` as ${parsed.relationship}` : ""}`;
     default:
       return "Unknown action";
   }
@@ -1313,6 +1447,8 @@ function describeActionDetails(parsed: ParsedQuery): string | undefined {
       return `Tag: "${parsed.tag}"`;
     case "bulk_update":
       return `${parsed.field} → "${parsed.value}"`;
+    case "link_contacts":
+      return parsed.relationship ? `Relationship: ${parsed.relationship}` : undefined;
     default:
       return undefined;
   }

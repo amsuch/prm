@@ -18,7 +18,8 @@ export type ParsedQuery =
   | { intent: "bulk_tag"; tag: string; filter: { company?: string; source?: string } }
   | { intent: "bulk_update"; field: string; value: string; filter: { company?: string; tag?: string; source?: string } }
   | { intent: "archive_contacts"; filter: { days?: number; tag?: string; company?: string } }
-  | { intent: "enrich_contact"; name: string };
+  | { intent: "enrich_contact"; name: string }
+  | { intent: "link_contacts"; nameA: string; nameB: string; relationship?: string };
 
 /** Returns true if the intent mutates data and should go through HITL approval */
 export function isActionIntent(parsed: ParsedQuery): boolean {
@@ -28,6 +29,7 @@ export function isActionIntent(parsed: ParsedQuery): boolean {
     "bulk_tag",
     "bulk_update",
     "archive_contacts",
+    "link_contacts",
   ].includes(parsed.intent);
 }
 
@@ -165,6 +167,31 @@ export function parseQuery(input: string): ParsedQuery {
       if (name.length > 1 && name !== "me" && name !== "my") {
         return { intent: "relationships", name };
       }
+    }
+  }
+
+  // --- Link contacts (create relationship) ---
+  // "link John and Jane as colleagues"
+  // "connect John Smith to Jane Doe as friends"
+  // "John is Jane's manager"
+  // "make John and Jane siblings"
+  // "link John to Jane"
+  const linkPatterns = [
+    /^(?:link|connect)\s+(.+?)\s+(?:and|to|with)\s+(.+?)\s+as\s+['"]?(.+?)['"]?[\s.!]*$/i,
+    /^(?:link|connect)\s+(.+?)\s+(?:and|to|with)\s+(.+?)[\s.!]*$/i,
+    /^(?:make|set)\s+(.+?)\s+(?:and)\s+(.+?)\s+(?:as\s+)?['"]?(.+?)['"]?[\s.!]*$/i,
+    /^(.+?)\s+is\s+(.+?)['']s\s+(\w+)[\s.!]*$/i,
+  ];
+
+  for (const pattern of linkPatterns) {
+    const match = trimmed.match(pattern);
+    if (match?.[1] && match[2]) {
+      return {
+        intent: "link_contacts",
+        nameA: match[1].trim(),
+        nameB: match[2].trim(),
+        relationship: match[3]?.trim(),
+      };
     }
   }
 
@@ -458,5 +485,7 @@ export function getQueryDescription(parsed: ParsedQuery): string {
     }
     case "enrich_contact":
       return `Looking up information for "${parsed.name}"...`;
+    case "link_contacts":
+      return `Linking ${parsed.nameA} and ${parsed.nameB}${parsed.relationship ? ` as ${parsed.relationship}` : ""}...`;
   }
 }
