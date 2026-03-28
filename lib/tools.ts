@@ -124,7 +124,6 @@ export function getToolDefinitions(): ToolDefinition[] {
           },
         },
         required: ["query"],
-        additionalProperties: false,
       },
       async execute(input, userId) {
         const query = input.query as string;
@@ -165,7 +164,6 @@ export function getToolDefinitions(): ToolDefinition[] {
           },
         },
         required: ["contact_id"],
-        additionalProperties: false,
       },
       async execute(input, userId) {
         const contactId = input.contact_id as string;
@@ -278,7 +276,6 @@ export function getToolDefinitions(): ToolDefinition[] {
           },
         },
         required: [],
-        additionalProperties: false,
       },
       async execute(input, userId) {
         const contactId = input.contact_id as string | undefined;
@@ -335,7 +332,6 @@ export function getToolDefinitions(): ToolDefinition[] {
         type: "object",
         properties: {},
         required: [],
-        additionalProperties: false,
       },
       async execute(_input, userId) {
         // Total contacts
@@ -439,7 +435,6 @@ export function getToolDefinitions(): ToolDefinition[] {
           },
         },
         required: ["contact_id"],
-        additionalProperties: false,
       },
       async execute(input) {
         const contactId = input.contact_id as string;
@@ -475,7 +470,6 @@ export function getToolDefinitions(): ToolDefinition[] {
         type: "object",
         properties: {},
         required: [],
-        additionalProperties: false,
       },
       async execute(_input, userId) {
         const { data, error } = await supabase
@@ -508,7 +502,6 @@ export function getToolDefinitions(): ToolDefinition[] {
           },
         },
         required: [],
-        additionalProperties: false,
       },
       async execute(input, userId) {
         let query = supabase
@@ -559,7 +552,6 @@ export function getToolDefinitions(): ToolDefinition[] {
           },
         },
         required: ["sql"],
-        additionalProperties: false,
       },
       async execute(input, userId) {
         const sql = input.sql as string;
@@ -617,7 +609,6 @@ export function getToolDefinitions(): ToolDefinition[] {
           },
         },
         required: ["first_name"],
-        additionalProperties: false,
       },
       requiresApproval: true,
       async execute(input, userId) {
@@ -693,7 +684,6 @@ export function getToolDefinitions(): ToolDefinition[] {
           },
         },
         required: ["contact_id", "field", "value"],
-        additionalProperties: false,
       },
       requiresApproval: true,
       async execute(input, userId) {
@@ -792,7 +782,6 @@ export function getToolDefinitions(): ToolDefinition[] {
           },
         },
         required: ["tag"],
-        additionalProperties: false,
       },
       requiresApproval: true,
       async execute(input, userId) {
@@ -912,7 +901,6 @@ export function getToolDefinitions(): ToolDefinition[] {
           },
         },
         required: [],
-        additionalProperties: false,
       },
       requiresApproval: true,
       async execute(input, userId) {
@@ -1030,7 +1018,6 @@ export function getToolDefinitions(): ToolDefinition[] {
           },
         },
         required: ["contact_a_id", "contact_b_id"],
-        additionalProperties: false,
       },
       requiresApproval: true,
       async execute(input, userId) {
@@ -1185,7 +1172,6 @@ export function getToolDefinitions(): ToolDefinition[] {
           },
         },
         required: ["name"],
-        additionalProperties: false,
       },
       requiresApproval: true,
       async execute(input, userId) {
@@ -1237,7 +1223,6 @@ export function getToolDefinitions(): ToolDefinition[] {
           },
         },
         required: ["entity_id", "first_name"],
-        additionalProperties: false,
       },
       requiresApproval: true,
       async execute(input, userId) {
@@ -1310,7 +1295,6 @@ export function getToolDefinitions(): ToolDefinition[] {
           },
         },
         required: ["contact_id", "type"],
-        additionalProperties: false,
       },
       requiresApproval: true,
       async execute(input, userId) {
@@ -1386,7 +1370,6 @@ export function toolsToOpenAIFormat(
     name: string;
     description: string;
     parameters: Record<string, unknown>;
-    strict: true;
   };
 }[] {
   return tools.map((t) => ({
@@ -1395,7 +1378,6 @@ export function toolsToOpenAIFormat(
       name: t.name,
       description: t.description,
       parameters: t.parameters,
-      strict: true as const,
     },
   }));
 }
