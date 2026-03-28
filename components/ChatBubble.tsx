@@ -64,7 +64,7 @@ export function ChatBubble({
   if (role === "user") {
     return (
       <View className="mb-3 flex-row justify-end px-4">
-        <View className="max-w-[80%] rounded-2xl rounded-br-md bg-brand-600 px-4 py-3">
+        <View className="max-w-[80%] rounded-2xl rounded-br-md bg-indigo-600 px-4 py-3">
           <Text className="text-base text-white">{text}</Text>
         </View>
       </View>
@@ -82,10 +82,10 @@ export function ChatBubble({
               <ToolProgressList progress={toolProgress} />
             ) : (
               <View className="flex-row items-center">
-                <View className="mr-2 h-2 w-2 rounded-full bg-gray-300" />
-                <View className="mr-2 h-2 w-2 rounded-full bg-gray-400" />
-                <View className="h-2 w-2 rounded-full bg-gray-500" />
-                <Text className="ml-3 text-sm text-gray-400">
+                <View className="mr-2 h-2 w-2 rounded-full bg-stone-300" />
+                <View className="mr-2 h-2 w-2 rounded-full bg-stone-400" />
+                <View className="h-2 w-2 rounded-full bg-stone-500" />
+                <Text className="ml-3 text-sm text-stone-400">
                   Thinking...
                 </Text>
               </View>
@@ -97,7 +97,7 @@ export function ChatBubble({
             {toolProgress && toolProgress.length > 0 && !pendingApproval && (
               <ToolProgressList progress={toolProgress} />
             )}
-            <Text className="text-base text-gray-900">{text}</Text>
+            <Text className="text-base text-stone-900">{text}</Text>
             {/* Pending approval card from the agent loop */}
             {pendingApproval && (
               <AgentApprovalCard
@@ -193,7 +193,7 @@ function ToolProgressList({ progress }: { progress: ToolProgress[] }) {
               color="#6b7280"
               style={{ marginLeft: 4 }}
             />
-            <Text className="ml-1.5 text-xs text-gray-500" numberOfLines={1}>
+            <Text className="ml-1.5 text-xs text-stone-500" numberOfLines={1}>
               {toolInfo.label}
               {detail}
               {tp.status === "running" ? "..." : ""}
@@ -236,13 +236,13 @@ function AgentApprovalCard({
           size={18}
           color="#d97706"
         />
-        <Text className="ml-2 text-xs font-semibold uppercase text-gray-500">
+        <Text className="ml-2 text-xs font-semibold uppercase text-stone-500">
           Pending Action
         </Text>
       </View>
 
       {/* Description */}
-      <Text className="mb-1 text-sm font-medium text-gray-800">
+      <Text className="mb-1 text-sm font-medium text-stone-800">
         {description}
       </Text>
 
@@ -254,10 +254,10 @@ function AgentApprovalCard({
             .slice(0, 6)
             .map(([key, value]) => (
               <View key={key} className="flex-row py-0.5">
-                <Text className="text-xs font-medium text-gray-400 w-24">
+                <Text className="text-xs font-medium text-stone-400 w-24">
                   {key.replace(/_/g, " ")}:
                 </Text>
-                <Text className="flex-1 text-xs text-gray-700" numberOfLines={1}>
+                <Text className="flex-1 text-xs text-stone-700" numberOfLines={1}>
                   {String(value)}
                 </Text>
               </View>
@@ -278,10 +278,10 @@ function AgentApprovalCard({
         </Pressable>
         <Pressable
           onPress={onReject}
-          className="flex-1 flex-row items-center justify-center rounded-lg border border-gray-200 bg-white py-2.5 active:bg-gray-50"
+          className="flex-1 flex-row items-center justify-center rounded-lg border border-stone-200 bg-white py-2.5 active:bg-stone-50"
         >
           <Ionicons name="close" size={16} color="#6b7280" />
-          <Text className="ml-1 text-sm font-semibold text-gray-600">
+          <Text className="ml-1 text-sm font-semibold text-stone-600">
             Cancel
           </Text>
         </Pressable>
@@ -369,7 +369,7 @@ function SQLResultCard({
           size={13}
           color="#9ca3af"
         />
-        <Text className="ml-1 text-xs text-gray-400">
+        <Text className="ml-1 text-xs text-stone-400">
           {showSQL ? "Hide SQL" : "Show SQL"} ({rowCount} row{rowCount === 1 ? "" : "s"})
         </Text>
         <Ionicons
@@ -381,18 +381,18 @@ function SQLResultCard({
       </Pressable>
 
       {showSQL && (
-        <View className="mb-2 rounded-lg bg-gray-800 p-3">
+        <View className="mb-2 rounded-lg bg-stone-800 p-3">
           <Text className="font-mono text-xs text-green-400">{sql}</Text>
         </View>
       )}
 
       {/* Results table */}
-      <View className="overflow-hidden rounded-xl border border-gray-200">
+      <View className="overflow-hidden rounded-xl border border-stone-200">
         {/* Header */}
-        <View className="flex-row bg-gray-100 px-2 py-1.5">
+        <View className="flex-row bg-stone-100 px-2 py-1.5">
           {columns.map((col) => (
             <View key={col} className="flex-1 px-1">
-              <Text className="text-xs font-semibold text-gray-500" numberOfLines={1}>
+              <Text className="text-xs font-semibold text-stone-500" numberOfLines={1}>
                 {col.replace(/_/g, " ")}
               </Text>
             </View>
@@ -403,13 +403,13 @@ function SQLResultCard({
         {displayRows.map((row, i) => (
           <View
             key={i}
-            className={`flex-row border-t border-gray-100 px-2 py-1.5 ${
-              i % 2 === 0 ? "bg-white" : "bg-gray-50"
+            className={`flex-row border-t border-stone-100 px-2 py-1.5 ${
+              i % 2 === 0 ? "bg-white" : "bg-stone-50"
             }`}
           >
             {columns.map((col) => (
               <View key={col} className="flex-1 px-1">
-                <Text className="text-xs text-gray-700" numberOfLines={2}>
+                <Text className="text-xs text-stone-700" numberOfLines={2}>
                   {formatCellValue(row[col])}
                 </Text>
               </View>
@@ -418,8 +418,8 @@ function SQLResultCard({
         ))}
 
         {rowCount > 20 && (
-          <View className="border-t border-gray-100 bg-gray-50 px-3 py-1.5">
-            <Text className="text-xs text-gray-400">
+          <View className="border-t border-stone-100 bg-stone-50 px-3 py-1.5">
+            <Text className="text-xs text-stone-400">
               +{rowCount - 20} more rows
             </Text>
           </View>
@@ -465,7 +465,7 @@ function ContactCards({ contacts }: { contacts: AgentResultContact[] }) {
           <Pressable
             key={contact.id}
             onPress={() => router.push(`/contact/${contact.id}`)}
-            className="mt-2 flex-row items-center rounded-xl border border-gray-100 bg-gray-50 p-2.5 active:bg-gray-100"
+            className="mt-2 flex-row items-center rounded-xl border border-stone-100 bg-stone-50 p-2.5 active:bg-stone-100"
           >
             <View
               className="h-9 w-9 items-center justify-center rounded-full"
@@ -475,14 +475,14 @@ function ContactCards({ contacts }: { contacts: AgentResultContact[] }) {
             </View>
             <View className="ml-2.5 flex-1">
               <Text
-                className="text-sm font-semibold text-gray-900"
+                className="text-sm font-semibold text-stone-900"
                 numberOfLines={1}
               >
                 {fullName}
               </Text>
               {subtitle ? (
                 <Text
-                  className="text-xs text-gray-500"
+                  className="text-xs text-stone-500"
                   numberOfLines={1}
                 >
                   {subtitle}
@@ -522,32 +522,32 @@ function InteractionCard({ interaction }: { interaction: InteractionResult }) {
         : "";
 
   return (
-    <View className="mt-3 rounded-xl border border-gray-100 bg-gray-50 p-3">
+    <View className="mt-3 rounded-xl border border-stone-100 bg-stone-50 p-3">
       <View className="flex-row items-center">
         <Ionicons
           name={iconName as keyof typeof Ionicons.glyphMap}
           size={18}
           color={Colors.brand[600]}
         />
-        <Text className="ml-2 text-sm font-semibold capitalize text-gray-900">
+        <Text className="ml-2 text-sm font-semibold capitalize text-stone-900">
           {interaction.type}
         </Text>
         {directionLabel ? (
-          <Text className="ml-2 text-xs text-gray-400">
+          <Text className="ml-2 text-xs text-stone-400">
             ({directionLabel})
           </Text>
         ) : null}
-        <Text className="ml-auto text-xs text-gray-400">
+        <Text className="ml-auto text-xs text-stone-400">
           {formatDate(interaction.occurred_at)}
         </Text>
       </View>
       {interaction.title ? (
-        <Text className="mt-1.5 text-sm font-medium text-gray-800">
+        <Text className="mt-1.5 text-sm font-medium text-stone-800">
           {interaction.title}
         </Text>
       ) : null}
       {interaction.body ? (
-        <Text className="mt-1 text-sm text-gray-600" numberOfLines={3}>
+        <Text className="mt-1 text-sm text-stone-600" numberOfLines={3}>
           {interaction.body}
         </Text>
       ) : null}
@@ -582,7 +582,7 @@ function RelationshipCards({
             onPress={() =>
               router.push(`/contact/${rel.related_contact_id}`)
             }
-            className="mt-2 flex-row items-center rounded-xl border border-gray-100 bg-gray-50 p-2.5 active:bg-gray-100"
+            className="mt-2 flex-row items-center rounded-xl border border-stone-100 bg-stone-50 p-2.5 active:bg-stone-100"
           >
             <View
               className="h-9 w-9 items-center justify-center rounded-full"
@@ -592,12 +592,12 @@ function RelationshipCards({
             </View>
             <View className="ml-2.5 flex-1">
               <Text
-                className="text-sm font-semibold text-gray-900"
+                className="text-sm font-semibold text-stone-900"
                 numberOfLines={1}
               >
                 {fullName}
               </Text>
-              <Text className="text-xs text-gray-500">
+              <Text className="text-xs text-stone-500">
                 {rel.relationship_name}
                 {rel.related_company ? ` - ${rel.related_company}` : ""}
               </Text>
@@ -616,7 +616,7 @@ function RelationshipCards({
 
 function StatsCard({ stats }: { stats: StatsResult }) {
   return (
-    <View className="mt-3 rounded-xl border border-gray-100 bg-gray-50 p-3">
+    <View className="mt-3 rounded-xl border border-stone-100 bg-stone-50 p-3">
       {/* Stat Rows */}
       <View className="flex-row justify-between">
         <StatItem
@@ -641,8 +641,8 @@ function StatsCard({ stats }: { stats: StatsResult }) {
 
       {/* Top Companies */}
       {stats.topCompanies.length > 0 && (
-        <View className="mt-3 border-t border-gray-200 pt-3">
-          <Text className="mb-1.5 text-xs font-semibold uppercase text-gray-400">
+        <View className="mt-3 border-t border-stone-200 pt-3">
+          <Text className="mb-1.5 text-xs font-semibold uppercase text-stone-400">
             Top Companies
           </Text>
           {stats.topCompanies.map((c) => (
@@ -650,10 +650,10 @@ function StatsCard({ stats }: { stats: StatsResult }) {
               key={c.company}
               className="flex-row items-center justify-between py-0.5"
             >
-              <Text className="text-sm text-gray-700" numberOfLines={1}>
+              <Text className="text-sm text-stone-700" numberOfLines={1}>
                 {c.company}
               </Text>
-              <Text className="text-sm font-medium text-gray-900">
+              <Text className="text-sm font-medium text-stone-900">
                 {c.count}
               </Text>
             </View>
@@ -663,8 +663,8 @@ function StatsCard({ stats }: { stats: StatsResult }) {
 
       {/* Source Breakdown */}
       {stats.sourceBreakdown.length > 0 && (
-        <View className="mt-3 border-t border-gray-200 pt-3">
-          <Text className="mb-1.5 text-xs font-semibold uppercase text-gray-400">
+        <View className="mt-3 border-t border-stone-200 pt-3">
+          <Text className="mb-1.5 text-xs font-semibold uppercase text-stone-400">
             Sources
           </Text>
           <View className="flex-row flex-wrap gap-2">
@@ -673,7 +673,7 @@ function StatsCard({ stats }: { stats: StatsResult }) {
                 key={s.source}
                 className="rounded-full bg-white px-2.5 py-1"
               >
-                <Text className="text-xs text-gray-600">
+                <Text className="text-xs text-stone-600">
                   {s.source}: {s.count}
                 </Text>
               </View>
@@ -710,15 +710,15 @@ function ActionCard({
     },
     bulk_tag: {
       icon: "pricetag",
-      bgClass: "bg-blue-50",
-      borderClass: "border-blue-200",
+      bgClass: "bg-indigo-50",
+      borderClass: "border-indigo-200",
       iconColor: "#3b82f6",
       label: "Contacts Tagged",
     },
     bulk_update: {
       icon: "create",
-      bgClass: "bg-blue-50",
-      borderClass: "border-blue-200",
+      bgClass: "bg-indigo-50",
+      borderClass: "border-indigo-200",
       iconColor: "#3b82f6",
       label: "Contacts Updated",
     },
@@ -738,8 +738,8 @@ function ActionCard({
     },
     update: {
       icon: "create",
-      bgClass: "bg-blue-50",
-      borderClass: "border-blue-200",
+      bgClass: "bg-indigo-50",
+      borderClass: "border-indigo-200",
       iconColor: "#3b82f6",
       label: "Contact Updated",
     },
@@ -759,8 +759,8 @@ function ActionCard({
     },
     add_entity_person: {
       icon: "person-add",
-      bgClass: "bg-blue-50",
-      borderClass: "border-blue-200",
+      bgClass: "bg-indigo-50",
+      borderClass: "border-indigo-200",
       iconColor: "#3b82f6",
       label: "Person Added",
     },
@@ -794,13 +794,13 @@ function ActionCard({
             size={18}
             color={config.iconColor}
           />
-          <Text className="ml-2 text-xs font-semibold uppercase text-gray-500">
+          <Text className="ml-2 text-xs font-semibold uppercase text-stone-500">
             {config.label}
           </Text>
         </View>
         <Pressable
           onPress={() => router.push(`/contact/${contact.id}`)}
-          className="flex-row items-center rounded-lg bg-white p-2.5 active:bg-gray-50"
+          className="flex-row items-center rounded-lg bg-white p-2.5 active:bg-stone-50"
         >
           <View
             className="h-10 w-10 items-center justify-center rounded-full"
@@ -810,13 +810,13 @@ function ActionCard({
           </View>
           <View className="ml-2.5 flex-1">
             <Text
-              className="text-sm font-semibold text-gray-900"
+              className="text-sm font-semibold text-stone-900"
               numberOfLines={1}
             >
               {fullName}
             </Text>
             {subtitle ? (
-              <Text className="text-xs text-gray-500" numberOfLines={1}>
+              <Text className="text-xs text-stone-500" numberOfLines={1}>
                 {subtitle}
               </Text>
             ) : null}
@@ -846,11 +846,11 @@ function ActionCard({
           />
         </View>
         <View className="ml-3 flex-1">
-          <Text className="text-xs font-semibold uppercase text-gray-500">
+          <Text className="text-xs font-semibold uppercase text-stone-500">
             {config.label}
           </Text>
           {count !== undefined && (
-            <Text className="text-2xl font-bold text-gray-900">
+            <Text className="text-2xl font-bold text-stone-900">
               {count}
             </Text>
           )}
@@ -879,14 +879,14 @@ function PendingActionCard({
 
   const iconMap: Record<ActionType, { icon: string; color: string; bg: string; border: string }> = {
     add: { icon: "add-circle", color: "#10b981", bg: "bg-green-50", border: "border-green-200" },
-    update: { icon: "create", color: "#3b82f6", bg: "bg-blue-50", border: "border-blue-200" },
-    bulk_tag: { icon: "pricetag", color: "#3b82f6", bg: "bg-blue-50", border: "border-blue-200" },
-    bulk_update: { icon: "create", color: "#3b82f6", bg: "bg-blue-50", border: "border-blue-200" },
+    update: { icon: "create", color: "#3b82f6", bg: "bg-indigo-50", border: "border-indigo-200" },
+    bulk_tag: { icon: "pricetag", color: "#3b82f6", bg: "bg-indigo-50", border: "border-indigo-200" },
+    bulk_update: { icon: "create", color: "#3b82f6", bg: "bg-indigo-50", border: "border-indigo-200" },
     archive: { icon: "archive", color: "#f59e0b", bg: "bg-amber-50", border: "border-amber-200" },
     enrich: { icon: "search", color: "#8b5cf6", bg: "bg-purple-50", border: "border-purple-200" },
     link: { icon: "link", color: "#0891b2", bg: "bg-cyan-50", border: "border-cyan-200" },
     create_entity: { icon: "business", color: "#10b981", bg: "bg-green-50", border: "border-green-200" },
-    add_entity_person: { icon: "person-add", color: "#3b82f6", bg: "bg-blue-50", border: "border-blue-200" },
+    add_entity_person: { icon: "person-add", color: "#3b82f6", bg: "bg-indigo-50", border: "border-indigo-200" },
     promote_person: { icon: "arrow-up-circle", color: "#8b5cf6", bg: "bg-purple-50", border: "border-purple-200" },
   };
 
@@ -901,34 +901,34 @@ function PendingActionCard({
           size={18}
           color={config.color}
         />
-        <Text className="ml-2 text-xs font-semibold uppercase text-gray-500">
+        <Text className="ml-2 text-xs font-semibold uppercase text-stone-500">
           Pending Action
         </Text>
       </View>
 
       {/* Description */}
-      <Text className="mb-1 text-sm font-medium text-gray-800">
+      <Text className="mb-1 text-sm font-medium text-stone-800">
         {preview.description}
       </Text>
       {preview.details && (
-        <Text className="mb-2 text-xs text-gray-500">{preview.details}</Text>
+        <Text className="mb-2 text-xs text-stone-500">{preview.details}</Text>
       )}
 
       {/* Total count — prominent for large sets */}
       {preview.totalCount > 5 && (
         <View className="mb-2 flex-row items-center rounded-lg bg-white px-3 py-2">
           <Ionicons name="alert-circle" size={16} color={config.color} />
-          <Text className="ml-2 text-sm font-bold text-gray-800">
+          <Text className="ml-2 text-sm font-bold text-stone-800">
             {preview.totalCount.toLocaleString()} contacts
           </Text>
-          <Text className="ml-1 text-sm text-gray-500">will be affected</Text>
+          <Text className="ml-1 text-sm text-stone-500">will be affected</Text>
         </View>
       )}
 
       {/* Affected contacts preview */}
       {preview.affectedContacts.length > 0 && (
         <View className="mb-3 rounded-lg bg-white p-2">
-          <Text className="mb-1 text-xs font-medium text-gray-400">
+          <Text className="mb-1 text-xs font-medium text-stone-400">
             {preview.totalCount <= 5
               ? `${preview.totalCount} contact${preview.totalCount === 1 ? "" : "s"} affected:`
               : `Showing ${Math.min(preview.affectedContacts.length, 5)} of ${preview.totalCount.toLocaleString()}:`}
@@ -945,7 +945,7 @@ function PendingActionCard({
                 >
                   <Text className="text-xs font-bold text-white">{initials}</Text>
                 </View>
-                <Text className="ml-2 text-xs text-gray-700" numberOfLines={1}>
+                <Text className="ml-2 text-xs text-stone-700" numberOfLines={1}>
                   {fullName}
                   {contact.company ? ` - ${contact.company}` : ""}
                 </Text>
@@ -953,7 +953,7 @@ function PendingActionCard({
             );
           })}
           {preview.totalCount > 5 && (
-            <Text className="mt-1 text-xs text-gray-400">
+            <Text className="mt-1 text-xs text-stone-400">
               +{(preview.totalCount - 5).toLocaleString()} more
             </Text>
           )}
@@ -971,10 +971,10 @@ function PendingActionCard({
         </Pressable>
         <Pressable
           onPress={() => onReject?.()}
-          className="flex-1 flex-row items-center justify-center rounded-lg border border-gray-200 bg-white py-2.5 active:bg-gray-50"
+          className="flex-1 flex-row items-center justify-center rounded-lg border border-stone-200 bg-white py-2.5 active:bg-stone-50"
         >
           <Ionicons name="close" size={16} color="#6b7280" />
-          <Text className="ml-1 text-sm font-semibold text-gray-600">Cancel</Text>
+          <Text className="ml-1 text-sm font-semibold text-stone-600">Cancel</Text>
         </Pressable>
       </View>
     </View>
@@ -999,8 +999,8 @@ function StatItem({
         size={20}
         color={color}
       />
-      <Text className="mt-1 text-lg font-bold text-gray-900">{value}</Text>
-      <Text className="text-xs text-gray-500">{label}</Text>
+      <Text className="mt-1 text-lg font-bold text-stone-900">{value}</Text>
+      <Text className="text-xs text-stone-500">{label}</Text>
     </View>
   );
 }

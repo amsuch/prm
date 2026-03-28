@@ -107,17 +107,17 @@ export default function CalendarSuggestionsScreen() {
     return (
       <View
         key={suggestion.id}
-        className="border-b border-gray-100 px-4 py-3"
+        className="border-b border-stone-100 px-4 py-3"
       >
         <View className="flex-row items-start justify-between">
           <View className="flex-1">
             {suggestion.display_name && (
-              <Text className="text-sm font-semibold text-gray-900">
+              <Text className="text-sm font-semibold text-stone-900">
                 {suggestion.display_name}
               </Text>
             )}
             <Text
-              className={`text-sm ${suggestion.display_name ? "text-gray-500" : "font-semibold text-gray-900"}`}
+              className={`text-sm ${suggestion.display_name ? "text-stone-500" : "font-semibold text-stone-900"}`}
               numberOfLines={1}
             >
               {suggestion.email}
@@ -129,7 +129,7 @@ export default function CalendarSuggestionsScreen() {
                   size={12}
                   color={Colors.gray[400]}
                 />
-                <Text className="ml-1 text-xs text-gray-400" numberOfLines={1}>
+                <Text className="ml-1 text-xs text-stone-400" numberOfLines={1}>
                   {suggestion.event_title}
                   {suggestion.event_date
                     ? ` - ${formatDate(suggestion.event_date)}`
@@ -148,23 +148,23 @@ export default function CalendarSuggestionsScreen() {
           ) : isDismissed ? (
             <Pressable
               onPress={() => handleRestore(suggestion)}
-              className="ml-2 rounded-lg border border-gray-200 px-3 py-1.5 active:bg-gray-50"
+              className="ml-2 rounded-lg border border-stone-200 px-3 py-1.5 active:bg-stone-50"
             >
-              <Text className="text-xs font-medium text-gray-600">Restore</Text>
+              <Text className="text-xs font-medium text-stone-600">Restore</Text>
             </Pressable>
           ) : (
             <View className="ml-2 flex-row gap-2">
               <Pressable
                 onPress={() => handleDismiss(suggestion)}
-                className="rounded-lg border border-gray-200 px-3 py-1.5 active:bg-gray-50"
+                className="rounded-lg border border-stone-200 px-3 py-1.5 active:bg-stone-50"
               >
-                <Text className="text-xs font-medium text-gray-500">
+                <Text className="text-xs font-medium text-stone-500">
                   Dismiss
                 </Text>
               </Pressable>
               <Pressable
                 onPress={() => handleCreateContact(suggestion)}
-                className="rounded-lg bg-blue-600 px-3 py-1.5 active:bg-blue-700"
+                className="rounded-lg bg-indigo-600 px-3 py-1.5 active:bg-indigo-700"
               >
                 <Text className="text-xs font-medium text-white">
                   Create Contact
@@ -179,26 +179,26 @@ export default function CalendarSuggestionsScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-gray-50">
+      <View className="flex-1 items-center justify-center bg-stone-50">
         <ActivityIndicator size="large" color={Colors.brand[600]} />
       </View>
     );
   }
 
   return (
-    <ScrollView className="flex-1 bg-gray-50">
+    <ScrollView className="flex-1 bg-stone-50">
       <View className="px-4 pt-5 pb-24">
-        <Text className="text-2xl font-bold text-gray-900">
+        <Text className="text-2xl font-bold text-stone-900">
           Calendar Suggestions
         </Text>
-        <Text className="mt-1 text-gray-500">
+        <Text className="mt-1 text-stone-500">
           Unmatched attendees from your calendar events
         </Text>
 
         {/* Pending suggestions */}
         {pendingSuggestions.length > 0 ? (
           <>
-            <Text className="mb-2 mt-6 text-xs font-semibold uppercase tracking-wider text-gray-400">
+            <Text className="mb-2 mt-6 text-xs font-semibold uppercase tracking-wider text-stone-400">
               Pending ({pendingSuggestions.length})
             </Text>
             <View className="overflow-hidden rounded-xl bg-white shadow-sm">
@@ -212,10 +212,10 @@ export default function CalendarSuggestionsScreen() {
               size={40}
               color={Colors.success}
             />
-            <Text className="mt-2 text-base font-semibold text-gray-900">
+            <Text className="mt-2 text-base font-semibold text-stone-900">
               All caught up!
             </Text>
-            <Text className="mt-1 text-sm text-gray-500">
+            <Text className="mt-1 text-sm text-stone-500">
               No pending suggestions to review
             </Text>
           </View>
@@ -224,14 +224,14 @@ export default function CalendarSuggestionsScreen() {
         {/* Created contacts */}
         {createdSuggestions.length > 0 && (
           <>
-            <Text className="mb-2 mt-6 text-xs font-semibold uppercase tracking-wider text-gray-400">
+            <Text className="mb-2 mt-6 text-xs font-semibold uppercase tracking-wider text-stone-400">
               Created ({createdSuggestions.length})
             </Text>
             <View className="overflow-hidden rounded-xl bg-white shadow-sm">
               {createdSuggestions.map((s) => (
                 <View
                   key={s.id}
-                  className="flex-row items-center border-b border-gray-100 px-4 py-3"
+                  className="flex-row items-center border-b border-stone-100 px-4 py-3"
                 >
                   <Ionicons
                     name="checkmark-circle"
@@ -240,11 +240,11 @@ export default function CalendarSuggestionsScreen() {
                   />
                   <View className="ml-2 flex-1">
                     {s.display_name && (
-                      <Text className="text-sm font-medium text-gray-900">
+                      <Text className="text-sm font-medium text-stone-900">
                         {s.display_name}
                       </Text>
                     )}
-                    <Text className="text-xs text-gray-500">{s.email}</Text>
+                    <Text className="text-xs text-stone-500">{s.email}</Text>
                   </View>
                   {s.created_contact_id && (
                     <Pressable
@@ -253,9 +253,9 @@ export default function CalendarSuggestionsScreen() {
                           `/(app)/contact/${s.created_contact_id}` as never,
                         )
                       }
-                      className="rounded-lg border border-gray-200 px-3 py-1.5 active:bg-gray-50"
+                      className="rounded-lg border border-stone-200 px-3 py-1.5 active:bg-stone-50"
                     >
-                      <Text className="text-xs font-medium text-blue-600">
+                      <Text className="text-xs font-medium text-indigo-600">
                         View
                       </Text>
                     </Pressable>
@@ -273,7 +273,7 @@ export default function CalendarSuggestionsScreen() {
               onPress={() => setShowDismissed(!showDismissed)}
               className="mb-2 mt-6 flex-row items-center"
             >
-              <Text className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+              <Text className="text-xs font-semibold uppercase tracking-wider text-stone-400">
                 Dismissed ({dismissedSuggestions.length})
               </Text>
               <Ionicons

@@ -227,15 +227,15 @@ export default function BulkLinkScreen() {
   // ============================================================
   if (step === "select") {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-stone-50">
         {/* Search */}
-        <View className="border-b border-gray-200 bg-white px-4 py-3">
-          <View className="flex-row items-center rounded-xl border border-gray-200 bg-gray-50 px-3">
+        <View className="border-b border-stone-200 bg-white px-4 py-3">
+          <View className="flex-row items-center rounded-xl border border-stone-200 bg-stone-50 px-3">
             <Ionicons name="search" size={18} color="#9ca3af" />
             <TextInput
-              className="ml-2 flex-1 py-2.5 text-sm text-gray-900"
+              className="ml-2 flex-1 py-2.5 text-sm text-stone-900"
               placeholder="Search contacts..."
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#a8a29e"
               value={searchText}
               onChangeText={setSearchText}
               autoCapitalize="none"
@@ -249,16 +249,16 @@ export default function BulkLinkScreen() {
 
           {/* Select All / Deselect */}
           <View className="mt-2 flex-row items-center justify-between">
-            <Text className="text-xs text-gray-500">
+            <Text className="text-xs text-stone-500">
               {selectedIds.size} of {filteredContacts.length} selected
             </Text>
             <View className="flex-row gap-2">
               <Pressable onPress={handleSelectAll}>
-                <Text className="text-xs font-medium text-blue-600">Select All</Text>
+                <Text className="text-xs font-medium text-indigo-600">Select All</Text>
               </Pressable>
-              <Text className="text-xs text-gray-300">|</Text>
+              <Text className="text-xs text-stone-300">|</Text>
               <Pressable onPress={handleDeselectAll}>
-                <Text className="text-xs font-medium text-gray-500">Clear</Text>
+                <Text className="text-xs font-medium text-stone-500">Clear</Text>
               </Pressable>
             </View>
           </View>
@@ -282,15 +282,15 @@ export default function BulkLinkScreen() {
               return (
                 <Pressable
                   onPress={() => toggleContact(item.id)}
-                  className={`flex-row items-center border-b border-gray-100 px-4 py-3 ${
-                    isSelected ? "bg-blue-50" : "bg-white active:bg-gray-50"
+                  className={`flex-row items-center border-b border-stone-100 px-4 py-3 ${
+                    isSelected ? "bg-indigo-50" : "bg-white active:bg-stone-50"
                   }`}
                 >
                   <View
                     className={`mr-3 h-5 w-5 items-center justify-center rounded border ${
                       isSelected
-                        ? "border-blue-600 bg-blue-600"
-                        : "border-gray-300 bg-white"
+                        ? "border-indigo-600 bg-indigo-600"
+                        : "border-stone-300 bg-white"
                     }`}
                   >
                     {isSelected && (
@@ -304,9 +304,9 @@ export default function BulkLinkScreen() {
                     <Text className="text-xs font-bold text-white">{initials}</Text>
                   </View>
                   <View className="ml-3 flex-1">
-                    <Text className="text-sm font-medium text-gray-900">{fullName}</Text>
+                    <Text className="text-sm font-medium text-stone-900">{fullName}</Text>
                     {item.company && (
-                      <Text className="text-xs text-gray-500">{item.company}</Text>
+                      <Text className="text-xs text-stone-500">{item.company}</Text>
                     )}
                   </View>
                 </Pressable>
@@ -316,19 +316,19 @@ export default function BulkLinkScreen() {
         )}
 
         {/* Bottom bar */}
-        <View className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white px-4 pb-6 pt-3">
+        <View className="absolute bottom-0 left-0 right-0 border-t border-stone-200 bg-white px-4 pb-6 pt-3">
           <Pressable
             onPress={() => setStep("configure")}
             disabled={selectedIds.size < 2}
             className={`items-center rounded-xl py-3.5 ${
               selectedIds.size >= 2
-                ? "bg-blue-600 active:bg-blue-700"
-                : "bg-gray-200"
+                ? "bg-indigo-600 active:bg-indigo-700"
+                : "bg-stone-200"
             }`}
           >
             <Text
               className={`text-base font-semibold ${
-                selectedIds.size >= 2 ? "text-white" : "text-gray-400"
+                selectedIds.size >= 2 ? "text-white" : "text-stone-400"
               }`}
             >
               {selectedIds.size >= 2
@@ -346,7 +346,7 @@ export default function BulkLinkScreen() {
   // ============================================================
   if (step === "configure") {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-stone-50">
         <FlatList
           data={[1]} // Single item to make it scrollable
           keyExtractor={() => "config"}
@@ -355,21 +355,21 @@ export default function BulkLinkScreen() {
             <View className="px-4 pt-4">
               {/* Selected contacts summary */}
               <View className="mb-6 rounded-xl bg-white p-4 shadow-sm">
-                <Text className="mb-2 text-sm font-semibold text-gray-700">
+                <Text className="mb-2 text-sm font-semibold text-stone-700">
                   {selectedIds.size} contacts selected
                 </Text>
                 <View className="flex-row flex-wrap gap-1.5">
                   {selectedContacts.slice(0, 10).map((c) => {
                     const name = [c.first_name, c.last_name].filter(Boolean).join(" ");
                     return (
-                      <View key={c.id} className="rounded-full bg-blue-50 px-2.5 py-1">
-                        <Text className="text-xs font-medium text-blue-700">{name}</Text>
+                      <View key={c.id} className="rounded-full bg-indigo-50 px-2.5 py-1">
+                        <Text className="text-xs font-medium text-indigo-700">{name}</Text>
                       </View>
                     );
                   })}
                   {selectedContacts.length > 10 && (
-                    <View className="rounded-full bg-gray-100 px-2.5 py-1">
-                      <Text className="text-xs text-gray-500">
+                    <View className="rounded-full bg-stone-100 px-2.5 py-1">
+                      <Text className="text-xs text-stone-500">
                         +{selectedContacts.length - 10} more
                       </Text>
                     </View>
@@ -378,14 +378,14 @@ export default function BulkLinkScreen() {
               </View>
 
               {/* Link mode */}
-              <Text className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
+              <Text className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-400">
                 Link Mode
               </Text>
               <View className="mb-6 overflow-hidden rounded-xl bg-white shadow-sm">
                 <Pressable
                   onPress={() => { setLinkMode("all_to_all"); setAnchorId(null); }}
-                  className={`flex-row items-center border-b border-gray-100 px-4 py-3.5 ${
-                    linkMode === "all_to_all" ? "bg-blue-50" : "active:bg-gray-50"
+                  className={`flex-row items-center border-b border-stone-100 px-4 py-3.5 ${
+                    linkMode === "all_to_all" ? "bg-indigo-50" : "active:bg-stone-50"
                   }`}
                 >
                   <Ionicons
@@ -394,10 +394,10 @@ export default function BulkLinkScreen() {
                     color={linkMode === "all_to_all" ? Colors.brand[600] : Colors.gray[400]}
                   />
                   <View className="ml-3 flex-1">
-                    <Text className="text-sm font-medium text-gray-900">
+                    <Text className="text-sm font-medium text-stone-900">
                       Everyone to everyone
                     </Text>
-                    <Text className="text-xs text-gray-500">
+                    <Text className="text-xs text-stone-500">
                       All {selectedIds.size} contacts linked to each other ({(selectedIds.size * (selectedIds.size - 1)) / 2} relationships)
                     </Text>
                   </View>
@@ -405,7 +405,7 @@ export default function BulkLinkScreen() {
                 <Pressable
                   onPress={() => setLinkMode("anchor")}
                   className={`flex-row items-center px-4 py-3.5 ${
-                    linkMode === "anchor" ? "bg-blue-50" : "active:bg-gray-50"
+                    linkMode === "anchor" ? "bg-indigo-50" : "active:bg-stone-50"
                   }`}
                 >
                   <Ionicons
@@ -414,10 +414,10 @@ export default function BulkLinkScreen() {
                     color={linkMode === "anchor" ? Colors.brand[600] : Colors.gray[400]}
                   />
                   <View className="ml-3 flex-1">
-                    <Text className="text-sm font-medium text-gray-900">
+                    <Text className="text-sm font-medium text-stone-900">
                       All linked to one contact
                     </Text>
-                    <Text className="text-xs text-gray-500">
+                    <Text className="text-xs text-stone-500">
                       Pick an anchor contact — everyone else links to them ({selectedIds.size - 1} relationships)
                     </Text>
                   </View>
@@ -427,7 +427,7 @@ export default function BulkLinkScreen() {
               {/* Anchor contact picker */}
               {linkMode === "anchor" && (
                 <>
-                  <Text className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  <Text className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-400">
                     Anchor Contact
                   </Text>
                   <View className="mb-6 overflow-hidden rounded-xl bg-white shadow-sm">
@@ -441,8 +441,8 @@ export default function BulkLinkScreen() {
                         <Pressable
                           key={c.id}
                           onPress={() => setAnchorId(c.id)}
-                          className={`flex-row items-center border-b border-gray-100 px-4 py-2.5 ${
-                            isAnchor ? "bg-blue-50" : "active:bg-gray-50"
+                          className={`flex-row items-center border-b border-stone-100 px-4 py-2.5 ${
+                            isAnchor ? "bg-indigo-50" : "active:bg-stone-50"
                           }`}
                         >
                           <Ionicons
@@ -456,10 +456,10 @@ export default function BulkLinkScreen() {
                           >
                             <Text className="text-xs font-bold text-white">{initials}</Text>
                           </View>
-                          <Text className="ml-2 text-sm text-gray-900">{name}</Text>
+                          <Text className="ml-2 text-sm text-stone-900">{name}</Text>
                           {isAnchor && (
-                            <View className="ml-auto rounded-full bg-blue-100 px-2 py-0.5">
-                              <Text className="text-xs font-medium text-blue-700">Anchor</Text>
+                            <View className="ml-auto rounded-full bg-indigo-100 px-2 py-0.5">
+                              <Text className="text-xs font-medium text-indigo-700">Anchor</Text>
                             </View>
                           )}
                         </Pressable>
@@ -470,13 +470,13 @@ export default function BulkLinkScreen() {
               )}
 
               {/* Relationship type picker */}
-              <Text className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
+              <Text className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-400">
                 Relationship Type
               </Text>
               <View className="mb-6 overflow-hidden rounded-xl bg-white shadow-sm">
                 {Object.entries(groupedTypes).map(([category, catTypes]) => (
                   <View key={category}>
-                    <View className="bg-gray-50 px-4 py-1.5">
+                    <View className="bg-stone-50 px-4 py-1.5">
                       <Text
                         className="text-xs font-semibold capitalize"
                         style={{ color: CATEGORY_COLORS[category] ?? "#6b7280" }}
@@ -490,8 +490,8 @@ export default function BulkLinkScreen() {
                         <Pressable
                           key={type.id}
                           onPress={() => setSelectedTypeId(type.id)}
-                          className={`flex-row items-center border-b border-gray-50 px-4 py-3 ${
-                            isSelected ? "bg-blue-50" : "active:bg-gray-50"
+                          className={`flex-row items-center border-b border-stone-50 px-4 py-3 ${
+                            isSelected ? "bg-indigo-50" : "active:bg-stone-50"
                           }`}
                         >
                           <Ionicons
@@ -499,9 +499,9 @@ export default function BulkLinkScreen() {
                             size={18}
                             color={isSelected ? Colors.brand[600] : Colors.gray[400]}
                           />
-                          <Text className="ml-3 text-sm text-gray-900">{type.name}</Text>
+                          <Text className="ml-3 text-sm text-stone-900">{type.name}</Text>
                           {!type.is_symmetric && type.reverse_name && (
-                            <Text className="ml-1 text-xs text-gray-400">
+                            <Text className="ml-1 text-xs text-stone-400">
                               / {type.reverse_name}
                             </Text>
                           )}
@@ -516,28 +516,28 @@ export default function BulkLinkScreen() {
         />
 
         {/* Bottom bar */}
-        <View className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white px-4 pb-6 pt-3">
+        <View className="absolute bottom-0 left-0 right-0 border-t border-stone-200 bg-white px-4 pb-6 pt-3">
           <View className="flex-row gap-3">
             <Pressable
               onPress={() => setStep("select")}
-              className="flex-1 items-center rounded-xl border border-gray-200 py-3.5 active:bg-gray-50"
+              className="flex-1 items-center rounded-xl border border-stone-200 py-3.5 active:bg-stone-50"
             >
-              <Text className="text-sm font-semibold text-gray-600">Back</Text>
+              <Text className="text-sm font-semibold text-stone-600">Back</Text>
             </Pressable>
             <Pressable
               onPress={() => setStep("review")}
               disabled={!selectedTypeId || (linkMode === "anchor" && !anchorId)}
               className={`flex-1 items-center rounded-xl py-3.5 ${
                 selectedTypeId && (linkMode !== "anchor" || anchorId)
-                  ? "bg-blue-600 active:bg-blue-700"
-                  : "bg-gray-200"
+                  ? "bg-indigo-600 active:bg-indigo-700"
+                  : "bg-stone-200"
               }`}
             >
               <Text
                 className={`text-sm font-semibold ${
                   selectedTypeId && (linkMode !== "anchor" || anchorId)
                     ? "text-white"
-                    : "text-gray-400"
+                    : "text-stone-400"
                 }`}
               >
                 Review
@@ -559,7 +559,7 @@ export default function BulkLinkScreen() {
       : "";
 
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-stone-50">
         <View className="flex-1 px-4 pt-6">
           {/* Summary card */}
           <View className="mb-6 rounded-xl bg-white p-5 shadow-sm">
@@ -568,25 +568,25 @@ export default function BulkLinkScreen() {
                 <Ionicons name="link" size={24} color="#0891b2" />
               </View>
               <View className="ml-4 flex-1">
-                <Text className="text-lg font-bold text-gray-900">
+                <Text className="text-lg font-bold text-stone-900">
                   {linkCount} relationship{linkCount === 1 ? "" : "s"}
                 </Text>
-                <Text className="text-sm text-gray-500">
+                <Text className="text-sm text-stone-500">
                   will be created
                 </Text>
               </View>
             </View>
 
-            <View className="rounded-lg bg-gray-50 p-3">
+            <View className="rounded-lg bg-stone-50 p-3">
               <View className="mb-2 flex-row items-center">
                 <Ionicons name="people" size={16} color={Colors.gray[500]} />
-                <Text className="ml-2 text-sm text-gray-700">
+                <Text className="ml-2 text-sm text-stone-700">
                   {selectedIds.size} contacts
                 </Text>
               </View>
               <View className="mb-2 flex-row items-center">
                 <Ionicons name="heart" size={16} color={Colors.gray[500]} />
-                <Text className="ml-2 text-sm text-gray-700">
+                <Text className="ml-2 text-sm text-stone-700">
                   Type: {selectedType?.name ?? "Unknown"}
                   {selectedType && !selectedType.is_symmetric && selectedType.reverse_name
                     ? ` / ${selectedType.reverse_name}`
@@ -599,7 +599,7 @@ export default function BulkLinkScreen() {
                   size={16}
                   color={Colors.gray[500]}
                 />
-                <Text className="ml-2 text-sm text-gray-700">
+                <Text className="ml-2 text-sm text-stone-700">
                   {linkMode === "all_to_all"
                     ? "Everyone linked to each other"
                     : `Everyone linked to ${anchorName}`}
@@ -609,7 +609,7 @@ export default function BulkLinkScreen() {
           </View>
 
           {/* Contact list preview */}
-          <Text className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
+          <Text className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-400">
             Contacts
           </Text>
           <View className="overflow-hidden rounded-xl bg-white shadow-sm">
@@ -620,17 +620,17 @@ export default function BulkLinkScreen() {
               const isAnchor = linkMode === "anchor" && c.id === anchorId;
 
               return (
-                <View key={c.id} className="flex-row items-center border-b border-gray-100 px-4 py-2.5">
+                <View key={c.id} className="flex-row items-center border-b border-stone-100 px-4 py-2.5">
                   <View
                     className="h-8 w-8 items-center justify-center rounded-full"
                     style={{ backgroundColor: avatarBg }}
                   >
                     <Text className="text-xs font-bold text-white">{initials}</Text>
                   </View>
-                  <Text className="ml-3 flex-1 text-sm text-gray-900">{name}</Text>
+                  <Text className="ml-3 flex-1 text-sm text-stone-900">{name}</Text>
                   {isAnchor && (
-                    <View className="rounded-full bg-blue-100 px-2 py-0.5">
-                      <Text className="text-xs font-medium text-blue-700">Anchor</Text>
+                    <View className="rounded-full bg-indigo-100 px-2 py-0.5">
+                      <Text className="text-xs font-medium text-indigo-700">Anchor</Text>
                     </View>
                   )}
                 </View>
@@ -638,7 +638,7 @@ export default function BulkLinkScreen() {
             })}
             {selectedContacts.length > 15 && (
               <View className="px-4 py-2.5">
-                <Text className="text-xs text-gray-400">
+                <Text className="text-xs text-stone-400">
                   +{selectedContacts.length - 15} more
                 </Text>
               </View>
@@ -647,14 +647,14 @@ export default function BulkLinkScreen() {
         </View>
 
         {/* Bottom bar */}
-        <View className="border-t border-gray-200 bg-white px-4 pb-6 pt-3">
+        <View className="border-t border-stone-200 bg-white px-4 pb-6 pt-3">
           <View className="flex-row gap-3">
             <Pressable
               onPress={() => setStep("configure")}
               disabled={isLinking}
-              className="flex-1 items-center rounded-xl border border-gray-200 py-3.5 active:bg-gray-50"
+              className="flex-1 items-center rounded-xl border border-stone-200 py-3.5 active:bg-stone-50"
             >
-              <Text className="text-sm font-semibold text-gray-600">Back</Text>
+              <Text className="text-sm font-semibold text-stone-600">Back</Text>
             </Pressable>
             <Pressable
               onPress={handleExecuteLink}
@@ -684,15 +684,15 @@ export default function BulkLinkScreen() {
   // Step 4: Done
   // ============================================================
   return (
-    <View className="flex-1 items-center justify-center bg-gray-50 px-6">
+    <View className="flex-1 items-center justify-center bg-stone-50 px-6">
       <View className="w-full max-w-sm items-center">
         <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-green-100">
           <Ionicons name="checkmark-circle" size={40} color="#16a34a" />
         </View>
-        <Text className="text-xl font-bold text-gray-900">
+        <Text className="text-xl font-bold text-stone-900">
           Relationships Created
         </Text>
-        <Text className="mt-2 text-center text-sm text-gray-500">
+        <Text className="mt-2 text-center text-sm text-stone-500">
           {result.created} relationship{result.created === 1 ? "" : "s"} created
           {result.skipped > 0
             ? `, ${result.skipped} already existed`
@@ -707,7 +707,7 @@ export default function BulkLinkScreen() {
               setSelectedTypeId(null);
               setAnchorId(null);
             }}
-            className="items-center rounded-xl bg-blue-600 py-3.5 active:bg-blue-700"
+            className="items-center rounded-xl bg-indigo-600 py-3.5 active:bg-indigo-700"
           >
             <Text className="text-sm font-semibold text-white">
               Link More Contacts
@@ -715,9 +715,9 @@ export default function BulkLinkScreen() {
           </Pressable>
           <Pressable
             onPress={() => router.back()}
-            className="items-center rounded-xl border border-gray-200 py-3.5 active:bg-gray-50"
+            className="items-center rounded-xl border border-stone-200 py-3.5 active:bg-stone-50"
           >
-            <Text className="text-sm font-semibold text-gray-600">Done</Text>
+            <Text className="text-sm font-semibold text-stone-600">Done</Text>
           </Pressable>
         </View>
       </View>

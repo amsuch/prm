@@ -73,15 +73,15 @@ export function ContactHeader({ contact }: ContactHeaderProps) {
       </View>
 
       {/* Name */}
-      <Text className="text-xl font-bold text-gray-900">{fullName}</Text>
+      <Text className="text-xl font-bold text-stone-900">{fullName}</Text>
 
       {/* Subtitle */}
       {subtitle ? (
-        <Text className="mt-1 text-sm text-gray-500">{subtitle}</Text>
+        <Text className="mt-1 text-sm text-stone-500">{subtitle}</Text>
       ) : null}
 
       {contact.department ? (
-        <Text className="mt-0.5 text-xs text-gray-400">{contact.department}</Text>
+        <Text className="mt-0.5 text-xs text-stone-400">{contact.department}</Text>
       ) : null}
 
       {/* Quick Action Icons */}
@@ -96,10 +96,10 @@ export function ContactHeader({ contact }: ContactHeaderProps) {
 
         <Pressable
           onPress={handleEmail}
-          className="items-center rounded-xl bg-blue-50 px-4 py-2 active:bg-blue-100"
+          className="items-center rounded-xl bg-indigo-50 px-4 py-2 active:bg-indigo-100"
         >
           <Ionicons name="mail" size={20} color={Colors.brand[600]} />
-          <Text className="mt-1 text-xs font-medium text-blue-700">Email</Text>
+          <Text className="mt-1 text-xs font-medium text-indigo-700">Email</Text>
         </Pressable>
 
         <Pressable

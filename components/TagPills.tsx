@@ -6,7 +6,7 @@ type TagPillsProps = {
 };
 
 const TAG_COLORS = [
-  { bg: "bg-blue-50", text: "text-blue-700" },
+  { bg: "bg-indigo-50", text: "text-indigo-700" },
   { bg: "bg-purple-50", text: "text-purple-700" },
   { bg: "bg-green-50", text: "text-green-700" },
   { bg: "bg-amber-50", text: "text-amber-700" },

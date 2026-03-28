@@ -43,15 +43,15 @@ export function EntityPersonCard({
   return (
     <View className="mb-2 flex-row items-center rounded-xl bg-white p-3 shadow-sm">
       {/* Avatar */}
-      <View className="h-10 w-10 items-center justify-center rounded-full bg-gray-200">
-        <Text className="text-sm font-bold text-gray-600">{initial}</Text>
+      <View className="h-10 w-10 items-center justify-center rounded-full bg-stone-200">
+        <Text className="text-sm font-bold text-stone-600">{initial}</Text>
       </View>
 
       {/* Info */}
       <View className="ml-3 flex-1">
-        <Text className="text-sm font-semibold text-gray-900">{fullName}</Text>
+        <Text className="text-sm font-semibold text-stone-900">{fullName}</Text>
         {person.role && (
-          <Text className="mt-0.5 text-xs text-gray-500">{person.role}</Text>
+          <Text className="mt-0.5 text-xs text-stone-500">{person.role}</Text>
         )}
       </View>
 
@@ -71,11 +71,11 @@ export function EntityPersonCard({
           <Pressable
             onPress={() => onPromote(person)}
             disabled={isPromoting}
-            className="flex-row items-center rounded-full bg-blue-50 px-3 py-1.5 active:bg-blue-100"
+            className="flex-row items-center rounded-full bg-indigo-50 px-3 py-1.5 active:bg-indigo-100"
             style={{ opacity: isPromoting ? 0.5 : 1 }}
           >
             <Ionicons name="arrow-up-circle" size={14} color={Colors.brand[600]} />
-            <Text className="ml-1 text-xs font-medium text-blue-700">
+            <Text className="ml-1 text-xs font-medium text-indigo-700">
               {isPromoting ? "Promoting..." : "Promote"}
             </Text>
           </Pressable>

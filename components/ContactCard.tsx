@@ -40,7 +40,7 @@ export function ContactCard({ contact }: ContactCardProps) {
   return (
     <Pressable
       onPress={() => router.push(`/contact/${contact.id}`)}
-      className="mx-4 mb-2 flex-row items-center rounded-xl bg-white p-3 shadow-sm active:bg-gray-50"
+      className="mx-4 mb-2 flex-row items-center rounded-xl bg-white p-3 shadow-sm active:bg-stone-50"
     >
       {/* Avatar */}
       <View
@@ -52,11 +52,11 @@ export function ContactCard({ contact }: ContactCardProps) {
 
       {/* Info */}
       <View className="ml-3 flex-1">
-        <Text className="text-base font-semibold text-gray-900" numberOfLines={1}>
+        <Text className="text-base font-semibold text-stone-900" numberOfLines={1}>
           {fullName}
         </Text>
         {subtitle ? (
-          <Text className="mt-0.5 text-sm text-gray-500" numberOfLines={1}>
+          <Text className="mt-0.5 text-sm text-stone-500" numberOfLines={1}>
             {subtitle}
           </Text>
         ) : null}
@@ -65,16 +65,16 @@ export function ContactCard({ contact }: ContactCardProps) {
             {tags.slice(0, 3).map((tag) => (
               <View
                 key={tag.id}
-                className="rounded-full bg-blue-50 px-2 py-0.5"
+                className="rounded-full bg-indigo-50 px-2 py-0.5"
               >
-                <Text className="text-xs font-medium text-blue-700">
+                <Text className="text-xs font-medium text-indigo-700">
                   {tag.name}
                 </Text>
               </View>
             ))}
             {tags.length > 3 && (
-              <View className="rounded-full bg-gray-100 px-2 py-0.5">
-                <Text className="text-xs text-gray-500">
+              <View className="rounded-full bg-stone-100 px-2 py-0.5">
+                <Text className="text-xs text-stone-500">
                   +{tags.length - 3}
                 </Text>
               </View>
@@ -85,7 +85,7 @@ export function ContactCard({ contact }: ContactCardProps) {
 
       {/* Right side: last contacted */}
       <View className="items-end ml-2">
-        <Text className="text-xs text-gray-400">
+        <Text className="text-xs text-stone-400">
           {formatRelativeTime(contact.last_contacted_at)}
         </Text>
         <Ionicons

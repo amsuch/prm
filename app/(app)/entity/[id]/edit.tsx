@@ -103,14 +103,14 @@ export default function EditEntityScreen() {
 
   if (entityLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-gray-50">
+      <View className="flex-1 items-center justify-center bg-stone-50">
         <ActivityIndicator size="large" color={Colors.brand[600]} />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-stone-50">
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 40 }}
@@ -125,9 +125,9 @@ export default function EditEntityScreen() {
 
           {/* Name */}
           <View className="mb-3">
-            <Text className="mb-1 text-sm font-medium text-gray-700">Name *</Text>
+            <Text className="mb-1 text-sm font-medium text-stone-700">Name *</Text>
             <TextInput
-              className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-base text-gray-900"
+              className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-base text-stone-900"
               placeholder="e.g. Joe's Diner, Planet Fitness"
               placeholderTextColor={Colors.gray[400]}
               value={name}
@@ -137,9 +137,9 @@ export default function EditEntityScreen() {
 
           {/* Category with autocomplete */}
           <View className="mb-3" style={{ zIndex: 10 }}>
-            <Text className="mb-1 text-sm font-medium text-gray-700">Category</Text>
+            <Text className="mb-1 text-sm font-medium text-stone-700">Category</Text>
             <TextInput
-              className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-base text-gray-900"
+              className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-base text-stone-900"
               placeholder="e.g. Restaurant, Gym, Company"
               placeholderTextColor={Colors.gray[400]}
               value={category}
@@ -153,7 +153,7 @@ export default function EditEntityScreen() {
               }}
             />
             {showCategorySuggestions && filteredCategories.length > 0 && (
-              <View className="absolute left-0 right-0 top-16 z-20 max-h-32 rounded-lg border border-gray-200 bg-white shadow-lg">
+              <View className="absolute left-0 right-0 top-16 z-20 max-h-32 rounded-lg border border-stone-200 bg-white shadow-lg">
                 <FlatList
                   data={filteredCategories}
                   keyExtractor={(item) => item}
@@ -164,9 +164,9 @@ export default function EditEntityScreen() {
                         setCategory(item);
                         setShowCategorySuggestions(false);
                       }}
-                      className="border-b border-gray-50 px-3 py-2 active:bg-gray-50"
+                      className="border-b border-stone-50 px-3 py-2 active:bg-stone-50"
                     >
-                      <Text className="text-sm text-gray-700">{item}</Text>
+                      <Text className="text-sm text-stone-700">{item}</Text>
                     </Pressable>
                   )}
                 />
@@ -176,9 +176,9 @@ export default function EditEntityScreen() {
 
           {/* Address */}
           <View className="mb-3">
-            <Text className="mb-1 text-sm font-medium text-gray-700">Address</Text>
+            <Text className="mb-1 text-sm font-medium text-stone-700">Address</Text>
             <TextInput
-              className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-base text-gray-900"
+              className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-base text-stone-900"
               placeholder="Street address"
               placeholderTextColor={Colors.gray[400]}
               value={address}
@@ -188,9 +188,9 @@ export default function EditEntityScreen() {
 
           {/* Phone */}
           <View className="mb-3">
-            <Text className="mb-1 text-sm font-medium text-gray-700">Phone</Text>
+            <Text className="mb-1 text-sm font-medium text-stone-700">Phone</Text>
             <TextInput
-              className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-base text-gray-900"
+              className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-base text-stone-900"
               placeholder="Phone number"
               placeholderTextColor={Colors.gray[400]}
               value={phone}
@@ -201,9 +201,9 @@ export default function EditEntityScreen() {
 
           {/* Website */}
           <View className="mb-3">
-            <Text className="mb-1 text-sm font-medium text-gray-700">Website</Text>
+            <Text className="mb-1 text-sm font-medium text-stone-700">Website</Text>
             <TextInput
-              className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-base text-gray-900"
+              className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-base text-stone-900"
               placeholder="https://example.com"
               placeholderTextColor={Colors.gray[400]}
               value={website}
@@ -215,9 +215,9 @@ export default function EditEntityScreen() {
 
           {/* Notes */}
           <View className="mb-3">
-            <Text className="mb-1 text-sm font-medium text-gray-700">Notes</Text>
+            <Text className="mb-1 text-sm font-medium text-stone-700">Notes</Text>
             <TextInput
-              className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-base text-gray-900"
+              className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-base text-stone-900"
               placeholder="Optional notes about this place"
               placeholderTextColor={Colors.gray[400]}
               value={notes}
@@ -234,7 +234,7 @@ export default function EditEntityScreen() {
           <Pressable
             onPress={handleSave}
             disabled={isSaving}
-            className="flex-row items-center justify-center rounded-xl bg-blue-600 py-3.5 active:bg-blue-700"
+            className="flex-row items-center justify-center rounded-xl bg-indigo-600 py-3.5 active:bg-indigo-700"
             style={{ opacity: isSaving ? 0.6 : 1 }}
           >
             {isSaving ? (

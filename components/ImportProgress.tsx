@@ -16,7 +16,7 @@ export function ImportProgress({ progress, label }: ImportProgressProps) {
   const isComplete = progress.current >= progress.total;
 
   return (
-    <View className="rounded-xl border border-gray-200 bg-white p-5">
+    <View className="rounded-xl border border-stone-200 bg-white p-5">
       {/* Header */}
       <View className="mb-4 flex-row items-center gap-3">
         {isComplete ? (
@@ -24,28 +24,28 @@ export function ImportProgress({ progress, label }: ImportProgressProps) {
             <Ionicons name="checkmark-circle" size={24} color="#10b981" />
           </View>
         ) : (
-          <View className="h-10 w-10 items-center justify-center rounded-full bg-blue-100">
+          <View className="h-10 w-10 items-center justify-center rounded-full bg-indigo-100">
             <Ionicons name="cloud-upload-outline" size={24} color="#2563eb" />
           </View>
         )}
         <View className="flex-1">
-          <Text className="text-base font-semibold text-gray-900">
+          <Text className="text-base font-semibold text-stone-900">
             {isComplete
               ? "Import Complete"
               : label ?? "Importing contacts..."}
           </Text>
-          <Text className="text-sm text-gray-500">
+          <Text className="text-sm text-stone-500">
             {progress.current} of {progress.total} processed
           </Text>
         </View>
-        <Text className="text-lg font-bold text-blue-600">{percentage}%</Text>
+        <Text className="text-lg font-bold text-indigo-600">{percentage}%</Text>
       </View>
 
       {/* Progress bar */}
-      <View className="mb-4 h-2.5 overflow-hidden rounded-full bg-gray-100">
+      <View className="mb-4 h-2.5 overflow-hidden rounded-full bg-stone-100">
         <View
           className={`h-full rounded-full ${
-            isComplete ? "bg-green-500" : "bg-blue-600"
+            isComplete ? "bg-green-500" : "bg-indigo-600"
           }`}
           style={{ width: `${percentage}%` }}
         />

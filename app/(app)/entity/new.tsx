@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState } from "react";
 import {
   View,
   Text,
@@ -6,19 +6,21 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
-  FlatList,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSession } from "@/lib/auth/ctx";
-import { supabase } from "@/lib/supabase";
 import { createEntity } from "@/lib/entities";
 import { Colors } from "@/constants/colors";
+import { useEntityCategories } from "@/hooks/useEntityCategories";
+import { parseGoogleMapsUrl, isGoogleMapsUrl } from "@/lib/googleMaps";
+import type { EntityCategory } from "@/hooks/useEntityCategories";
 
 export default function NewEntityScreen() {
   const router = useRouter();
   const { session } = useSession();
   const userId = session?.user?.id;
+  const { categories, isLoading: categoriesLoading } = useEntityCategories();
 
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
@@ -29,33 +31,53 @@ export default function NewEntityScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Category autocomplete
-  const [allCategories, setAllCategories] = useState<string[]>([]);
-  const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
+  // Google Maps link
+  const [mapsLink, setMapsLink] = useState("");
+  const [isParsingMap, setIsParsingMap] = useState(false);
+  const [mapsError, setMapsError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!userId) return;
-    supabase
-      .from("entities")
-      .select("category")
-      .eq("user_id", userId)
-      .not("category", "is", null)
-      .then(({ data }) => {
-        type CategoryRow = { category: string | null };
-        const rows = (data ?? []) as unknown as CategoryRow[];
-        const unique = [...new Set(rows.map((r) => r.category).filter(Boolean) as string[])];
-        unique.sort();
-        setAllCategories(unique);
-      });
-  }, [userId]);
+  // Category picker state
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [customCategory, setCustomCategory] = useState("");
 
-  const filteredCategories = useMemo(() => {
-    if (!category.trim()) return allCategories;
-    const query = category.toLowerCase();
-    return allCategories.filter(
-      (c) => c.toLowerCase().includes(query) && c.toLowerCase() !== query,
-    );
-  }, [category, allCategories]);
+  const selectedCategory = categories.find((c) => c.name === category);
+
+  const handleImportMaps = async () => {
+    if (!mapsLink.trim()) return;
+
+    setIsParsingMap(true);
+    setMapsError(null);
+
+    try {
+      const result = await parseGoogleMapsUrl(mapsLink.trim());
+      if (!result) {
+        setMapsError("Could not parse this Google Maps link");
+        return;
+      }
+
+      if (result.name && !name) setName(result.name);
+      if (result.address && !address) setAddress(result.address);
+      setMapsLink("");
+    } catch {
+      setMapsError("Failed to parse Google Maps link");
+    } finally {
+      setIsParsingMap(false);
+    }
+  };
+
+  const handleSelectCategory = (cat: EntityCategory) => {
+    setCategory(cat.name);
+    setShowCategoryPicker(false);
+    setCustomCategory("");
+  };
+
+  const handleCustomCategory = () => {
+    if (customCategory.trim()) {
+      setCategory(customCategory.trim());
+      setShowCategoryPicker(false);
+      setCustomCategory("");
+    }
+  };
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -84,12 +106,62 @@ export default function NewEntityScreen() {
   };
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-stone-50">
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
       >
+        {/* Google Maps Import */}
+        <View className="mx-4 mt-4 rounded-xl bg-white p-4 shadow-sm">
+          <View className="flex-row items-center mb-2">
+            <Ionicons name="map-outline" size={16} color={Colors.brand[600]} />
+            <Text className="ml-1.5 text-sm font-medium text-stone-700">
+              Paste Google Maps Link
+            </Text>
+          </View>
+          <View className="flex-row items-center gap-2">
+            <TextInput
+              className="flex-1 rounded-xl border border-stone-200 bg-stone-50 px-4 py-2.5 text-sm text-stone-900"
+              placeholder="https://maps.google.com/..."
+              placeholderTextColor={Colors.gray[400]}
+              value={mapsLink}
+              onChangeText={(text) => {
+                setMapsLink(text);
+                setMapsError(null);
+              }}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <Pressable
+              onPress={handleImportMaps}
+              disabled={isParsingMap || !mapsLink.trim() || !isGoogleMapsUrl(mapsLink)}
+              className={`rounded-xl px-4 py-2.5 ${
+                isParsingMap || !mapsLink.trim() || !isGoogleMapsUrl(mapsLink)
+                  ? "bg-stone-200"
+                  : "bg-indigo-600 active:bg-indigo-700"
+              }`}
+            >
+              {isParsingMap ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Text
+                  className={`text-sm font-medium ${
+                    !mapsLink.trim() || !isGoogleMapsUrl(mapsLink)
+                      ? "text-stone-400"
+                      : "text-white"
+                  }`}
+                >
+                  Import
+                </Text>
+              )}
+            </Pressable>
+          </View>
+          {mapsError && (
+            <Text className="mt-1.5 text-xs text-red-500">{mapsError}</Text>
+          )}
+        </View>
+
         <View className="mx-4 mt-4 rounded-xl bg-white p-4 shadow-sm">
           {error && (
             <View className="mb-3 rounded-lg bg-red-50 p-3">
@@ -99,9 +171,9 @@ export default function NewEntityScreen() {
 
           {/* Name */}
           <View className="mb-3">
-            <Text className="mb-1 text-sm font-medium text-gray-700">Name *</Text>
+            <Text className="mb-1 text-sm font-medium text-stone-700">Name *</Text>
             <TextInput
-              className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
+              className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-base text-stone-900"
               placeholder="e.g. Joe's Diner, Planet Fitness"
               placeholderTextColor={Colors.gray[400]}
               value={name}
@@ -110,51 +182,135 @@ export default function NewEntityScreen() {
             />
           </View>
 
-          {/* Category with autocomplete */}
+          {/* Category Picker */}
           <View className="mb-3" style={{ zIndex: 10 }}>
-            <Text className="mb-1 text-sm font-medium text-gray-700">Category</Text>
-            <TextInput
-              className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
-              placeholder="e.g. Restaurant, Gym, Company"
-              placeholderTextColor={Colors.gray[400]}
-              value={category}
-              onChangeText={(text) => {
-                setCategory(text);
-                setShowCategorySuggestions(true);
-              }}
-              onFocus={() => setShowCategorySuggestions(true)}
-              onBlur={() => {
-                // Delay to allow press event on suggestions
-                setTimeout(() => setShowCategorySuggestions(false), 200);
-              }}
-            />
-            {showCategorySuggestions && filteredCategories.length > 0 && (
-              <View className="absolute left-0 right-0 top-16 z-20 max-h-32 rounded-lg border border-gray-200 bg-white shadow-lg">
-                <FlatList
-                  data={filteredCategories}
-                  keyExtractor={(item) => item}
+            <Text className="mb-1 text-sm font-medium text-stone-700">Category</Text>
+
+            {/* Selected category display / trigger */}
+            <Pressable
+              onPress={() => setShowCategoryPicker(!showCategoryPicker)}
+              className="flex-row items-center justify-between rounded-xl border border-stone-200 bg-stone-50 px-4 py-3"
+            >
+              {category ? (
+                <View className="flex-row items-center">
+                  {selectedCategory && (
+                    <Ionicons
+                      name={selectedCategory.icon as keyof typeof Ionicons.glyphMap}
+                      size={16}
+                      color={selectedCategory.color}
+                    />
+                  )}
+                  <Text className={`text-base text-stone-900 ${selectedCategory ? "ml-2" : ""}`}>
+                    {category}
+                  </Text>
+                </View>
+              ) : (
+                <Text className="text-base" style={{ color: Colors.gray[400] }}>
+                  Select a category
+                </Text>
+              )}
+              <Ionicons
+                name={showCategoryPicker ? "chevron-up" : "chevron-down"}
+                size={16}
+                color={Colors.gray[400]}
+              />
+            </Pressable>
+
+            {/* Category dropdown */}
+            {showCategoryPicker && (
+              <View className="absolute left-0 right-0 top-16 z-20 rounded-xl border border-stone-200 bg-white shadow-lg">
+                <ScrollView
+                  style={{ maxHeight: 240 }}
                   keyboardShouldPersistTaps="handled"
-                  renderItem={({ item }) => (
+                  nestedScrollEnabled
+                >
+                  {/* Clear selection */}
+                  {category !== "" && (
                     <Pressable
                       onPress={() => {
-                        setCategory(item);
-                        setShowCategorySuggestions(false);
+                        setCategory("");
+                        setShowCategoryPicker(false);
                       }}
-                      className="border-b border-gray-50 px-4 py-2 active:bg-gray-50"
+                      className="border-b border-stone-100 px-4 py-2.5 active:bg-stone-50"
                     >
-                      <Text className="text-sm text-gray-700">{item}</Text>
+                      <Text className="text-sm text-stone-400 italic">None</Text>
                     </Pressable>
                   )}
-                />
+
+                  {/* Category options */}
+                  {categoriesLoading ? (
+                    <View className="items-center py-4">
+                      <ActivityIndicator size="small" color={Colors.brand[600]} />
+                    </View>
+                  ) : (
+                    categories.map((cat) => (
+                      <Pressable
+                        key={cat.id}
+                        onPress={() => handleSelectCategory(cat)}
+                        className={`flex-row items-center border-b border-stone-50 px-4 py-2.5 active:bg-stone-50 ${
+                          category === cat.name ? "bg-indigo-50" : ""
+                        }`}
+                      >
+                        <Ionicons
+                          name={cat.icon as keyof typeof Ionicons.glyphMap}
+                          size={16}
+                          color={cat.color}
+                        />
+                        <Text
+                          className={`ml-2.5 text-sm font-medium ${
+                            category === cat.name ? "text-indigo-700" : "text-stone-700"
+                          }`}
+                        >
+                          {cat.name}
+                        </Text>
+                        <View
+                          className="ml-auto h-2.5 w-2.5 rounded-full"
+                          style={{ backgroundColor: cat.color }}
+                        />
+                      </Pressable>
+                    ))
+                  )}
+
+                  {/* Custom category input */}
+                  <View className="border-t border-stone-200 px-4 py-2.5">
+                    <Text className="mb-1 text-xs text-stone-400">Or type custom:</Text>
+                    <View className="flex-row items-center gap-2">
+                      <TextInput
+                        className="flex-1 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-900"
+                        placeholder="Custom category"
+                        placeholderTextColor={Colors.gray[400]}
+                        value={customCategory}
+                        onChangeText={setCustomCategory}
+                      />
+                      <Pressable
+                        onPress={handleCustomCategory}
+                        disabled={!customCategory.trim()}
+                        className={`rounded-lg px-3 py-2 ${
+                          !customCategory.trim()
+                            ? "bg-stone-200"
+                            : "bg-indigo-600 active:bg-indigo-700"
+                        }`}
+                      >
+                        <Text
+                          className={`text-xs font-medium ${
+                            !customCategory.trim() ? "text-stone-400" : "text-white"
+                          }`}
+                        >
+                          Use
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                </ScrollView>
               </View>
             )}
           </View>
 
           {/* Address */}
           <View className="mb-3">
-            <Text className="mb-1 text-sm font-medium text-gray-700">Address</Text>
+            <Text className="mb-1 text-sm font-medium text-stone-700">Address</Text>
             <TextInput
-              className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
+              className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-base text-stone-900"
               placeholder="Street address"
               placeholderTextColor={Colors.gray[400]}
               value={address}
@@ -164,9 +320,9 @@ export default function NewEntityScreen() {
 
           {/* Phone */}
           <View className="mb-3">
-            <Text className="mb-1 text-sm font-medium text-gray-700">Phone</Text>
+            <Text className="mb-1 text-sm font-medium text-stone-700">Phone</Text>
             <TextInput
-              className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
+              className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-base text-stone-900"
               placeholder="Phone number"
               placeholderTextColor={Colors.gray[400]}
               value={phone}
@@ -177,9 +333,9 @@ export default function NewEntityScreen() {
 
           {/* Website */}
           <View className="mb-3">
-            <Text className="mb-1 text-sm font-medium text-gray-700">Website</Text>
+            <Text className="mb-1 text-sm font-medium text-stone-700">Website</Text>
             <TextInput
-              className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
+              className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-base text-stone-900"
               placeholder="https://example.com"
               placeholderTextColor={Colors.gray[400]}
               value={website}
@@ -191,9 +347,9 @@ export default function NewEntityScreen() {
 
           {/* Notes */}
           <View className="mb-3">
-            <Text className="mb-1 text-sm font-medium text-gray-700">Notes</Text>
+            <Text className="mb-1 text-sm font-medium text-stone-700">Notes</Text>
             <TextInput
-              className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
+              className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-base text-stone-900"
               placeholder="Optional notes about this place"
               placeholderTextColor={Colors.gray[400]}
               value={notes}
@@ -210,7 +366,7 @@ export default function NewEntityScreen() {
           <Pressable
             onPress={handleSave}
             disabled={isSaving}
-            className="flex-row items-center justify-center rounded-xl bg-blue-600 py-3.5 active:bg-blue-700"
+            className="flex-row items-center justify-center rounded-xl bg-indigo-600 py-3.5 active:bg-indigo-700"
             style={{ opacity: isSaving ? 0.6 : 1 }}
           >
             {isSaving ? (

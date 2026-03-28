@@ -177,7 +177,7 @@ export function AddRelationshipModal({
       <Pressable
         onPress={() => setSelectedContact(item)}
         className={`flex-row items-center rounded-xl px-3 py-2.5 ${
-          isSelected ? "bg-blue-50" : "active:bg-gray-50"
+          isSelected ? "bg-indigo-50" : "active:bg-stone-50"
         }`}
       >
         <View
@@ -189,14 +189,14 @@ export function AddRelationshipModal({
         <View className="ml-3 flex-1">
           <Text
             className={`text-sm font-medium ${
-              isSelected ? "text-blue-700" : "text-gray-900"
+              isSelected ? "text-indigo-700" : "text-stone-900"
             }`}
             numberOfLines={1}
           >
             {fullName}
           </Text>
           {item.company ? (
-            <Text className="text-xs text-gray-500" numberOfLines={1}>
+            <Text className="text-xs text-stone-500" numberOfLines={1}>
               {item.company}
             </Text>
           ) : null}
@@ -217,27 +217,27 @@ export function AddRelationshipModal({
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1 bg-gray-50"
+        className="flex-1 bg-stone-50"
       >
         {/* Header */}
-        <View className="flex-row items-center justify-between border-b border-gray-200 bg-white px-4 pb-3 pt-4">
+        <View className="flex-row items-center justify-between border-b border-stone-200 bg-white px-4 pb-3 pt-4">
           <Pressable onPress={onClose} hitSlop={8}>
             <Ionicons name="close" size={24} color={Colors.gray[600]} />
           </Pressable>
-          <Text className="text-lg font-semibold text-gray-900">Add Relationship</Text>
+          <Text className="text-lg font-semibold text-stone-900">Add Relationship</Text>
           <View style={{ width: 24 }} />
         </View>
 
         <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
           {/* Step 1: Search and Select Contact */}
           <View className="mx-4 mt-4">
-            <Text className="mb-2 text-sm font-semibold text-gray-700">
+            <Text className="mb-2 text-sm font-semibold text-stone-700">
               Select Contact
             </Text>
             <View className="flex-row items-center rounded-xl bg-white px-3 py-2 shadow-sm">
               <Ionicons name="search" size={18} color={Colors.gray[400]} />
               <TextInput
-                className="ml-2 flex-1 text-base text-gray-900"
+                className="ml-2 flex-1 text-base text-stone-900"
                 placeholder="Search by name or company..."
                 placeholderTextColor={Colors.gray[400]}
                 value={searchQuery}
@@ -248,7 +248,7 @@ export function AddRelationshipModal({
               {searchQuery.length > 0 && (
                 <Pressable
                   onPress={() => setSearchQuery("")}
-                  className="ml-1 rounded-full bg-gray-100 p-1"
+                  className="ml-1 rounded-full bg-stone-100 p-1"
                   hitSlop={8}
                 >
                   <Ionicons name="close" size={14} color={Colors.gray[500]} />
@@ -259,9 +259,9 @@ export function AddRelationshipModal({
 
           {/* Selected contact indicator */}
           {selectedContact && (
-            <View className="mx-4 mt-2 flex-row items-center rounded-xl bg-blue-50 px-3 py-2">
+            <View className="mx-4 mt-2 flex-row items-center rounded-xl bg-indigo-50 px-3 py-2">
               <Ionicons name="person" size={16} color={Colors.brand[600]} />
-              <Text className="ml-2 flex-1 text-sm font-medium text-blue-700">
+              <Text className="ml-2 flex-1 text-sm font-medium text-indigo-700">
                 {[selectedContact.first_name, selectedContact.last_name]
                   .filter(Boolean)
                   .join(" ")}
@@ -281,7 +281,7 @@ export function AddRelationshipModal({
                 </View>
               ) : searchResults.length === 0 ? (
                 <View className="items-center py-6">
-                  <Text className="text-sm text-gray-400">
+                  <Text className="text-sm text-stone-400">
                     {searchQuery ? "No contacts found" : "Type to search contacts"}
                   </Text>
                 </View>
@@ -294,7 +294,7 @@ export function AddRelationshipModal({
                   nestedScrollEnabled={true}
                   style={{ maxHeight: 192 }}
                   ItemSeparatorComponent={() => (
-                    <View className="mx-3 h-px bg-gray-100" />
+                    <View className="mx-3 h-px bg-stone-100" />
                   )}
                 />
               )}
@@ -303,7 +303,7 @@ export function AddRelationshipModal({
 
           {/* Step 2: Relationship Type */}
           <View className="mx-4 mt-5">
-            <Text className="mb-2 text-sm font-semibold text-gray-700">
+            <Text className="mb-2 text-sm font-semibold text-stone-700">
               Relationship Type
             </Text>
             {isLoadingTypes ? (
@@ -317,7 +317,7 @@ export function AddRelationshipModal({
                   if (!types || types.length === 0) return null;
                   return (
                     <View key={category} className="mb-3 last:mb-0">
-                      <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                      <Text className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-stone-400">
                         {category}
                       </Text>
                       <View className="flex-row flex-wrap gap-2">
@@ -329,13 +329,13 @@ export function AddRelationshipModal({
                               onPress={() => setSelectedTypeId(type.id)}
                               className={`rounded-lg px-3 py-1.5 ${
                                 isSelected
-                                  ? "bg-blue-600"
-                                  : "bg-gray-100 active:bg-gray-200"
+                                  ? "bg-indigo-600"
+                                  : "bg-stone-100 active:bg-stone-200"
                               }`}
                             >
                               <Text
                                 className={`text-sm font-medium ${
-                                  isSelected ? "text-white" : "text-gray-700"
+                                  isSelected ? "text-white" : "text-stone-700"
                                 }`}
                               >
                                 {type.name}
@@ -366,11 +366,11 @@ export function AddRelationshipModal({
 
           {/* Step 3: Optional Notes */}
           <View className="mx-4 mt-5">
-            <Text className="mb-2 text-sm font-semibold text-gray-700">
+            <Text className="mb-2 text-sm font-semibold text-stone-700">
               Notes (optional)
             </Text>
             <TextInput
-              className="min-h-[80px] rounded-xl bg-white px-3 py-3 text-base text-gray-900 shadow-sm"
+              className="min-h-[80px] rounded-xl bg-white px-3 py-3 text-base text-stone-900 shadow-sm"
               placeholder="How do they know each other?"
               placeholderTextColor={Colors.gray[400]}
               value={notes}
@@ -385,14 +385,14 @@ export function AddRelationshipModal({
         </ScrollView>
 
         {/* Save Button */}
-        <View className="border-t border-gray-200 bg-white px-4 pb-8 pt-3">
+        <View className="border-t border-stone-200 bg-white px-4 pb-8 pt-3">
           <Pressable
             onPress={handleSave}
             disabled={!selectedContact || !selectedTypeId || isSaving}
             className={`items-center rounded-xl py-3.5 ${
               selectedContact && selectedTypeId && !isSaving
-                ? "bg-blue-600 active:bg-blue-700"
-                : "bg-gray-200"
+                ? "bg-indigo-600 active:bg-indigo-700"
+                : "bg-stone-200"
             }`}
           >
             {isSaving ? (
@@ -400,7 +400,7 @@ export function AddRelationshipModal({
             ) : (
               <Text
                 className={`text-base font-semibold ${
-                  selectedContact && selectedTypeId ? "text-white" : "text-gray-400"
+                  selectedContact && selectedTypeId ? "text-white" : "text-stone-400"
                 }`}
               >
                 Add Relationship

@@ -53,7 +53,7 @@ export function EntityCard({ entity }: EntityCardProps) {
   return (
     <Pressable
       onPress={() => router.push(`/entity/${entity.id}` as never)}
-      className="mx-4 mb-2 flex-row items-center rounded-xl bg-white p-3 shadow-sm active:bg-gray-50"
+      className="mx-4 mb-2 flex-row items-center rounded-xl bg-white p-3 shadow-sm active:bg-stone-50"
     >
       {/* Avatar */}
       <View
@@ -65,7 +65,7 @@ export function EntityCard({ entity }: EntityCardProps) {
 
       {/* Info */}
       <View className="ml-3 flex-1">
-        <Text className="text-base font-semibold text-gray-900" numberOfLines={1}>
+        <Text className="text-base font-semibold text-stone-900" numberOfLines={1}>
           {entity.name}
         </Text>
         {entity.category && (
@@ -81,18 +81,18 @@ export function EntityCard({ entity }: EntityCardProps) {
                 {entity.category}
               </Text>
             </View>
-            <Text className="ml-2 text-xs text-gray-400">
+            <Text className="ml-2 text-xs text-stone-400">
               {entity.people_count} {entity.people_count === 1 ? "person" : "people"}
             </Text>
           </View>
         )}
         {!entity.category && entity.people_count > 0 && (
-          <Text className="mt-0.5 text-xs text-gray-400">
+          <Text className="mt-0.5 text-xs text-stone-400">
             {entity.people_count} {entity.people_count === 1 ? "person" : "people"}
           </Text>
         )}
         {entity.address && (
-          <Text className="mt-0.5 text-sm text-gray-500" numberOfLines={1}>
+          <Text className="mt-0.5 text-sm text-stone-500" numberOfLines={1}>
             {entity.address}
           </Text>
         )}

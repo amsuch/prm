@@ -128,32 +128,32 @@ export default function SignIn() {
   // ============================================================
   if (step === "sent") {
     return (
-      <View className="flex-1 items-center justify-center bg-gray-50 px-6">
+      <View className="flex-1 items-center justify-center bg-stone-50 px-6">
         <View className="w-full max-w-sm items-center">
-          <View className="mb-5 h-16 w-16 items-center justify-center rounded-full bg-blue-100">
+          <View className="mb-5 h-16 w-16 items-center justify-center rounded-full bg-indigo-100">
             <Ionicons name="mail-outline" size={32} color={Colors.brand[600]} />
           </View>
 
-          <Text className="text-xl font-bold text-gray-900">
+          <Text className="text-xl font-bold text-stone-900">
             Check your email
           </Text>
 
-          <Text className="mt-3 text-center text-sm leading-5 text-gray-500">
+          <Text className="mt-3 text-center text-sm leading-5 text-stone-500">
             We sent a sign-in link to
           </Text>
-          <Text className="mt-1 text-sm font-semibold text-gray-800">
+          <Text className="mt-1 text-sm font-semibold text-stone-800">
             {email}
           </Text>
 
-          <Text className="mt-5 text-center text-xs leading-5 text-gray-400">
+          <Text className="mt-5 text-center text-xs leading-5 text-stone-400">
             Click the link in the email and you'll be signed in automatically.
             {"\n"}New here? An account will be created for you.
           </Text>
 
           {/* Waiting indicator */}
-          <View className="mt-6 flex-row items-center rounded-xl bg-blue-50 px-4 py-3">
+          <View className="mt-6 flex-row items-center rounded-xl bg-indigo-50 px-4 py-3">
             <ActivityIndicator size="small" color={Colors.brand[600]} />
-            <Text className="ml-3 text-sm text-blue-700">
+            <Text className="ml-3 text-sm text-indigo-700">
               Waiting for sign-in...
             </Text>
           </View>
@@ -166,12 +166,12 @@ export default function SignIn() {
 
           <View className="mt-8 items-center gap-4">
             <Pressable onPress={handleResend} disabled={loading}>
-              <Text className={`text-sm font-medium ${loading ? "text-gray-400" : "text-blue-600"}`}>
+              <Text className={`text-sm font-medium ${loading ? "text-stone-400" : "text-indigo-600"}`}>
                 Resend link
               </Text>
             </Pressable>
             <Pressable onPress={() => { setStep("email"); setError(""); }}>
-              <Text className="text-sm text-gray-500">
+              <Text className="text-sm text-stone-500">
                 Use a different email
               </Text>
             </Pressable>
@@ -187,30 +187,30 @@ export default function SignIn() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className="flex-1 bg-gray-50"
+      className="flex-1 bg-stone-50"
     >
       <View className="flex-1 items-center justify-center px-6">
         <View className="w-full max-w-sm">
           {/* Logo */}
           <View className="mb-8 items-center">
-            <View className="mb-3 h-14 w-14 items-center justify-center rounded-2xl bg-blue-600">
+            <View className="mb-3 h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600">
               <Text className="text-xl font-bold text-white">P</Text>
             </View>
-            <Text className="text-2xl font-bold text-gray-900">
+            <Text className="text-2xl font-bold text-stone-900">
               Personal RM
             </Text>
-            <Text className="mt-1 text-sm text-gray-500">
+            <Text className="mt-1 text-sm text-stone-500">
               Sign in or create an account
             </Text>
           </View>
 
           {/* Form */}
           <View className="rounded-2xl bg-white p-5 shadow-sm">
-            <Text className="mb-1.5 text-xs font-medium text-gray-500">
+            <Text className="mb-1.5 text-xs font-medium text-stone-500">
               Email
             </Text>
             <TextInput
-              className="mb-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-900"
+              className="mb-4 rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-base text-stone-900"
               placeholder="you@example.com"
               placeholderTextColor={Colors.gray[400]}
               value={email}
@@ -234,7 +234,7 @@ export default function SignIn() {
               onPress={handleSendLink}
               disabled={loading}
               className={`items-center rounded-xl py-3.5 ${
-                loading ? "bg-blue-400" : "bg-blue-600 active:bg-blue-700"
+                loading ? "bg-indigo-400" : "bg-indigo-600 active:bg-indigo-700"
               }`}
             >
               {loading ? (
@@ -246,24 +246,24 @@ export default function SignIn() {
               )}
             </Pressable>
 
-            <Text className="mt-3 text-center text-xs text-gray-400">
+            <Text className="mt-3 text-center text-xs text-stone-400">
               No password needed. We'll email you a sign-in link.
             </Text>
 
             {/* Divider */}
             <View className="my-5 flex-row items-center">
-              <View className="h-px flex-1 bg-gray-200" />
-              <Text className="mx-3 text-xs text-gray-400">OR</Text>
-              <View className="h-px flex-1 bg-gray-200" />
+              <View className="h-px flex-1 bg-stone-200" />
+              <Text className="mx-3 text-xs text-stone-400">OR</Text>
+              <View className="h-px flex-1 bg-stone-200" />
             </View>
 
             {/* Google */}
             <Pressable
               onPress={handleGoogleSignIn}
-              className="flex-row items-center justify-center rounded-xl border border-gray-200 bg-white py-3.5 active:bg-gray-50"
+              className="flex-row items-center justify-center rounded-xl border border-stone-200 bg-white py-3.5 active:bg-stone-50"
             >
               <Ionicons name="logo-google" size={20} color="#4285F4" />
-              <Text className="ml-2 text-base font-medium text-gray-700">
+              <Text className="ml-2 text-base font-medium text-stone-700">
                 Continue with Google
               </Text>
             </Pressable>
@@ -287,10 +287,10 @@ export default function SignIn() {
                     setLoading(false);
                   }
                 }}
-                className="mt-3 flex-row items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 py-2.5 active:bg-gray-100"
+                className="mt-3 flex-row items-center justify-center rounded-xl border border-dashed border-stone-300 bg-stone-50 py-2.5 active:bg-stone-100"
               >
                 <Ionicons name="flash-outline" size={16} color={Colors.gray[500]} />
-                <Text className="ml-1.5 text-sm font-medium text-gray-500">
+                <Text className="ml-1.5 text-sm font-medium text-stone-500">
                   Dev Quick Sign In
                 </Text>
               </Pressable>

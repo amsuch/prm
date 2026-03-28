@@ -23,7 +23,7 @@ function InteractionItem({ interaction }: { interaction: Tables<"interactions"> 
   return (
     <Pressable
       onPress={() => hasBody && setIsExpanded(!isExpanded)}
-      className="flex-row rounded-xl bg-white px-3 py-2.5 active:bg-gray-50"
+      className="flex-row rounded-xl bg-white px-3 py-2.5 active:bg-stone-50"
     >
       {/* Type Icon */}
       <View
@@ -41,37 +41,37 @@ function InteractionItem({ interaction }: { interaction: Tables<"interactions"> 
       <View className="ml-3 flex-1">
         <View className="flex-row items-center justify-between">
           <View className="flex-1 flex-row items-center">
-            <Text className="text-sm font-semibold text-gray-900">
+            <Text className="text-sm font-semibold text-stone-900">
               {interaction.title || config.label}
             </Text>
             {interaction.direction && (
-              <View className="ml-1.5 rounded-md bg-gray-100 px-1.5 py-0.5">
-                <Text className="text-xs text-gray-500">
+              <View className="ml-1.5 rounded-md bg-stone-100 px-1.5 py-0.5">
+                <Text className="text-xs text-stone-500">
                   {interaction.direction === "inbound" ? "In" : "Out"}
                 </Text>
               </View>
             )}
           </View>
-          <Text className="ml-2 text-xs text-gray-400">
+          <Text className="ml-2 text-xs text-stone-400">
             {formatRelativeTime(interaction.occurred_at)}
           </Text>
         </View>
 
         {/* Body preview or expanded */}
         {hasBody && !isExpanded && (
-          <Text className="mt-0.5 text-xs text-gray-500" numberOfLines={1}>
+          <Text className="mt-0.5 text-xs text-stone-500" numberOfLines={1}>
             {truncate(interaction.body!, 80)}
           </Text>
         )}
         {hasBody && isExpanded && (
-          <Text className="mt-1 text-sm leading-5 text-gray-600">
+          <Text className="mt-1 text-sm leading-5 text-stone-600">
             {interaction.body}
           </Text>
         )}
 
         {/* Interaction type label when title is custom */}
         {interaction.title && (
-          <Text className="mt-0.5 text-xs text-gray-400">
+          <Text className="mt-0.5 text-xs text-stone-400">
             {config.label} {"\u00B7"} {formatDate(interaction.occurred_at)}
           </Text>
         )}
@@ -106,14 +106,14 @@ export function InteractionTimeline({
       <View className="mb-2 flex-row items-center justify-between">
         <View className="flex-row items-center">
           <Ionicons name="time-outline" size={18} color={Colors.gray[600]} />
-          <Text className="ml-2 text-base font-semibold text-gray-900">Activity</Text>
+          <Text className="ml-2 text-base font-semibold text-stone-900">Activity</Text>
         </View>
         <Pressable
           onPress={onLogPress}
-          className="flex-row items-center rounded-lg bg-blue-50 px-2.5 py-1 active:bg-blue-100"
+          className="flex-row items-center rounded-lg bg-indigo-50 px-2.5 py-1 active:bg-indigo-100"
         >
           <Ionicons name="add" size={16} color={Colors.brand[600]} />
-          <Text className="ml-0.5 text-xs font-semibold text-blue-700">Log</Text>
+          <Text className="ml-0.5 text-xs font-semibold text-indigo-700">Log</Text>
         </Pressable>
       </View>
 
@@ -130,9 +130,9 @@ export function InteractionTimeline({
           <Text className="text-sm text-red-500">{error}</Text>
           <Pressable
             onPress={onRefresh}
-            className="mt-2 rounded-lg bg-gray-100 px-3 py-1"
+            className="mt-2 rounded-lg bg-stone-100 px-3 py-1"
           >
-            <Text className="text-xs font-medium text-gray-600">Retry</Text>
+            <Text className="text-xs font-medium text-stone-600">Retry</Text>
           </Pressable>
         </View>
       )}
@@ -141,11 +141,11 @@ export function InteractionTimeline({
       {!isLoading && !error && !hasInteractions && (
         <Pressable
           onPress={onLogPress}
-          className="items-center rounded-xl bg-white py-6 shadow-sm active:bg-gray-50"
+          className="items-center rounded-xl bg-white py-6 shadow-sm active:bg-stone-50"
         >
           <Ionicons name="time-outline" size={28} color={Colors.gray[300]} />
-          <Text className="mt-2 text-sm text-gray-400">No interactions yet</Text>
-          <Text className="mt-1 text-xs text-blue-600">Tap to log your first one</Text>
+          <Text className="mt-2 text-sm text-stone-400">No interactions yet</Text>
+          <Text className="mt-1 text-xs text-indigo-600">Tap to log your first one</Text>
         </Pressable>
       )}
 
@@ -156,11 +156,11 @@ export function InteractionTimeline({
             <View key={group.title}>
               {/* Date Group Header */}
               <View className="mb-1.5 flex-row items-center">
-                <View className="h-px flex-1 bg-gray-200" />
-                <Text className="mx-3 text-xs font-semibold text-gray-400">
+                <View className="h-px flex-1 bg-stone-200" />
+                <Text className="mx-3 text-xs font-semibold text-stone-400">
                   {group.title}
                 </Text>
-                <View className="h-px flex-1 bg-gray-200" />
+                <View className="h-px flex-1 bg-stone-200" />
               </View>
 
               {/* Interactions in this group */}

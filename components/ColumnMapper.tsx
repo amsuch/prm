@@ -35,12 +35,12 @@ export function ColumnMapper({
   const mappedCount = Object.values(mapping).filter(Boolean).length;
 
   return (
-    <View className="rounded-xl border border-gray-200 bg-white">
-      <View className="border-b border-gray-200 px-4 py-3">
-        <Text className="text-sm font-semibold text-gray-900">
+    <View className="rounded-xl border border-stone-200 bg-white">
+      <View className="border-b border-stone-200 px-4 py-3">
+        <Text className="text-sm font-semibold text-stone-900">
           Column Mapping
         </Text>
-        <Text className="mt-1 text-xs text-gray-500">
+        <Text className="mt-1 text-xs text-stone-500">
           {mappedCount} of {TARGET_FIELDS.length} fields mapped
         </Text>
       </View>
@@ -52,16 +52,16 @@ export function ColumnMapper({
           const isMapped = currentMapping !== null;
 
           return (
-            <View key={key} className="border-b border-gray-100">
+            <View key={key} className="border-b border-stone-100">
               <Pressable
-                className="flex-row items-center justify-between px-4 py-3 active:bg-gray-50"
+                className="flex-row items-center justify-between px-4 py-3 active:bg-stone-50"
                 onPress={() =>
                   setExpandedField(isExpanded ? null : key)
                 }
               >
                 <View className="flex-1">
                   <View className="flex-row items-center gap-2">
-                    <Text className="text-sm font-medium text-gray-900">
+                    <Text className="text-sm font-medium text-stone-900">
                       {label}
                       {key === "first_name" && (
                         <Text className="text-red-500"> *</Text>
@@ -75,7 +75,7 @@ export function ColumnMapper({
                       </View>
                     )}
                   </View>
-                  <Text className="mt-0.5 text-xs text-gray-400">
+                  <Text className="mt-0.5 text-xs text-stone-400">
                     {description}
                   </Text>
                 </View>
@@ -83,7 +83,7 @@ export function ColumnMapper({
                 <View className="ml-3 min-w-24 items-end">
                   <Text
                     className={`text-sm ${
-                      isMapped ? "font-medium text-blue-600" : "text-gray-400"
+                      isMapped ? "font-medium text-indigo-600" : "text-stone-400"
                     }`}
                     numberOfLines={1}
                   >
@@ -93,12 +93,12 @@ export function ColumnMapper({
               </Pressable>
 
               {isExpanded && (
-                <View className="border-t border-gray-100 bg-gray-50 px-4 py-2">
+                <View className="border-t border-stone-100 bg-stone-50 px-4 py-2">
                   <Pressable
-                    className="rounded-lg px-3 py-2 active:bg-gray-200"
+                    className="rounded-lg px-3 py-2 active:bg-stone-200"
                     onPress={() => handleSelect(key, null)}
                   >
-                    <Text className="text-sm italic text-gray-400">
+                    <Text className="text-sm italic text-stone-400">
                       None (skip this field)
                     </Text>
                   </Pressable>
@@ -114,10 +114,10 @@ export function ColumnMapper({
                         key={header}
                         className={`rounded-lg px-3 py-2 ${
                           isSelected
-                            ? "bg-blue-50"
+                            ? "bg-indigo-50"
                             : isUsedElsewhere
                               ? "opacity-40"
-                              : "active:bg-gray-200"
+                              : "active:bg-stone-200"
                         }`}
                         onPress={() =>
                           !isUsedElsewhere && handleSelect(key, header)
@@ -127,8 +127,8 @@ export function ColumnMapper({
                         <Text
                           className={`text-sm ${
                             isSelected
-                              ? "font-semibold text-blue-600"
-                              : "text-gray-700"
+                              ? "font-semibold text-indigo-600"
+                              : "text-stone-700"
                           }`}
                         >
                           {header}

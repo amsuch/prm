@@ -46,16 +46,16 @@ export function DashboardStats({ stats, isLoading }: DashboardStatsProps) {
     return (
       <View className="flex-row gap-3">
         <View className="flex-1 rounded-xl bg-white p-4 shadow-sm">
-          <View className="h-8 w-16 rounded bg-gray-100" />
-          <View className="mt-2 h-3 w-20 rounded bg-gray-100" />
+          <View className="h-8 w-16 rounded bg-stone-100" />
+          <View className="mt-2 h-3 w-20 rounded bg-stone-100" />
         </View>
         <View className="flex-1 rounded-xl bg-white p-4 shadow-sm">
-          <View className="h-8 w-16 rounded bg-gray-100" />
-          <View className="mt-2 h-3 w-20 rounded bg-gray-100" />
+          <View className="h-8 w-16 rounded bg-stone-100" />
+          <View className="mt-2 h-3 w-20 rounded bg-stone-100" />
         </View>
         <View className="flex-1 rounded-xl bg-white p-4 shadow-sm">
-          <View className="h-8 w-16 rounded bg-gray-100" />
-          <View className="mt-2 h-3 w-20 rounded bg-gray-100" />
+          <View className="h-8 w-16 rounded bg-stone-100" />
+          <View className="mt-2 h-3 w-20 rounded bg-stone-100" />
         </View>
       </View>
     );
@@ -66,17 +66,17 @@ export function DashboardStats({ stats, isLoading }: DashboardStatsProps) {
       <StatCard
         value={stats.totalContacts}
         label="Total Contacts"
-        colorClass="text-blue-600"
-        textColor="text-gray-500"
+        colorClass="text-indigo-600"
+        textColor="text-stone-500"
         icon="people"
         iconColor="#2563eb"
-        bgTintClass="bg-blue-50"
+        bgTintClass="bg-indigo-50"
       />
       <StatCard
         value={stats.contactedThisWeek}
         label="This Week"
         colorClass="text-green-600"
-        textColor="text-gray-500"
+        textColor="text-stone-500"
         icon="chatbubble"
         iconColor="#16a34a"
         bgTintClass="bg-green-50"
@@ -85,7 +85,7 @@ export function DashboardStats({ stats, isLoading }: DashboardStatsProps) {
         value={stats.staleContacts}
         label="Stale"
         colorClass="text-amber-600"
-        textColor="text-gray-500"
+        textColor="text-stone-500"
         icon="alert-circle"
         iconColor="#d97706"
         bgTintClass="bg-amber-50"

@@ -28,7 +28,7 @@ export function CustomFieldInput({
       case "text":
         return (
           <TextInput
-            className="rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900"
+            className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900"
             placeholder={`Enter ${name.toLowerCase()}`}
             placeholderTextColor={Colors.gray[400]}
             value={typeof value === "string" ? value : ""}
@@ -39,7 +39,7 @@ export function CustomFieldInput({
       case "number":
         return (
           <TextInput
-            className="rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900"
+            className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900"
             placeholder={`Enter ${name.toLowerCase()}`}
             placeholderTextColor={Colors.gray[400]}
             value={value !== null && value !== undefined ? String(value) : ""}
@@ -54,7 +54,7 @@ export function CustomFieldInput({
       case "url":
         return (
           <TextInput
-            className="rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900"
+            className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900"
             placeholder="https://..."
             placeholderTextColor={Colors.gray[400]}
             value={typeof value === "string" ? value : ""}
@@ -67,7 +67,7 @@ export function CustomFieldInput({
       case "date":
         return (
           <TextInput
-            className="rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900"
+            className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900"
             placeholder="YYYY-MM-DD"
             placeholderTextColor={Colors.gray[400]}
             value={typeof value === "string" ? value : ""}
@@ -84,7 +84,7 @@ export function CustomFieldInput({
               trackColor={{ false: Colors.gray[200], true: Colors.brand[400] }}
               thumbColor={value ? Colors.brand[600] : Colors.gray[50]}
             />
-            <Text className="text-sm text-gray-600">
+            <Text className="text-sm text-stone-600">
               {value ? "Yes" : "No"}
             </Text>
           </View>
@@ -101,13 +101,13 @@ export function CustomFieldInput({
                   onPress={() => onChange(isSelected ? null : opt)}
                   className={`rounded-full px-3 py-1.5 ${
                     isSelected
-                      ? "bg-blue-600"
-                      : "bg-white border border-gray-200"
+                      ? "bg-indigo-600"
+                      : "bg-white border border-stone-200"
                   }`}
                 >
                   <Text
                     className={`text-sm ${
-                      isSelected ? "text-white font-medium" : "text-gray-600"
+                      isSelected ? "text-white font-medium" : "text-stone-600"
                     }`}
                   >
                     {opt}
@@ -136,8 +136,8 @@ export function CustomFieldInput({
                   }}
                   className={`flex-row items-center rounded-full px-3 py-1.5 ${
                     isSelected
-                      ? "bg-blue-600"
-                      : "bg-white border border-gray-200"
+                      ? "bg-indigo-600"
+                      : "bg-white border border-stone-200"
                   }`}
                 >
                   {isSelected && (
@@ -150,7 +150,7 @@ export function CustomFieldInput({
                   )}
                   <Text
                     className={`text-sm ${
-                      isSelected ? "text-white font-medium" : "text-gray-600"
+                      isSelected ? "text-white font-medium" : "text-stone-600"
                     }`}
                   >
                     {opt}
@@ -165,7 +165,7 @@ export function CustomFieldInput({
       default:
         return (
           <TextInput
-            className="rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900"
+            className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900"
             placeholder={`Enter ${name.toLowerCase()}`}
             placeholderTextColor={Colors.gray[400]}
             value={typeof value === "string" ? value : ""}
@@ -177,7 +177,7 @@ export function CustomFieldInput({
 
   return (
     <View className="mb-4">
-      <Text className="mb-1.5 text-sm font-medium text-gray-700">
+      <Text className="mb-1.5 text-sm font-medium text-stone-700">
         {name}
         {is_required && <Text className="text-red-500"> *</Text>}
       </Text>

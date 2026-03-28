@@ -130,23 +130,23 @@ export default function EntityDetailScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-gray-50">
+      <View className="flex-1 items-center justify-center bg-stone-50">
         <ActivityIndicator size="large" color={Colors.brand[600]} />
-        <Text className="mt-3 text-sm text-gray-400">Loading entity...</Text>
+        <Text className="mt-3 text-sm text-stone-400">Loading entity...</Text>
       </View>
     );
   }
 
   if (error || !entity) {
     return (
-      <View className="flex-1 items-center justify-center bg-gray-50 px-8">
+      <View className="flex-1 items-center justify-center bg-stone-50 px-8">
         <Ionicons name="alert-circle-outline" size={48} color={Colors.error} />
-        <Text className="mt-3 text-center text-base font-medium text-gray-700">
+        <Text className="mt-3 text-center text-base font-medium text-stone-700">
           {error ?? "Entity not found"}
         </Text>
         <Pressable
           onPress={() => router.back()}
-          className="mt-4 rounded-lg bg-blue-600 px-5 py-2 active:bg-blue-700"
+          className="mt-4 rounded-lg bg-indigo-600 px-5 py-2 active:bg-indigo-700"
         >
           <Text className="text-sm font-medium text-white">Go Back</Text>
         </Pressable>
@@ -157,7 +157,7 @@ export default function EntityDetailScreen() {
   const categoryColor = getCategoryColor(entity.category);
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-stone-50">
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 96 }}
@@ -166,7 +166,7 @@ export default function EntityDetailScreen() {
         <View className="mx-4 mt-4 rounded-xl bg-white p-4 shadow-sm">
           <View className="flex-row items-start justify-between">
             <View className="flex-1">
-              <Text className="text-xl font-bold text-gray-900">
+              <Text className="text-xl font-bold text-stone-900">
                 {entity.name}
               </Text>
               {entity.category && (
@@ -185,7 +185,7 @@ export default function EntityDetailScreen() {
                 </View>
               )}
             </View>
-            <View className="h-14 w-14 items-center justify-center rounded-full bg-blue-100">
+            <View className="h-14 w-14 items-center justify-center rounded-full bg-indigo-100">
               <Ionicons name="business" size={28} color={Colors.brand[600]} />
             </View>
           </View>
@@ -199,10 +199,10 @@ export default function EntityDetailScreen() {
                     `https://maps.google.com/?q=${encodeURIComponent(entity.address!)}`,
                   )
                 }
-                className="mb-2 flex-row items-center rounded-lg bg-gray-50 p-2.5 active:bg-gray-100"
+                className="mb-2 flex-row items-center rounded-lg bg-stone-50 p-2.5 active:bg-stone-100"
               >
                 <Ionicons name="location-outline" size={16} color={Colors.brand[600]} />
-                <Text className="ml-2 flex-1 text-sm text-gray-700" numberOfLines={2}>
+                <Text className="ml-2 flex-1 text-sm text-stone-700" numberOfLines={2}>
                   {entity.address}
                 </Text>
                 <Ionicons name="open-outline" size={14} color={Colors.gray[300]} />
@@ -212,10 +212,10 @@ export default function EntityDetailScreen() {
             {entity.phone && (
               <Pressable
                 onPress={() => Linking.openURL(`tel:${entity.phone}`)}
-                className="mb-2 flex-row items-center rounded-lg bg-gray-50 p-2.5 active:bg-gray-100"
+                className="mb-2 flex-row items-center rounded-lg bg-stone-50 p-2.5 active:bg-stone-100"
               >
                 <Ionicons name="call-outline" size={16} color="#16a34a" />
-                <Text className="ml-2 flex-1 text-sm text-gray-700">
+                <Text className="ml-2 flex-1 text-sm text-stone-700">
                   {entity.phone}
                 </Text>
                 <Ionicons name="open-outline" size={14} color={Colors.gray[300]} />
@@ -230,11 +230,11 @@ export default function EntityDetailScreen() {
                     : `https://${entity.website}`;
                   Linking.openURL(url);
                 }}
-                className="mb-2 flex-row items-center rounded-lg bg-gray-50 p-2.5 active:bg-gray-100"
+                className="mb-2 flex-row items-center rounded-lg bg-stone-50 p-2.5 active:bg-stone-100"
               >
                 <Ionicons name="globe-outline" size={16} color="#7c3aed" />
                 <Text
-                  className="ml-2 flex-1 text-sm text-blue-600"
+                  className="ml-2 flex-1 text-sm text-indigo-600"
                   numberOfLines={1}
                 >
                   {entity.website}
@@ -248,10 +248,10 @@ export default function EntityDetailScreen() {
         {/* Notes */}
         {entity.notes && (
           <View className="mx-4 mt-3 rounded-xl bg-white p-4 shadow-sm">
-            <Text className="mb-1 text-sm font-semibold uppercase tracking-wide text-gray-500">
+            <Text className="mb-1 text-sm font-semibold uppercase tracking-wide text-stone-500">
               Notes
             </Text>
-            <Text className="text-sm leading-5 text-gray-700">
+            <Text className="text-sm leading-5 text-stone-700">
               {entity.notes}
             </Text>
           </View>
@@ -259,12 +259,12 @@ export default function EntityDetailScreen() {
 
         {/* People Section */}
         <View className="mx-4 mt-4 mb-2 flex-row items-center justify-between">
-          <Text className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+          <Text className="text-sm font-semibold uppercase tracking-wide text-stone-500">
             People ({people.length})
           </Text>
           <Pressable
             onPress={() => setShowAddPerson(true)}
-            className="flex-row items-center rounded-full bg-blue-600 px-3 py-1.5 active:bg-blue-700"
+            className="flex-row items-center rounded-full bg-indigo-600 px-3 py-1.5 active:bg-indigo-700"
           >
             <Ionicons name="add" size={14} color="white" />
             <Text className="ml-1 text-xs font-medium text-white">
@@ -276,15 +276,15 @@ export default function EntityDetailScreen() {
         {people.length === 0 ? (
           <View className="mx-4 items-center rounded-xl bg-white p-6 shadow-sm">
             <Ionicons name="person-outline" size={32} color={Colors.gray[300]} />
-            <Text className="mt-2 text-sm text-gray-400">
+            <Text className="mt-2 text-sm text-stone-400">
               No people added yet
             </Text>
             <Pressable
               onPress={() => setShowAddPerson(true)}
-              className="mt-3 flex-row items-center rounded-lg bg-blue-50 px-4 py-2 active:bg-blue-100"
+              className="mt-3 flex-row items-center rounded-lg bg-indigo-50 px-4 py-2 active:bg-indigo-100"
             >
               <Ionicons name="add" size={16} color={Colors.brand[600]} />
-              <Text className="ml-1 text-sm font-medium text-blue-700">
+              <Text className="ml-1 text-sm font-medium text-indigo-700">
                 Add the first person
               </Text>
             </Pressable>
@@ -305,13 +305,13 @@ export default function EntityDetailScreen() {
       </ScrollView>
 
       {/* Bottom Action Bar */}
-      <View className="absolute bottom-0 left-0 right-0 flex-row border-t border-gray-100 bg-white px-4 pb-8 pt-3">
+      <View className="absolute bottom-0 left-0 right-0 flex-row border-t border-stone-100 bg-white px-4 pb-8 pt-3">
         <Pressable
           onPress={() => router.push(`/entity/${id}/edit` as never)}
-          className="mr-2 flex-1 flex-row items-center justify-center rounded-xl border border-gray-200 bg-white py-3 active:bg-gray-50"
+          className="mr-2 flex-1 flex-row items-center justify-center rounded-xl border border-stone-200 bg-white py-3 active:bg-stone-50"
         >
           <Ionicons name="create-outline" size={18} color={Colors.gray[700]} />
-          <Text className="ml-2 text-sm font-semibold text-gray-700">Edit</Text>
+          <Text className="ml-2 text-sm font-semibold text-stone-700">Edit</Text>
         </Pressable>
         <Pressable
           onPress={handleDeleteEntity}

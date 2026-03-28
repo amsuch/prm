@@ -644,6 +644,31 @@ export type Database = {
           },
         ];
       };
+      entity_categories: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          name: string;
+          icon: string;
+          color: string;
+          is_system: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          name: string;
+          icon?: string;
+          color?: string;
+          is_system?: boolean;
+        };
+        Update: {
+          name?: string;
+          icon?: string;
+          color?: string;
+        };
+        Relationships: [];
+      };
       entity_people: {
         Row: {
           id: string;

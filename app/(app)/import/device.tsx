@@ -39,7 +39,7 @@ export default function DeviceContactsScreen() {
   // Check if we're on web
   if (!isDeviceContactsAvailable()) {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-stone-50">
         <EmptyState
           icon="phone-portrait-outline"
           title="Mobile Only Feature"
@@ -166,10 +166,10 @@ export default function DeviceContactsScreen() {
   // Permission request screen
   if (step === "permission" && permissionStatus !== "granted") {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-stone-50">
         <View className="flex-1 items-center justify-center px-6">
           <View className="w-full max-w-sm items-center">
-            <View className="mb-6 h-24 w-24 items-center justify-center rounded-full bg-blue-100">
+            <View className="mb-6 h-24 w-24 items-center justify-center rounded-full bg-indigo-100">
               <Ionicons
                 name="people-circle-outline"
                 size={48}
@@ -177,11 +177,11 @@ export default function DeviceContactsScreen() {
               />
             </View>
 
-            <Text className="text-center text-xl font-bold text-gray-900">
+            <Text className="text-center text-xl font-bold text-stone-900">
               Import Device Contacts
             </Text>
 
-            <Text className="mt-2 text-center text-sm leading-5 text-gray-500">
+            <Text className="mt-2 text-center text-sm leading-5 text-stone-500">
               We need access to your contacts to import them into the app.
               You can select which contacts to import.
             </Text>
@@ -206,7 +206,7 @@ export default function DeviceContactsScreen() {
                 </View>
 
                 <Pressable
-                  className="mt-6 w-full flex-row items-center justify-center gap-2 rounded-xl bg-blue-600 py-4 active:bg-blue-700"
+                  className="mt-6 w-full flex-row items-center justify-center gap-2 rounded-xl bg-indigo-600 py-4 active:bg-indigo-700"
                   onPress={() => Linking.openSettings()}
                 >
                   <Ionicons name="settings-outline" size={20} color="white" />
@@ -216,18 +216,18 @@ export default function DeviceContactsScreen() {
                 </Pressable>
 
                 <Pressable
-                  className="mt-3 w-full flex-row items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white py-4 active:bg-gray-50"
+                  className="mt-3 w-full flex-row items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white py-4 active:bg-stone-50"
                   onPress={handleRequestPermission}
                 >
                   <Ionicons name="refresh-outline" size={20} color="#2563eb" />
-                  <Text className="text-base font-semibold text-blue-600">
+                  <Text className="text-base font-semibold text-indigo-600">
                     Try Again
                   </Text>
                 </Pressable>
               </>
             ) : (
               <>
-                <View className="mt-6 w-full rounded-xl border border-gray-200 bg-white p-4">
+                <View className="mt-6 w-full rounded-xl border border-stone-200 bg-white p-4">
                   <PermissionFeature
                     icon="shield-checkmark-outline"
                     title="Privacy First"
@@ -246,7 +246,7 @@ export default function DeviceContactsScreen() {
                 </View>
 
                 <Pressable
-                  className="mt-6 w-full flex-row items-center justify-center gap-2 rounded-xl bg-blue-600 py-4 active:bg-blue-700"
+                  className="mt-6 w-full flex-row items-center justify-center gap-2 rounded-xl bg-indigo-600 py-4 active:bg-indigo-700"
                   onPress={handleRequestPermission}
                 >
                   <Ionicons name="lock-open-outline" size={20} color="white" />
@@ -271,7 +271,7 @@ export default function DeviceContactsScreen() {
   // Loading contacts
   if (step === "loading") {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-stone-50">
         <LoadingSpinner message="Loading device contacts..." />
       </View>
     );
@@ -280,7 +280,7 @@ export default function DeviceContactsScreen() {
   // Select contacts
   if (step === "select") {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-stone-50">
         {error && (
           <View className="border-b border-red-200 bg-red-50 px-4 py-3">
             <Text className="text-sm text-red-700">{error}</Text>
@@ -296,12 +296,12 @@ export default function DeviceContactsScreen() {
         />
 
         {/* Import button */}
-        <View className="border-t border-gray-200 bg-white px-4 pb-8 pt-4">
+        <View className="border-t border-stone-200 bg-white px-4 pb-8 pt-4">
           <Pressable
             className={`flex-row items-center justify-center gap-2 rounded-xl py-4 ${
               selectedIds.size > 0
-                ? "bg-blue-600 active:bg-blue-700"
-                : "bg-gray-300"
+                ? "bg-indigo-600 active:bg-indigo-700"
+                : "bg-stone-300"
             }`}
             onPress={handleStartImport}
             disabled={selectedIds.size === 0}
@@ -319,7 +319,7 @@ export default function DeviceContactsScreen() {
 
   // Importing / Complete
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-stone-50">
       <View className="flex-1 p-4">
         <ImportProgress
           progress={progress}
@@ -329,7 +329,7 @@ export default function DeviceContactsScreen() {
         {step === "complete" && (
           <View className="mt-6 gap-3">
             <Pressable
-              className="flex-row items-center justify-center gap-2 rounded-xl bg-blue-600 py-4 active:bg-blue-700"
+              className="flex-row items-center justify-center gap-2 rounded-xl bg-indigo-600 py-4 active:bg-indigo-700"
               onPress={() => router.replace("/(app)/(tabs)/contacts")}
             >
               <Ionicons name="people-outline" size={20} color="white" />
@@ -339,11 +339,11 @@ export default function DeviceContactsScreen() {
             </Pressable>
 
             <Pressable
-              className="flex-row items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white py-4 active:bg-gray-50"
+              className="flex-row items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white py-4 active:bg-stone-50"
               onPress={handleReset}
             >
               <Ionicons name="refresh-outline" size={20} color="#2563eb" />
-              <Text className="text-base font-semibold text-blue-600">
+              <Text className="text-base font-semibold text-indigo-600">
                 Import More Contacts
               </Text>
             </Pressable>
@@ -367,12 +367,12 @@ function PermissionFeature({
 }) {
   return (
     <View className="mb-3 flex-row last:mb-0">
-      <View className="mr-3 h-8 w-8 items-center justify-center rounded-full bg-blue-50">
+      <View className="mr-3 h-8 w-8 items-center justify-center rounded-full bg-indigo-50">
         <Ionicons name={icon} size={18} color="#2563eb" />
       </View>
       <View className="flex-1">
-        <Text className="text-sm font-medium text-gray-900">{title}</Text>
-        <Text className="text-xs text-gray-500">{description}</Text>
+        <Text className="text-sm font-medium text-stone-900">{title}</Text>
+        <Text className="text-xs text-stone-500">{description}</Text>
       </View>
     </View>
   );

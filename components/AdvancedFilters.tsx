@@ -91,17 +91,17 @@ export function AdvancedFilters({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-stone-50">
         {/* Header */}
-        <View className="flex-row items-center justify-between border-b border-gray-200 bg-white px-4 pb-3 pt-4">
+        <View className="flex-row items-center justify-between border-b border-stone-200 bg-white px-4 pb-3 pt-4">
           <Pressable onPress={onClose} hitSlop={8}>
             <Ionicons name="close" size={24} color={Colors.gray[600]} />
           </Pressable>
-          <Text className="text-lg font-bold text-gray-900">
+          <Text className="text-lg font-bold text-stone-900">
             Filters
           </Text>
           <Pressable onPress={handleClear} hitSlop={8}>
-            <Text className="text-sm font-medium text-brand-600">
+            <Text className="text-sm font-medium text-indigo-600">
               Clear All
             </Text>
           </Pressable>
@@ -114,12 +114,12 @@ export function AdvancedFilters({
         >
           {/* Tags */}
           <View className="mt-4 px-4">
-            <Text className="mb-2 text-sm font-semibold uppercase tracking-wider text-gray-500">
+            <Text className="mb-2 text-sm font-semibold uppercase tracking-wider text-stone-500">
               Tags
             </Text>
             <View className="flex-row flex-wrap gap-2">
               {tags.length === 0 ? (
-                <Text className="text-sm text-gray-400">
+                <Text className="text-sm text-stone-400">
                   No tags created yet
                 </Text>
               ) : (
@@ -131,13 +131,13 @@ export function AdvancedFilters({
                       onPress={() => toggleTag(tag.id)}
                       className={`rounded-full border px-3 py-1.5 ${
                         isSelected
-                          ? "border-brand-500 bg-brand-50"
-                          : "border-gray-200 bg-white"
+                          ? "border-indigo-500 bg-indigo-50"
+                          : "border-stone-200 bg-white"
                       }`}
                     >
                       <Text
                         className={`text-sm font-medium ${
-                          isSelected ? "text-brand-700" : "text-gray-700"
+                          isSelected ? "text-indigo-700" : "text-stone-700"
                         }`}
                       >
                         {tag.name}
@@ -151,17 +151,17 @@ export function AdvancedFilters({
 
           {/* Company */}
           <View className="mt-6 px-4">
-            <Text className="mb-2 text-sm font-semibold uppercase tracking-wider text-gray-500">
+            <Text className="mb-2 text-sm font-semibold uppercase tracking-wider text-stone-500">
               Company
             </Text>
-            <View className="flex-row items-center rounded-lg border border-gray-200 bg-white px-3 py-2">
+            <View className="flex-row items-center rounded-lg border border-stone-200 bg-white px-3 py-2">
               <Ionicons
                 name="business-outline"
                 size={18}
                 color={Colors.gray[400]}
               />
               <TextInput
-                className="ml-2 flex-1 text-base text-gray-900"
+                className="ml-2 flex-1 text-base text-stone-900"
                 placeholder="Filter by company..."
                 placeholderTextColor={Colors.gray[400]}
                 value={localFilters.company}
@@ -190,7 +190,7 @@ export function AdvancedFilters({
 
           {/* Last Contacted */}
           <View className="mt-6 px-4">
-            <Text className="mb-2 text-sm font-semibold uppercase tracking-wider text-gray-500">
+            <Text className="mb-2 text-sm font-semibold uppercase tracking-wider text-stone-500">
               Last Contacted
             </Text>
             <View className="flex-row flex-wrap gap-2">
@@ -208,13 +208,13 @@ export function AdvancedFilters({
                     }
                     className={`rounded-full border px-3 py-1.5 ${
                       isSelected
-                        ? "border-brand-500 bg-brand-50"
-                        : "border-gray-200 bg-white"
+                        ? "border-indigo-500 bg-indigo-50"
+                        : "border-stone-200 bg-white"
                     }`}
                   >
                     <Text
                       className={`text-sm font-medium ${
-                        isSelected ? "text-brand-700" : "text-gray-700"
+                        isSelected ? "text-indigo-700" : "text-stone-700"
                       }`}
                     >
                       {option.label}
@@ -227,7 +227,7 @@ export function AdvancedFilters({
 
           {/* Source */}
           <View className="mt-6 px-4">
-            <Text className="mb-2 text-sm font-semibold uppercase tracking-wider text-gray-500">
+            <Text className="mb-2 text-sm font-semibold uppercase tracking-wider text-stone-500">
               Source
             </Text>
             <View className="flex-row flex-wrap gap-2">
@@ -244,13 +244,13 @@ export function AdvancedFilters({
                     }
                     className={`rounded-full border px-3 py-1.5 ${
                       isSelected
-                        ? "border-brand-500 bg-brand-50"
-                        : "border-gray-200 bg-white"
+                        ? "border-indigo-500 bg-indigo-50"
+                        : "border-stone-200 bg-white"
                     }`}
                   >
                     <Text
                       className={`text-sm font-medium ${
-                        isSelected ? "text-brand-700" : "text-gray-700"
+                        isSelected ? "text-indigo-700" : "text-stone-700"
                       }`}
                     >
                       {option.label}
@@ -263,7 +263,7 @@ export function AdvancedFilters({
 
           {/* Sort By */}
           <View className="mt-6 px-4">
-            <Text className="mb-2 text-sm font-semibold uppercase tracking-wider text-gray-500">
+            <Text className="mb-2 text-sm font-semibold uppercase tracking-wider text-stone-500">
               Sort By
             </Text>
             <View className="flex-row flex-wrap gap-2">
@@ -280,13 +280,13 @@ export function AdvancedFilters({
                     }
                     className={`rounded-full border px-3 py-1.5 ${
                       isSelected
-                        ? "border-brand-500 bg-brand-50"
-                        : "border-gray-200 bg-white"
+                        ? "border-indigo-500 bg-indigo-50"
+                        : "border-stone-200 bg-white"
                     }`}
                   >
                     <Text
                       className={`text-sm font-medium ${
-                        isSelected ? "text-brand-700" : "text-gray-700"
+                        isSelected ? "text-indigo-700" : "text-stone-700"
                       }`}
                     >
                       {option.label}
@@ -299,10 +299,10 @@ export function AdvancedFilters({
         </ScrollView>
 
         {/* Apply Button */}
-        <View className="border-t border-gray-200 bg-white px-4 pb-8 pt-3">
+        <View className="border-t border-stone-200 bg-white px-4 pb-8 pt-3">
           <Pressable
             onPress={handleApply}
-            className="items-center rounded-xl bg-brand-600 py-3.5 active:bg-brand-700"
+            className="items-center rounded-xl bg-indigo-600 py-3.5 active:bg-indigo-700"
           >
             <Text className="text-base font-semibold text-white">
               Apply Filters

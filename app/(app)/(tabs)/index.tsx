@@ -23,15 +23,15 @@ export default function HomeScreen() {
 
   return (
     <ScrollView
-      className="flex-1 bg-gray-50"
+      className="flex-1 bg-stone-50"
       refreshControl={
         <RefreshControl refreshing={false} onRefresh={refetch} tintColor={Colors.brand[600]} />
       }
     >
       <View className="px-4 pt-5 pb-24">
         {/* Greeting */}
-        <Text className="text-2xl font-bold text-gray-900">Hi, {name}</Text>
-        <Text className="mt-1 text-gray-500">
+        <Text className="text-2xl font-bold text-stone-900">Hi, {name}</Text>
+        <Text className="mt-1 text-stone-500">
           Your relationship dashboard
         </Text>
 
@@ -39,7 +39,7 @@ export default function HomeScreen() {
         <View className="mt-6 flex-row gap-3">
           <Pressable
             onPress={() => router.push("/(app)/contact/new")}
-            className="flex-1 items-center rounded-xl bg-blue-600 py-4 active:bg-blue-700"
+            className="flex-1 items-center rounded-xl bg-indigo-600 py-4 active:bg-indigo-700"
           >
             <Ionicons name="person-add-outline" size={22} color="white" />
             <Text className="mt-1 text-sm font-medium text-white">
@@ -48,26 +48,26 @@ export default function HomeScreen() {
           </Pressable>
           <Pressable
             onPress={() => router.push("/(app)/(tabs)/import")}
-            className="flex-1 items-center rounded-xl bg-white py-4 shadow-sm active:bg-gray-50"
+            className="flex-1 items-center rounded-xl bg-white py-4 shadow-sm active:bg-stone-50"
           >
             <Ionicons name="download-outline" size={22} color={Colors.brand[600]} />
-            <Text className="mt-1 text-sm font-medium text-gray-700">
+            <Text className="mt-1 text-sm font-medium text-stone-700">
               Import
             </Text>
           </Pressable>
           <Pressable
             onPress={() => router.push("/(app)/(tabs)/contacts")}
-            className="flex-1 items-center rounded-xl bg-white py-4 shadow-sm active:bg-gray-50"
+            className="flex-1 items-center rounded-xl bg-white py-4 shadow-sm active:bg-stone-50"
           >
             <Ionicons name="search-outline" size={22} color={Colors.brand[600]} />
-            <Text className="mt-1 text-sm font-medium text-gray-700">
+            <Text className="mt-1 text-sm font-medium text-stone-700">
               Search
             </Text>
           </Pressable>
         </View>
 
         {/* Stats */}
-        <Text className="mb-3 mt-8 text-lg font-semibold text-gray-900">
+        <Text className="mb-3 mt-8 text-lg font-semibold text-stone-900">
           Overview
         </Text>
         <DashboardStats stats={stats} isLoading={isLoading} />
@@ -88,7 +88,7 @@ export default function HomeScreen() {
         )}
 
         {/* Recent Activity */}
-        <Text className="mb-3 mt-8 text-lg font-semibold text-gray-900">
+        <Text className="mb-3 mt-8 text-lg font-semibold text-stone-900">
           Recent Activity
         </Text>
         <RecentActivity
@@ -99,7 +99,7 @@ export default function HomeScreen() {
         {/* Upcoming Birthdays */}
         {upcomingBirthdays.length > 0 && (
           <>
-            <Text className="mb-3 mt-8 text-lg font-semibold text-gray-900">
+            <Text className="mb-3 mt-8 text-lg font-semibold text-stone-900">
               Upcoming Birthdays
             </Text>
             <View className="overflow-hidden rounded-xl bg-white shadow-sm">
@@ -114,14 +114,14 @@ export default function HomeScreen() {
 
                 return (
                   <View key={birthday.id}>
-                    {index > 0 && <View className="ml-17 h-px bg-gray-100" />}
+                    {index > 0 && <View className="ml-17 h-px bg-stone-100" />}
                     <Pressable
                       onPress={() =>
                         router.push(
                           `/(app)/contact/${birthday.id}` as const,
                         )
                       }
-                      className="flex-row items-center px-4 py-3 active:bg-gray-50"
+                      className="flex-row items-center px-4 py-3 active:bg-stone-50"
                     >
                       <View className="h-10 w-10 items-center justify-center rounded-full bg-pink-100">
                         <Text className="text-sm font-semibold text-pink-700">
@@ -129,10 +129,10 @@ export default function HomeScreen() {
                         </Text>
                       </View>
                       <View className="ml-3 flex-1">
-                        <Text className="text-sm font-semibold text-gray-900">
+                        <Text className="text-sm font-semibold text-stone-900">
                           {fullName}
                         </Text>
-                        <Text className="mt-0.5 text-xs text-gray-500">
+                        <Text className="mt-0.5 text-xs text-stone-500">
                           {formatDate(birthday.birthday)}
                         </Text>
                       </View>

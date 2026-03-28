@@ -196,7 +196,7 @@ export default function CSVImportScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-stone-50">
         <LoadingSpinner message="Reading file..." />
       </View>
     );
@@ -204,16 +204,16 @@ export default function CSVImportScreen() {
 
   if (error && step === "pick") {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-stone-50">
         <ErrorFallback message={error} onRetry={handleReset} />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-stone-50">
       {/* Step indicator */}
-      <View className="border-b border-gray-200 bg-white px-4 py-3">
+      <View className="border-b border-stone-200 bg-white px-4 py-3">
         <StepIndicator
           currentStep={step}
           steps={[
@@ -236,23 +236,23 @@ export default function CSVImportScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* File info */}
-          <View className="mb-4 flex-row items-center rounded-xl border border-gray-200 bg-white px-4 py-3">
+          <View className="mb-4 flex-row items-center rounded-xl border border-stone-200 bg-white px-4 py-3">
             <View className="mr-3 h-10 w-10 items-center justify-center rounded-lg bg-green-100">
               <Ionicons name="document-text" size={22} color="#10b981" />
             </View>
             <View className="flex-1">
               <Text
-                className="text-sm font-medium text-gray-900"
+                className="text-sm font-medium text-stone-900"
                 numberOfLines={1}
               >
                 {fileName}
               </Text>
-              <Text className="text-xs text-gray-500">
+              <Text className="text-xs text-stone-500">
                 {parsedData.totalRows} rows, {parsedData.headers.length} columns
               </Text>
             </View>
             <Pressable
-              className="rounded-md p-2 active:bg-gray-100"
+              className="rounded-md p-2 active:bg-stone-100"
               onPress={handleReset}
             >
               <Ionicons name="close-circle-outline" size={22} color="#9ca3af" />
@@ -289,8 +289,8 @@ export default function CSVImportScreen() {
           <Pressable
             className={`flex-row items-center justify-center gap-2 rounded-xl py-4 ${
               mapping.first_name
-                ? "bg-blue-600 active:bg-blue-700"
-                : "bg-gray-300"
+                ? "bg-indigo-600 active:bg-indigo-700"
+                : "bg-stone-300"
             }`}
             onPress={handleStartImport}
             disabled={!mapping.first_name}
@@ -314,7 +314,7 @@ export default function CSVImportScreen() {
           {step === "complete" && (
             <View className="mt-6 gap-3">
               <Pressable
-                className="flex-row items-center justify-center gap-2 rounded-xl bg-blue-600 py-4 active:bg-blue-700"
+                className="flex-row items-center justify-center gap-2 rounded-xl bg-indigo-600 py-4 active:bg-indigo-700"
                 onPress={() => router.replace("/(app)/(tabs)/contacts")}
               >
                 <Ionicons name="people-outline" size={20} color="white" />
@@ -324,11 +324,11 @@ export default function CSVImportScreen() {
               </Pressable>
 
               <Pressable
-                className="flex-row items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white py-4 active:bg-gray-50"
+                className="flex-row items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white py-4 active:bg-stone-50"
                 onPress={handleReset}
               >
                 <Ionicons name="cloud-upload-outline" size={20} color="#2563eb" />
-                <Text className="text-base font-semibold text-blue-600">
+                <Text className="text-base font-semibold text-indigo-600">
                   Import Another File
                 </Text>
               </Pressable>
@@ -347,20 +347,20 @@ function PickFileStep({ onPickFile }: { onPickFile: () => void }) {
     <View className="flex-1 items-center justify-center px-6">
       <View className="w-full max-w-sm items-center">
         {/* Icon */}
-        <View className="mb-6 h-24 w-24 items-center justify-center rounded-full bg-blue-100">
+        <View className="mb-6 h-24 w-24 items-center justify-center rounded-full bg-indigo-100">
           <Ionicons name="document-text-outline" size={48} color="#2563eb" />
         </View>
 
-        <Text className="text-center text-xl font-bold text-gray-900">
+        <Text className="text-center text-xl font-bold text-stone-900">
           Import LinkedIn CSV
         </Text>
-        <Text className="mt-2 text-center text-sm leading-5 text-gray-500">
+        <Text className="mt-2 text-center text-sm leading-5 text-stone-500">
           Export your connections from LinkedIn, then upload the CSV file here.
           We will automatically detect and map the columns.
         </Text>
 
         {/* Steps */}
-        <View className="mt-6 w-full rounded-xl border border-gray-200 bg-white p-4">
+        <View className="mt-6 w-full rounded-xl border border-stone-200 bg-white p-4">
           <InstructionStep
             number={1}
             text='Go to LinkedIn > My Network > Connections > "Export connections"'
@@ -377,7 +377,7 @@ function PickFileStep({ onPickFile }: { onPickFile: () => void }) {
 
         {/* Pick button */}
         <Pressable
-          className="mt-6 w-full flex-row items-center justify-center gap-2 rounded-xl bg-blue-600 py-4 active:bg-blue-700"
+          className="mt-6 w-full flex-row items-center justify-center gap-2 rounded-xl bg-indigo-600 py-4 active:bg-indigo-700"
           onPress={onPickFile}
         >
           <Ionicons name="folder-open-outline" size={20} color="white" />
@@ -393,10 +393,10 @@ function PickFileStep({ onPickFile }: { onPickFile: () => void }) {
 function InstructionStep({ number, text }: { number: number; text: string }) {
   return (
     <View className="mb-3 flex-row last:mb-0">
-      <View className="mr-3 h-6 w-6 items-center justify-center rounded-full bg-blue-600">
+      <View className="mr-3 h-6 w-6 items-center justify-center rounded-full bg-indigo-600">
         <Text className="text-xs font-bold text-white">{number}</Text>
       </View>
-      <Text className="flex-1 text-sm leading-5 text-gray-600">{text}</Text>
+      <Text className="flex-1 text-sm leading-5 text-stone-600">{text}</Text>
     </View>
   );
 }
@@ -424,17 +424,17 @@ function StepIndicator({
               {idx > 0 && (
                 <View
                   className={`h-0.5 w-full flex-1 ${
-                    isComplete || isActive ? "bg-blue-600" : "bg-gray-200"
+                    isComplete || isActive ? "bg-indigo-600" : "bg-stone-200"
                   }`}
                 />
               )}
               <View
                 className={`h-6 w-6 items-center justify-center rounded-full ${
                   isComplete
-                    ? "bg-blue-600"
+                    ? "bg-indigo-600"
                     : isActive
-                      ? "border-2 border-blue-600 bg-white"
-                      : "border-2 border-gray-200 bg-white"
+                      ? "border-2 border-indigo-600 bg-white"
+                      : "border-2 border-stone-200 bg-white"
                 }`}
               >
                 {isComplete ? (
@@ -442,7 +442,7 @@ function StepIndicator({
                 ) : (
                   <Text
                     className={`text-xs font-bold ${
-                      isActive ? "text-blue-600" : "text-gray-400"
+                      isActive ? "text-indigo-600" : "text-stone-400"
                     }`}
                   >
                     {idx + 1}
@@ -452,14 +452,14 @@ function StepIndicator({
               {idx < steps.length - 1 && (
                 <View
                   className={`h-0.5 w-full flex-1 ${
-                    isComplete ? "bg-blue-600" : "bg-gray-200"
+                    isComplete ? "bg-indigo-600" : "bg-stone-200"
                   }`}
                 />
               )}
             </View>
             <Text
               className={`mt-1 text-center text-xs ${
-                isActive ? "font-semibold text-blue-600" : "text-gray-400"
+                isActive ? "font-semibold text-indigo-600" : "text-stone-400"
               }`}
               numberOfLines={1}
             >

@@ -64,17 +64,17 @@ export function ErrorFallback({
         <Ionicons name="alert-circle-outline" size={40} color="#ef4444" />
       </View>
 
-      <Text className="text-center text-lg font-semibold text-gray-900">
+      <Text className="text-center text-lg font-semibold text-stone-900">
         Something went wrong
       </Text>
 
-      <Text className="mt-2 text-center text-sm leading-5 text-gray-500">
+      <Text className="mt-2 text-center text-sm leading-5 text-stone-500">
         {message ?? error?.message ?? "An unexpected error occurred. Please try again."}
       </Text>
 
       {onRetry && (
         <Pressable
-          className="mt-6 flex-row items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 active:bg-blue-700"
+          className="mt-6 flex-row items-center gap-2 rounded-lg bg-indigo-600 px-6 py-3 active:bg-indigo-700"
           onPress={onRetry}
         >
           <Ionicons name="refresh-outline" size={18} color="white" />
