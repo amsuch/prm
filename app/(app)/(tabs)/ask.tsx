@@ -12,6 +12,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/colors";
 import { useSession } from "@/lib/auth/ctx";
+import { getLLMConfigFromSession } from "@/lib/llm";
+import {
+  runAgentLoop,
+  resumeAfterApproval,
+  type AgentEvent,
+  type ToolCall,
+  type ToolMessage,
+} from "@/lib/agentLoop";
 import { parseQuery, getQueryDescription, isActionIntent } from "@/lib/queryParser";
 import {
   executeQuery,
@@ -20,7 +28,6 @@ import {
   type AgentResponse,
   type PendingAction,
 } from "@/lib/agent";
-import { getLLMConfigFromSession } from "@/lib/llm";
 import { ChatBubble } from "@/components/ChatBubble";
 import { SuggestedQuestions } from "@/components/SuggestedQuestions";
 import { AdvancedFilters } from "@/components/AdvancedFilters";
@@ -31,12 +38,26 @@ import {
 
 type AgentMode = "hitl" | "auto";
 
+type ToolProgress = {
+  name: string;
+  status: "running" | "done" | "error";
+  arguments?: Record<string, unknown>;
+  result?: unknown;
+};
+
 type ChatMessage = {
   id: string;
   role: "user" | "agent";
   text: string;
   response?: AgentResponse;
   isLoading?: boolean;
+  toolProgress?: ToolProgress[];
+  pendingApproval?: {
+    toolCall: ToolCall;
+    toolName: string;
+    description: string;
+    preview: unknown;
+  };
 };
 
 let messageIdCounter = 0;
@@ -55,11 +76,232 @@ export default function AskScreen() {
   const [showFilters, setShowFilters] = useState(false);
   const [agentMode, setAgentMode] = useState<AgentMode>("hitl");
 
+  // Conversation history for the LLM agent (persisted across turns)
+  const conversationHistory = useRef<ToolMessage[]>([]);
+  // Pending approval state for resuming after HITL
+  const pendingApprovalRef = useRef<{
+    toolCall: ToolCall;
+    messages: ToolMessage[];
+  } | null>(null);
+
   const flatListRef = useRef<FlatList<ChatMessage>>(null);
   const inputRef = useRef<TextInput>(null);
 
   const { filters, search, clearFilters, activeFilterCount } = useSearch();
 
+  // -------------------------------------------------------------------
+  // Tool-calling agent flow (when LLM is configured)
+  // -------------------------------------------------------------------
+  const handleAgentSend = useCallback(
+    async (messageText: string, agentMsgId: string) => {
+      const llmConfig = getLLMConfigFromSession(session);
+      if (!llmConfig || !userId) return;
+
+      const autoApprove = agentMode === "auto";
+
+      const generator = runAgentLoop(
+        messageText,
+        llmConfig,
+        userId,
+        conversationHistory.current,
+        autoApprove,
+      );
+
+      const toolProgress: ToolProgress[] = [];
+
+      for await (const event of generator) {
+        switch (event.type) {
+          case "thinking":
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === agentMsgId
+                  ? { ...msg, text: event.text, isLoading: true }
+                  : msg,
+              ),
+            );
+            break;
+
+          case "tool_call":
+            toolProgress.push({
+              name: event.name,
+              status: "running",
+              arguments: event.arguments,
+            });
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === agentMsgId
+                  ? {
+                      ...msg,
+                      text: getToolLabel(event.name, event.arguments),
+                      isLoading: true,
+                      toolProgress: [...toolProgress],
+                    }
+                  : msg,
+              ),
+            );
+            break;
+
+          case "tool_result": {
+            const idx = toolProgress.findIndex(
+              (tp) => tp.name === event.name && tp.status === "running",
+            );
+            if (idx >= 0) {
+              toolProgress[idx] = {
+                ...toolProgress[idx],
+                status: "done",
+                result: event.result,
+              };
+            }
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === agentMsgId
+                  ? {
+                      ...msg,
+                      toolProgress: [...toolProgress],
+                    }
+                  : msg,
+              ),
+            );
+            break;
+          }
+
+          case "approval_needed":
+            pendingApprovalRef.current = {
+              toolCall: event.toolCall,
+              messages: [...conversationHistory.current],
+            };
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === agentMsgId
+                  ? {
+                      ...msg,
+                      text: event.description,
+                      isLoading: false,
+                      toolProgress: [...toolProgress],
+                      pendingApproval: {
+                        toolCall: event.toolCall,
+                        toolName: event.toolName,
+                        description: event.description,
+                        preview: event.preview,
+                      },
+                    }
+                  : msg,
+              ),
+            );
+            break;
+
+          case "text":
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === agentMsgId
+                  ? { ...msg, text: event.text, isLoading: false }
+                  : msg,
+              ),
+            );
+            break;
+
+          case "done":
+            // Add user message and assistant response to conversation history
+            conversationHistory.current.push({
+              role: "user",
+              content: messageText,
+            });
+            conversationHistory.current.push({
+              role: "assistant",
+              content: event.finalText,
+            });
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === agentMsgId
+                  ? {
+                      ...msg,
+                      text: event.finalText,
+                      isLoading: false,
+                      toolProgress: [...toolProgress],
+                    }
+                  : msg,
+              ),
+            );
+            break;
+
+          case "error":
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === agentMsgId
+                  ? {
+                      ...msg,
+                      text: event.text,
+                      isLoading: false,
+                      response: {
+                        type: "error" as const,
+                        message: event.text,
+                      },
+                    }
+                  : msg,
+              ),
+            );
+            break;
+        }
+      }
+    },
+    [session, userId, agentMode],
+  );
+
+  // -------------------------------------------------------------------
+  // Fallback flow (no LLM configured — regex parser + Supabase)
+  // -------------------------------------------------------------------
+  const handleFallbackSend = useCallback(
+    async (messageText: string, agentMsgId: string) => {
+      if (!userId) return;
+
+      const parsed = parseQuery(messageText);
+
+      try {
+        let response: AgentResponse;
+        const llmConfig = getLLMConfigFromSession(session);
+
+        if (agentMode === "hitl" && isActionIntent(parsed)) {
+          response = await previewAction(parsed, userId);
+        } else {
+          response = await executeQuery(parsed, userId, llmConfig);
+        }
+
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === agentMsgId
+              ? {
+                  ...msg,
+                  text: response.message,
+                  response,
+                  isLoading: false,
+                }
+              : msg,
+          ),
+        );
+      } catch {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === agentMsgId
+              ? {
+                  ...msg,
+                  text: "Something went wrong. Please try again.",
+                  isLoading: false,
+                  response: {
+                    type: "error" as const,
+                    message: "Something went wrong.",
+                  },
+                }
+              : msg,
+          ),
+        );
+      }
+    },
+    [userId, session, agentMode],
+  );
+
+  // -------------------------------------------------------------------
+  // Send handler — routes to agent or fallback
+  // -------------------------------------------------------------------
   const handleSend = useCallback(
     async (text?: string) => {
       const messageText = (text ?? inputText).trim();
@@ -77,60 +319,36 @@ export default function AskScreen() {
         text: messageText,
       };
 
-      const parsed = parseQuery(messageText);
-      const loadingText = getQueryDescription(parsed);
+      const llmConfig = getLLMConfigFromSession(session);
 
       const loadingMsg: ChatMessage = {
         id: agentMsgId,
         role: "agent",
-        text: loadingText,
+        text: llmConfig ? "Thinking..." : getQueryDescription(parseQuery(messageText)),
         isLoading: true,
       };
 
       setMessages((prev) => [...prev, userMsg, loadingMsg]);
 
       try {
-        let response: AgentResponse;
-
-        // Get LLM config from session for AI-powered responses
-        const llmConfig = getLLMConfigFromSession(session);
-
-        // In HITL mode, action intents get previewed first
-        if (agentMode === "hitl" && isActionIntent(parsed)) {
-          response = await previewAction(parsed, userId);
+        if (llmConfig) {
+          await handleAgentSend(messageText, agentMsgId);
         } else {
-          response = await executeQuery(parsed, userId, llmConfig);
+          await handleFallbackSend(messageText, agentMsgId);
         }
-
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === agentMsgId
-              ? { ...msg, text: response.message, response, isLoading: false }
-              : msg,
-          ),
-        );
-      } catch {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === agentMsgId
-              ? {
-                  ...msg,
-                  text: "Something went wrong. Please try again.",
-                  isLoading: false,
-                  response: { type: "error" as const, message: "Something went wrong." },
-                }
-              : msg,
-          ),
-        );
       } finally {
         setIsProcessing(false);
       }
     },
-    [inputText, userId, isProcessing, agentMode],
+    [inputText, userId, isProcessing, session, handleAgentSend, handleFallbackSend],
   );
 
+  // -------------------------------------------------------------------
+  // Approval handlers
+  // -------------------------------------------------------------------
   const handleApprove = useCallback(
-    async (pendingAction: PendingAction) => {
+    async (pendingAction?: PendingAction) => {
+      if (!userId) return;
       setIsProcessing(true);
       const agentMsgId = nextId();
 
@@ -140,40 +358,123 @@ export default function AskScreen() {
         text: "Executing...",
         isLoading: true,
       };
-
       setMessages((prev) => [...prev, loadingMsg]);
 
-      try {
-        const response = await confirmAction(pendingAction);
+      const llmConfig = getLLMConfigFromSession(session);
 
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === agentMsgId
-              ? { ...msg, text: response.message, response, isLoading: false }
-              : msg,
-          ),
+      // If we have a pending tool call from the agent loop, resume it
+      if (pendingApprovalRef.current && llmConfig) {
+        const { toolCall, messages: savedMessages } =
+          pendingApprovalRef.current;
+        pendingApprovalRef.current = null;
+
+        const generator = resumeAfterApproval(
+          true,
+          toolCall,
+          llmConfig,
+          userId,
+          savedMessages,
         );
-      } catch {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === agentMsgId
-              ? {
-                  ...msg,
-                  text: "Action failed. Please try again.",
-                  isLoading: false,
-                  response: { type: "error" as const, message: "Action failed." },
-                }
-              : msg,
-          ),
-        );
-      } finally {
-        setIsProcessing(false);
+
+        for await (const event of generator) {
+          switch (event.type) {
+            case "tool_call":
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === agentMsgId
+                    ? { ...msg, text: getToolLabel(event.name, event.arguments) }
+                    : msg,
+                ),
+              );
+              break;
+            case "text":
+            case "done":
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === agentMsgId
+                    ? {
+                        ...msg,
+                        text:
+                          event.type === "done"
+                            ? event.finalText
+                            : event.text,
+                        isLoading: false,
+                      }
+                    : msg,
+                ),
+              );
+              if (event.type === "done") {
+                conversationHistory.current.push({
+                  role: "assistant",
+                  content: event.finalText,
+                });
+              }
+              break;
+            case "error":
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === agentMsgId
+                    ? {
+                        ...msg,
+                        text: event.text,
+                        isLoading: false,
+                        response: {
+                          type: "error" as const,
+                          message: event.text,
+                        },
+                      }
+                    : msg,
+                ),
+              );
+              break;
+          }
+        }
+      } else if (pendingAction) {
+        // Fallback: old-style HITL approval for regex parser
+        try {
+          const response = await confirmAction(pendingAction);
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === agentMsgId
+                ? {
+                    ...msg,
+                    text: response.message,
+                    response,
+                    isLoading: false,
+                  }
+                : msg,
+            ),
+          );
+        } catch {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === agentMsgId
+                ? {
+                    ...msg,
+                    text: "Action failed. Please try again.",
+                    isLoading: false,
+                    response: {
+                      type: "error" as const,
+                      message: "Action failed.",
+                    },
+                  }
+                : msg,
+            ),
+          );
+        }
       }
+
+      setIsProcessing(false);
     },
-    [],
+    [userId, session],
   );
 
   const handleReject = useCallback(() => {
+    // If we have a pending tool call, reject it
+    if (pendingApprovalRef.current) {
+      pendingApprovalRef.current = null;
+    }
+
     const cancelMsgId = nextId();
     setMessages((prev) => [
       ...prev,
@@ -213,6 +514,8 @@ export default function AskScreen() {
         text={item.text}
         response={item.response}
         isLoading={item.isLoading}
+        toolProgress={item.toolProgress}
+        pendingApproval={item.pendingApproval}
         onApprove={handleApprove}
         onReject={handleReject}
       />
@@ -286,17 +589,21 @@ export default function AskScreen() {
         </View>
 
         {/* Mode description bar */}
-        <View className={`flex-row items-center px-4 py-1.5 ${
-          agentMode === "hitl" ? "bg-amber-50" : "bg-green-50"
-        }`}>
+        <View
+          className={`flex-row items-center px-4 py-1.5 ${
+            agentMode === "hitl" ? "bg-amber-50" : "bg-green-50"
+          }`}
+        >
           <Ionicons
             name="information-circle-outline"
             size={13}
             color={agentMode === "hitl" ? "#92400e" : "#166534"}
           />
-          <Text className={`ml-1 text-[11px] ${
-            agentMode === "hitl" ? "text-amber-800" : "text-green-800"
-          }`}>
+          <Text
+            className={`ml-1 text-[11px] ${
+              agentMode === "hitl" ? "text-amber-800" : "text-green-800"
+            }`}
+          >
             {agentMode === "hitl"
               ? "Actions require your approval before executing"
               : "Actions execute immediately without confirmation"}
@@ -392,4 +699,50 @@ export default function AskScreen() {
       />
     </SafeAreaView>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Helper: human-readable label for tool calls in the chat
+// ---------------------------------------------------------------------------
+
+function getToolLabel(
+  name: string,
+  args: Record<string, unknown>,
+): string {
+  switch (name) {
+    case "search_contacts":
+      return `Searching contacts for "${args.query}"...`;
+    case "get_contact_details":
+      return "Getting contact details...";
+    case "get_interactions":
+      return "Looking up interactions...";
+    case "get_network_stats":
+      return "Calculating network stats...";
+    case "get_relationships":
+      return "Looking up relationships...";
+    case "list_tags":
+      return "Listing tags...";
+    case "list_entities":
+      return "Listing entities...";
+    case "run_sql_query":
+      return "Running database query...";
+    case "create_contact":
+      return `Creating contact "${args.first_name}"...`;
+    case "update_contact":
+      return `Updating contact...`;
+    case "bulk_tag_contacts":
+      return `Tagging contacts as "${args.tag}"...`;
+    case "archive_contacts":
+      return "Archiving contacts...";
+    case "link_contacts":
+      return "Linking contacts...";
+    case "create_entity":
+      return `Creating entity "${args.name}"...`;
+    case "add_entity_person":
+      return `Adding person to entity...`;
+    case "log_interaction":
+      return `Logging interaction...`;
+    default:
+      return `Running ${name}...`;
+  }
 }

@@ -1100,7 +1100,7 @@ async function handleBulkUpdate(
     message: `Updated ${normalizedField} to "${value}" for ${contactIds.length} contact${contactIds.length === 1 ? "" : "s"} ${filterDesc}.`,
     actionType: "bulk_update",
     count: contactIds.length,
-    needsConfirmation: true,
+
   };
 }
 
@@ -1219,7 +1219,7 @@ async function handleArchiveContacts(
     message: `Archived ${contactIds.length} contact${contactIds.length === 1 ? "" : "s"} ${filterDesc}.`,
     actionType: "archive",
     count: contactIds.length,
-    needsConfirmation: true,
+
   };
 }
 

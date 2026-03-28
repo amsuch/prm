@@ -13,13 +13,28 @@ import type {
   RelationshipResult,
   StatsResult,
 } from "@/lib/agent";
+import type { ToolCall } from "@/lib/agentLoop";
+
+type ToolProgress = {
+  name: string;
+  status: "running" | "done" | "error";
+  arguments?: Record<string, unknown>;
+  result?: unknown;
+};
 
 type ChatBubbleProps = {
   role: "user" | "agent";
   text: string;
   response?: AgentResponse;
   isLoading?: boolean;
-  onApprove?: (pendingAction: PendingAction) => void;
+  toolProgress?: ToolProgress[];
+  pendingApproval?: {
+    toolCall: ToolCall;
+    toolName: string;
+    description: string;
+    preview: unknown;
+  };
+  onApprove?: (pendingAction?: PendingAction) => void;
   onReject?: () => void;
 };
 
@@ -36,7 +51,16 @@ function getAvatarColor(name: string): string {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
-export function ChatBubble({ role, text, response, isLoading, onApprove, onReject }: ChatBubbleProps) {
+export function ChatBubble({
+  role,
+  text,
+  response,
+  isLoading,
+  toolProgress,
+  pendingApproval,
+  onApprove,
+  onReject,
+}: ChatBubbleProps) {
   if (role === "user") {
     return (
       <View className="mb-3 flex-row justify-end px-4">
@@ -52,15 +76,39 @@ export function ChatBubble({ role, text, response, isLoading, onApprove, onRejec
     <View className="mb-3 px-4">
       <View className="max-w-[90%] rounded-2xl rounded-bl-md bg-white px-4 py-3 shadow-sm">
         {isLoading ? (
-          <View className="flex-row items-center">
-            <View className="mr-2 h-2 w-2 rounded-full bg-gray-300" />
-            <View className="mr-2 h-2 w-2 rounded-full bg-gray-400" />
-            <View className="h-2 w-2 rounded-full bg-gray-500" />
-            <Text className="ml-3 text-sm text-gray-400">Thinking...</Text>
+          <View>
+            {/* Tool progress indicators */}
+            {toolProgress && toolProgress.length > 0 ? (
+              <ToolProgressList progress={toolProgress} />
+            ) : (
+              <View className="flex-row items-center">
+                <View className="mr-2 h-2 w-2 rounded-full bg-gray-300" />
+                <View className="mr-2 h-2 w-2 rounded-full bg-gray-400" />
+                <View className="h-2 w-2 rounded-full bg-gray-500" />
+                <Text className="ml-3 text-sm text-gray-400">
+                  Thinking...
+                </Text>
+              </View>
+            )}
           </View>
         ) : (
           <>
+            {/* Show completed tool progress above the final text */}
+            {toolProgress && toolProgress.length > 0 && !pendingApproval && (
+              <ToolProgressList progress={toolProgress} />
+            )}
             <Text className="text-base text-gray-900">{text}</Text>
+            {/* Pending approval card from the agent loop */}
+            {pendingApproval && (
+              <AgentApprovalCard
+                description={pendingApproval.description}
+                toolName={pendingApproval.toolName}
+                preview={pendingApproval.preview}
+                onApprove={() => onApprove?.()}
+                onReject={() => onReject?.()}
+              />
+            )}
+            {/* Legacy response content rendering */}
             {response && (
               <ResponseContent
                 response={response}
@@ -70,6 +118,173 @@ export function ChatBubble({ role, text, response, isLoading, onApprove, onRejec
             )}
           </>
         )}
+      </View>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Tool progress list — shows tool calls as they happen
+// ---------------------------------------------------------------------------
+
+const TOOL_ICONS: Record<string, { icon: string; label: string }> = {
+  search_contacts: { icon: "search", label: "Searching contacts" },
+  get_contact_details: { icon: "person", label: "Getting contact details" },
+  get_interactions: { icon: "chatbubbles", label: "Looking up interactions" },
+  get_network_stats: { icon: "stats-chart", label: "Calculating stats" },
+  get_relationships: { icon: "git-network", label: "Finding relationships" },
+  list_tags: { icon: "pricetags", label: "Listing tags" },
+  list_entities: { icon: "business", label: "Listing entities" },
+  run_sql_query: { icon: "code-slash", label: "Running query" },
+  create_contact: { icon: "person-add", label: "Creating contact" },
+  update_contact: { icon: "create", label: "Updating contact" },
+  bulk_tag_contacts: { icon: "pricetag", label: "Tagging contacts" },
+  archive_contacts: { icon: "archive", label: "Archiving contacts" },
+  link_contacts: { icon: "link", label: "Linking contacts" },
+  create_entity: { icon: "business", label: "Creating entity" },
+  add_entity_person: { icon: "person-add", label: "Adding person" },
+  log_interaction: { icon: "chatbubble", label: "Logging interaction" },
+};
+
+function ToolProgressList({ progress }: { progress: ToolProgress[] }) {
+  return (
+    <View className="mb-2">
+      {progress.map((tp, index) => {
+        const toolInfo = TOOL_ICONS[tp.name] ?? {
+          icon: "ellipse",
+          label: tp.name,
+        };
+        const statusIcon =
+          tp.status === "done"
+            ? "checkmark-circle"
+            : tp.status === "error"
+              ? "alert-circle"
+              : "ellipsis-horizontal-circle";
+        const statusColor =
+          tp.status === "done"
+            ? "#10b981"
+            : tp.status === "error"
+              ? "#ef4444"
+              : "#9ca3af";
+
+        // Extract a summary from arguments for context
+        let detail = "";
+        if (tp.arguments) {
+          if (tp.arguments.query)
+            detail = ` "${tp.arguments.query}"`;
+          else if (tp.arguments.first_name)
+            detail = ` ${tp.arguments.first_name}`;
+          else if (tp.arguments.tag)
+            detail = ` "${tp.arguments.tag}"`;
+          else if (tp.arguments.name)
+            detail = ` "${tp.arguments.name}"`;
+        }
+
+        return (
+          <View key={`${tp.name}-${index}`} className="mt-1 flex-row items-center">
+            <Ionicons
+              name={statusIcon as keyof typeof Ionicons.glyphMap}
+              size={14}
+              color={statusColor}
+            />
+            <Ionicons
+              name={toolInfo.icon as keyof typeof Ionicons.glyphMap}
+              size={13}
+              color="#6b7280"
+              style={{ marginLeft: 4 }}
+            />
+            <Text className="ml-1.5 text-xs text-gray-500" numberOfLines={1}>
+              {toolInfo.label}
+              {detail}
+              {tp.status === "running" ? "..." : ""}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Agent approval card — for LLM tool-calling approval flow
+// ---------------------------------------------------------------------------
+
+function AgentApprovalCard({
+  description,
+  toolName,
+  preview,
+  onApprove,
+  onReject,
+}: {
+  description: string;
+  toolName: string;
+  preview: unknown;
+  onApprove: () => void;
+  onReject: () => void;
+}) {
+  const toolInfo = TOOL_ICONS[toolName] ?? {
+    icon: "alert-circle",
+    label: toolName,
+  };
+
+  return (
+    <View className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
+      {/* Header */}
+      <View className="mb-2 flex-row items-center">
+        <Ionicons
+          name={toolInfo.icon as keyof typeof Ionicons.glyphMap}
+          size={18}
+          color="#d97706"
+        />
+        <Text className="ml-2 text-xs font-semibold uppercase text-gray-500">
+          Pending Action
+        </Text>
+      </View>
+
+      {/* Description */}
+      <Text className="mb-1 text-sm font-medium text-gray-800">
+        {description}
+      </Text>
+
+      {/* Preview details */}
+      {preview != null && typeof preview === "object" ? (
+        <View className="mb-2 rounded-lg bg-white p-2">
+          {Object.entries(preview as Record<string, unknown>)
+            .filter(([, v]) => v !== undefined && v !== null && v !== "")
+            .slice(0, 6)
+            .map(([key, value]) => (
+              <View key={key} className="flex-row py-0.5">
+                <Text className="text-xs font-medium text-gray-400 w-24">
+                  {key.replace(/_/g, " ")}:
+                </Text>
+                <Text className="flex-1 text-xs text-gray-700" numberOfLines={1}>
+                  {String(value)}
+                </Text>
+              </View>
+            ))}
+        </View>
+      ) : null}
+
+      {/* Approve / Cancel buttons */}
+      <View className="flex-row gap-2">
+        <Pressable
+          onPress={onApprove}
+          className="flex-1 flex-row items-center justify-center rounded-lg bg-green-600 py-2.5 active:bg-green-700"
+        >
+          <Ionicons name="checkmark" size={16} color="white" />
+          <Text className="ml-1 text-sm font-semibold text-white">
+            Approve
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={onReject}
+          className="flex-1 flex-row items-center justify-center rounded-lg border border-gray-200 bg-white py-2.5 active:bg-gray-50"
+        >
+          <Ionicons name="close" size={16} color="#6b7280" />
+          <Text className="ml-1 text-sm font-semibold text-gray-600">
+            Cancel
+          </Text>
+        </Pressable>
       </View>
     </View>
   );
