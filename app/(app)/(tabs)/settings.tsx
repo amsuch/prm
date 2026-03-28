@@ -746,11 +746,12 @@ const AI_MODELS: Record<AIProvider, { id: string; label: string; tier: string }[
     { id: "claude-haiku-4-5-20251001", label: "Haiku 4.5", tier: "Fastest" },
   ],
   openai: [
-    { id: "gpt-5.4-pro-2026-03-05", label: "GPT-5.4 Pro", tier: "Max performance" },
-    { id: "gpt-5.4-2026-03-05", label: "GPT-5.4", tier: "Most capable" },
-    { id: "gpt-5.4-mini", label: "GPT-5.4 Mini", tier: "Fast + cheap" },
-    { id: "gpt-5.3-instant", label: "GPT-5.3 Instant", tier: "Everyday fast" },
-    { id: "gpt-5.3-codex", label: "GPT-5.3 Codex", tier: "Coding agent" },
+    { id: "gpt-5.4-pro", label: "GPT-5.4 Pro", tier: "Max performance" },
+    { id: "gpt-5.4", label: "GPT-5.4", tier: "Most capable" },
+    { id: "gpt-5.4-mini", label: "GPT-5.4 Mini", tier: "Fast + smart" },
+    { id: "gpt-5.4-nano", label: "GPT-5.4 Nano", tier: "Fastest" },
+    { id: "gpt-4.1", label: "GPT-4.1", tier: "Reliable" },
+    { id: "gpt-4.1-mini", label: "GPT-4.1 Mini", tier: "Fast + cheap" },
   ],
 };
 

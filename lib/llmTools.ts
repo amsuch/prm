@@ -73,7 +73,7 @@ async function callOpenAIWithTools(
       model: config.model,
       messages: openAIMessages,
       tools: openAITools,
-      max_tokens: 4096,
+      max_completion_tokens: 4096,
       temperature: 0.3,
     }),
   });
@@ -183,7 +183,7 @@ async function callAnthropicWithTools(
       system: systemPrompt || config.systemPrompt,
       messages: apiMessages,
       tools: anthropicTools,
-      max_tokens: 4096,
+      max_completion_tokens: 4096,
       temperature: 0.3,
     }),
   });

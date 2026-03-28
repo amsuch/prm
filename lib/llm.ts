@@ -55,7 +55,7 @@ async function callOpenAI(
     body: JSON.stringify({
       model: config.model,
       messages: apiMessages,
-      max_tokens: 1024,
+      max_completion_tokens: 1024,
       temperature: 0.3,
     }),
   });
