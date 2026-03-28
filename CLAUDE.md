@@ -149,6 +149,29 @@ Key RPC functions: `search_contacts`, `get_contact_relationships`, `execute_read
 - `last_contacted_at` auto-updated via `trg_interaction_update_contact` trigger
 - Batch operations in chunks of 200 (avoid PostgREST URL length limits)
 
+## Supabase Management API
+
+Use `SUPABASE_ACCOUNT_TOKEN` (sbp_ format) with the Management API at `api.supabase.com`:
+
+```bash
+# Get auth config
+curl -s "https://api.supabase.com/v1/projects/rymspebhcinjttcrmtow/config/auth" \
+  -H "Authorization: Bearer ${SUPABASE_ACCOUNT_TOKEN}"
+
+# Update auth config
+curl -s -X PATCH "https://api.supabase.com/v1/projects/rymspebhcinjttcrmtow/config/auth" \
+  -H "Authorization: Bearer ${SUPABASE_ACCOUNT_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"site_url": "http://localhost:8081"}'
+```
+
+Current auth config:
+- `site_url`: http://localhost:8081
+- `redirect_urls`: http://localhost:8081, prm-sc://auth/callback
+- `mailer_autoconfirm`: true (no email confirmation needed)
+- `mailer_otp_length`: 6 digits
+- Magic link email template includes both clickable link AND 6-digit OTP code
+
 ## Common Pitfalls (from this project)
 
 1. **Supabase short API keys** (`sb_publishable_`, `sb_secret_`) are NOT JWTs. Use the legacy JWT key for admin API calls (`Authorization: Bearer`).
