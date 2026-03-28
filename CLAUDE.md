@@ -172,6 +172,41 @@ Current auth config:
 - `mailer_otp_length`: 6 digits
 - Magic link email template includes both clickable link AND 6-digit OTP code
 
+## Mandatory Pre-Commit Checks
+
+**Before committing ANY LLM/API integration:**
+```bash
+# 1. Test the actual API call
+curl -s "https://api.openai.com/v1/chat/completions" \
+  -H "Authorization: Bearer $KEY" \
+  -d '{"model":"MODEL","messages":[{"role":"user","content":"hi"}],"max_completion_tokens":10}'
+
+# 2. Test with tool calling (if applicable)
+# Include the actual tool definitions, not simplified versions
+
+# 3. Verify the build
+pnpm exec expo export --platform web
+```
+
+**Before listing model IDs in the UI:**
+```bash
+# Query the ACTUAL available models
+curl -s "https://api.openai.com/v1/models" -H "Authorization: Bearer $KEY" | \
+  node -e "..." # filter for chat-compatible models
+
+# Test each model with /v1/chat/completions to confirm it's a chat model
+```
+
+**Before committing tool definitions:**
+- Verify all properties with `additionalProperties: false` have ALL props in `required`
+- OR remove `additionalProperties: false` and `strict: true` for tools with optional params
+- Test the tool schema by sending it to the API
+
+**After swarm agent builds:**
+- Run `pnpm exec expo export --platform web` to catch import/type errors
+- Check for design consistency (px-4, shadow-sm, Colors constants)
+- Verify useCallback/useMemo dependency arrays include all referenced variables
+
 ## Common Pitfalls (from this project)
 
 1. **Supabase short API keys** (`sb_publishable_`, `sb_secret_`) are NOT JWTs. Use the legacy JWT key for admin API calls (`Authorization: Bearer`).

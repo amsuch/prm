@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,10 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
+  Modal,
+  Alert,
+  Animated,
+  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -35,6 +39,8 @@ import {
   useSearch,
   type SearchFilters,
 } from "@/hooks/useSearch";
+import { useChatSessions, type ChatSession } from "@/hooks/useChatSessions";
+import { useChatMessages } from "@/hooks/useChatMessages";
 
 type AgentMode = "hitl" | "auto";
 
@@ -58,6 +64,7 @@ type ChatMessage = {
     description: string;
     preview: unknown;
   };
+  dbId?: string; // database row id for updating after agent finishes
 };
 
 let messageIdCounter = 0;
@@ -65,6 +72,8 @@ function nextId(): string {
   messageIdCounter += 1;
   return `msg-${messageIdCounter}-${Date.now()}`;
 }
+
+const DRAWER_WIDTH = Math.min(320, Dimensions.get("window").width * 0.85);
 
 export default function AskScreen() {
   const { session } = useSession();
@@ -75,6 +84,30 @@ export default function AskScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [agentMode, setAgentMode] = useState<AgentMode>("hitl");
+  const [showHistory, setShowHistory] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
+  const [isFirstMessage, setIsFirstMessage] = useState(false);
+
+  // Chat sessions & messages hooks
+  const {
+    sessions,
+    activeSessionId,
+    isLoading: sessionsLoading,
+    createSession,
+    switchSession,
+    deleteSession,
+    renameSession,
+    touchSession,
+  } = useChatSessions();
+
+  const {
+    messages: dbMessages,
+    isLoading: messagesLoading,
+    addMessage: addDbMessage,
+    updateMessage: updateDbMessage,
+    clearMessages: clearDbMessages,
+  } = useChatMessages(activeSessionId);
 
   // Conversation history for the LLM agent (persisted across turns)
   const conversationHistory = useRef<ToolMessage[]>([]);
@@ -86,14 +119,109 @@ export default function AskScreen() {
 
   const flatListRef = useRef<FlatList<ChatMessage>>(null);
   const inputRef = useRef<TextInput>(null);
+  const drawerAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
 
   const { filters, search, clearFilters, activeFilterCount } = useSearch();
+
+  const activeSession = sessions.find((s) => s.id === activeSessionId) ?? null;
+
+  // -------------------------------------------------------------------
+  // On mount: load most recent session or create one
+  // -------------------------------------------------------------------
+  useEffect(() => {
+    if (sessionsLoading || !userId) return;
+    if (activeSessionId) return; // already have one
+
+    if (sessions.length > 0) {
+      // Switch to most recent
+      switchSession(sessions[0].id);
+    } else {
+      // Create first session
+      createSession("New Chat");
+    }
+  }, [sessionsLoading, userId, activeSessionId, sessions, switchSession, createSession]);
+
+  // -------------------------------------------------------------------
+  // When session switches, load messages from DB
+  // -------------------------------------------------------------------
+  useEffect(() => {
+    if (messagesLoading || !activeSessionId) return;
+
+    // Rebuild in-memory messages from DB rows
+    const loaded: ChatMessage[] = dbMessages.map((m) => {
+      const toolProg = m.tool_progress_json
+        ? (m.tool_progress_json as unknown as ToolProgress[])
+        : undefined;
+      const resp = m.response_json
+        ? (m.response_json as unknown as AgentResponse)
+        : undefined;
+
+      return {
+        id: m.id,
+        role: m.role === "user" ? "user" : "agent",
+        text: m.content,
+        response: resp,
+        toolProgress: toolProg,
+        dbId: m.id,
+      };
+    });
+
+    setMessages(loaded);
+
+    // Rebuild conversation history for the LLM from DB messages
+    const history: ToolMessage[] = [];
+    for (const m of dbMessages) {
+      if (m.role === "user") {
+        history.push({ role: "user", content: m.content });
+      } else if (m.role === "agent") {
+        history.push({ role: "assistant", content: m.content });
+      }
+    }
+    conversationHistory.current = history;
+
+    // Check if this is a fresh session (no messages)
+    setIsFirstMessage(dbMessages.length === 0);
+  }, [dbMessages, messagesLoading, activeSessionId]);
+
+  // -------------------------------------------------------------------
+  // Drawer animation
+  // -------------------------------------------------------------------
+  const openDrawer = useCallback(() => {
+    setShowHistory(true);
+    Animated.spring(drawerAnim, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 65,
+      friction: 11,
+    }).start();
+  }, [drawerAnim]);
+
+  const closeDrawer = useCallback(() => {
+    Animated.timing(drawerAnim, {
+      toValue: -DRAWER_WIDTH,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => setShowHistory(false));
+  }, [drawerAnim]);
+
+  // -------------------------------------------------------------------
+  // Auto-title after first agent response
+  // -------------------------------------------------------------------
+  const autoTitleSession = useCallback(
+    async (userText: string) => {
+      if (!activeSessionId) return;
+      const truncated =
+        userText.length > 40 ? userText.slice(0, 37) + "..." : userText;
+      await renameSession(activeSessionId, truncated);
+    },
+    [activeSessionId, renameSession],
+  );
 
   // -------------------------------------------------------------------
   // Tool-calling agent flow (when LLM is configured)
   // -------------------------------------------------------------------
   const handleAgentSend = useCallback(
-    async (messageText: string, agentMsgId: string) => {
+    async (messageText: string, agentMsgId: string, agentDbId: string) => {
       const llmConfig = getLLMConfigFromSession(session);
       if (!llmConfig || !userId) return;
 
@@ -108,6 +236,7 @@ export default function AskScreen() {
       );
 
       const toolProgress: ToolProgress[] = [];
+      let finalText = "";
 
       for await (const event of generator) {
         switch (event.type) {
@@ -188,9 +317,17 @@ export default function AskScreen() {
                   : msg,
               ),
             );
+            // Save to DB with approval state
+            await updateDbMessage(
+              agentDbId,
+              event.description,
+              undefined,
+              [...toolProgress],
+            );
             break;
 
           case "text":
+            finalText = event.text;
             setMessages((prev) =>
               prev.map((msg) =>
                 msg.id === agentMsgId
@@ -201,6 +338,7 @@ export default function AskScreen() {
             break;
 
           case "done":
+            finalText = event.finalText;
             // Add user message and assistant response to conversation history
             conversationHistory.current.push({
               role: "user",
@@ -222,6 +360,20 @@ export default function AskScreen() {
                   : msg,
               ),
             );
+            // Persist final agent response to DB
+            await updateDbMessage(
+              agentDbId,
+              event.finalText,
+              undefined,
+              toolProgress.length > 0 ? [...toolProgress] : undefined,
+            );
+            // Touch session timestamp
+            if (activeSessionId) await touchSession(activeSessionId);
+            // Auto-title on first message
+            if (isFirstMessage) {
+              await autoTitleSession(messageText);
+              setIsFirstMessage(false);
+            }
             break;
 
           case "error":
@@ -240,18 +392,23 @@ export default function AskScreen() {
                   : msg,
               ),
             );
+            await updateDbMessage(
+              agentDbId,
+              event.text,
+              { type: "error", message: event.text },
+            );
             break;
         }
       }
     },
-    [session, userId, agentMode],
+    [session, userId, agentMode, activeSessionId, touchSession, isFirstMessage, autoTitleSession, updateDbMessage],
   );
 
   // -------------------------------------------------------------------
-  // Fallback flow (no LLM configured — regex parser + Supabase)
+  // Fallback flow (no LLM configured -- regex parser + Supabase)
   // -------------------------------------------------------------------
   const handleFallbackSend = useCallback(
-    async (messageText: string, agentMsgId: string) => {
+    async (messageText: string, agentMsgId: string, agentDbId: string) => {
       if (!userId) return;
 
       const parsed = parseQuery(messageText);
@@ -278,6 +435,16 @@ export default function AskScreen() {
               : msg,
           ),
         );
+
+        // Persist to DB
+        await updateDbMessage(agentDbId, response.message, response);
+        if (activeSessionId) await touchSession(activeSessionId);
+
+        // Auto-title on first message
+        if (isFirstMessage) {
+          await autoTitleSession(messageText);
+          setIsFirstMessage(false);
+        }
       } catch {
         setMessages((prev) =>
           prev.map((msg) =>
@@ -294,18 +461,30 @@ export default function AskScreen() {
               : msg,
           ),
         );
+        await updateDbMessage(
+          agentDbId,
+          "Something went wrong. Please try again.",
+          { type: "error", message: "Something went wrong." },
+        );
       }
     },
-    [userId, session, agentMode],
+    [userId, session, agentMode, activeSessionId, touchSession, isFirstMessage, autoTitleSession, updateDbMessage],
   );
 
   // -------------------------------------------------------------------
-  // Send handler — routes to agent or fallback
+  // Send handler -- routes to agent or fallback
   // -------------------------------------------------------------------
   const handleSend = useCallback(
     async (text?: string) => {
       const messageText = (text ?? inputText).trim();
       if (!messageText || !userId || isProcessing) return;
+
+      // Ensure we have an active session
+      let currentSessionId = activeSessionId;
+      if (!currentSessionId) {
+        currentSessionId = await createSession("New Chat");
+        if (!currentSessionId) return;
+      }
 
       setInputText("");
       setIsProcessing(true);
@@ -313,13 +492,13 @@ export default function AskScreen() {
       const userMsgId = nextId();
       const agentMsgId = nextId();
 
+      const llmConfig = getLLMConfigFromSession(session);
+
       const userMsg: ChatMessage = {
         id: userMsgId,
         role: "user",
         text: messageText,
       };
-
-      const llmConfig = getLLMConfigFromSession(session);
 
       const loadingMsg: ChatMessage = {
         id: agentMsgId,
@@ -330,17 +509,24 @@ export default function AskScreen() {
 
       setMessages((prev) => [...prev, userMsg, loadingMsg]);
 
+      // Persist user message to DB
+      await addDbMessage("user", messageText);
+
+      // Persist placeholder agent message to DB (will be updated when done)
+      const agentRow = await addDbMessage("agent", "Thinking...");
+      const agentDbId = agentRow?.id ?? agentMsgId;
+
       try {
         if (llmConfig) {
-          await handleAgentSend(messageText, agentMsgId);
+          await handleAgentSend(messageText, agentMsgId, agentDbId);
         } else {
-          await handleFallbackSend(messageText, agentMsgId);
+          await handleFallbackSend(messageText, agentMsgId, agentDbId);
         }
       } finally {
         setIsProcessing(false);
       }
     },
-    [inputText, userId, isProcessing, session, handleAgentSend, handleFallbackSend],
+    [inputText, userId, isProcessing, session, activeSessionId, createSession, addDbMessage, handleAgentSend, handleFallbackSend],
   );
 
   // -------------------------------------------------------------------
@@ -359,6 +545,9 @@ export default function AskScreen() {
         isLoading: true,
       };
       setMessages((prev) => [...prev, loadingMsg]);
+
+      const agentRow = await addDbMessage("agent", "Executing...");
+      const agentDbId = agentRow?.id ?? agentMsgId;
 
       const llmConfig = getLLMConfigFromSession(session);
 
@@ -408,6 +597,8 @@ export default function AskScreen() {
                   role: "assistant",
                   content: event.finalText,
                 });
+                await updateDbMessage(agentDbId, event.finalText);
+                if (activeSessionId) await touchSession(activeSessionId);
               }
               break;
             case "error":
@@ -425,6 +616,11 @@ export default function AskScreen() {
                       }
                     : msg,
                 ),
+              );
+              await updateDbMessage(
+                agentDbId,
+                event.text,
+                { type: "error", message: event.text },
               );
               break;
           }
@@ -445,6 +641,7 @@ export default function AskScreen() {
                 : msg,
             ),
           );
+          await updateDbMessage(agentDbId, response.message, response);
         } catch {
           setMessages((prev) =>
             prev.map((msg) =>
@@ -461,15 +658,20 @@ export default function AskScreen() {
                 : msg,
             ),
           );
+          await updateDbMessage(
+            agentDbId,
+            "Action failed. Please try again.",
+            { type: "error", message: "Action failed." },
+          );
         }
       }
 
       setIsProcessing(false);
     },
-    [userId, session],
+    [userId, session, activeSessionId, touchSession, addDbMessage, updateDbMessage],
   );
 
-  const handleReject = useCallback(() => {
+  const handleReject = useCallback(async () => {
     // If we have a pending tool call, reject it
     if (pendingApprovalRef.current) {
       pendingApprovalRef.current = null;
@@ -485,7 +687,13 @@ export default function AskScreen() {
         response: { type: "text" as const, message: "Action cancelled." },
       },
     ]);
-  }, []);
+
+    await addDbMessage(
+      "agent",
+      "Action cancelled.",
+      { type: "text", message: "Action cancelled." },
+    );
+  }, [addDbMessage]);
 
   const handleSuggestionSelect = useCallback(
     (question: string) => {
@@ -504,6 +712,86 @@ export default function AskScreen() {
   const handleClearFilters = useCallback(() => {
     clearFilters();
   }, [clearFilters]);
+
+  // -------------------------------------------------------------------
+  // New chat handler
+  // -------------------------------------------------------------------
+  const handleNewChat = useCallback(async () => {
+    conversationHistory.current = [];
+    pendingApprovalRef.current = null;
+    setMessages([]);
+    clearDbMessages();
+    setIsFirstMessage(true);
+    await createSession("New Chat");
+    closeDrawer();
+  }, [createSession, clearDbMessages, closeDrawer]);
+
+  // -------------------------------------------------------------------
+  // Switch session handler
+  // -------------------------------------------------------------------
+  const handleSwitchSession = useCallback(
+    (id: string) => {
+      if (id === activeSessionId) {
+        closeDrawer();
+        return;
+      }
+      conversationHistory.current = [];
+      pendingApprovalRef.current = null;
+      setMessages([]);
+      clearDbMessages();
+      switchSession(id);
+      closeDrawer();
+    },
+    [activeSessionId, switchSession, clearDbMessages, closeDrawer],
+  );
+
+  // -------------------------------------------------------------------
+  // Delete session handler
+  // -------------------------------------------------------------------
+  const handleDeleteSession = useCallback(
+    (id: string) => {
+      Alert.alert(
+        "Delete Chat",
+        "Are you sure you want to delete this chat session?",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: async () => {
+              await deleteSession(id);
+              // If deleted the active session, start fresh
+              if (id === activeSessionId) {
+                conversationHistory.current = [];
+                pendingApprovalRef.current = null;
+                setMessages([]);
+                clearDbMessages();
+                setIsFirstMessage(true);
+              }
+            },
+          },
+        ],
+      );
+    },
+    [deleteSession, activeSessionId, clearDbMessages],
+  );
+
+  // -------------------------------------------------------------------
+  // Title editing
+  // -------------------------------------------------------------------
+  const startEditingTitle = useCallback(() => {
+    if (activeSession) {
+      setTitleDraft(activeSession.title);
+      setEditingTitle(true);
+    }
+  }, [activeSession]);
+
+  const finishEditingTitle = useCallback(async () => {
+    if (activeSessionId && titleDraft.trim()) {
+      await renameSession(activeSessionId, titleDraft.trim());
+    }
+    setEditingTitle(false);
+  }, [activeSessionId, titleDraft, renameSession]);
 
   const hasMessages = messages.length > 0;
 
@@ -525,6 +813,64 @@ export default function AskScreen() {
 
   const keyExtractor = useCallback((item: ChatMessage) => item.id, []);
 
+  // -------------------------------------------------------------------
+  // Format date for session list
+  // -------------------------------------------------------------------
+  const formatSessionDate = (dateStr: string): string => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return "Today";
+    if (diffDays === 1) return "Yesterday";
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  };
+
+  // -------------------------------------------------------------------
+  // Render session item for history drawer
+  // -------------------------------------------------------------------
+  const renderSessionItem = useCallback(
+    ({ item }: { item: ChatSession }) => {
+      const isActive = item.id === activeSessionId;
+
+      return (
+        <Pressable
+          onPress={() => handleSwitchSession(item.id)}
+          onLongPress={() => handleDeleteSession(item.id)}
+          className={`mx-2 mb-1 rounded-xl px-4 py-3 ${
+            isActive ? "bg-blue-50" : "active:bg-gray-100"
+          }`}
+        >
+          <View className="flex-row items-center justify-between">
+            <View className="mr-3 flex-1">
+              <Text
+                className={`text-sm font-medium ${
+                  isActive ? "text-blue-700" : "text-gray-900"
+                }`}
+                numberOfLines={1}
+              >
+                {item.title}
+              </Text>
+              <Text className="mt-0.5 text-xs text-gray-400">
+                {formatSessionDate(item.updated_at)}
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => handleDeleteSession(item.id)}
+              hitSlop={8}
+              className="rounded-lg p-1 active:bg-gray-200"
+            >
+              <Ionicons name="trash-outline" size={16} color={Colors.gray[400]} />
+            </Pressable>
+          </View>
+        </Pressable>
+      );
+    },
+    [activeSessionId, handleSwitchSession, handleDeleteSession],
+  );
+
   return (
     <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
       <KeyboardAvoidingView
@@ -532,59 +878,101 @@ export default function AskScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       >
-        {/* Header with mode toggle and filter */}
-        <View className="flex-row items-center justify-between border-b border-gray-200 bg-white px-4 py-2">
-          <Text className="text-lg font-bold text-gray-900">
-            Ask your Network
-          </Text>
-          <View className="flex-row items-center gap-2">
-            {/* HITL / Auto toggle */}
-            <Pressable
-              onPress={() =>
-                setAgentMode((m) => (m === "hitl" ? "auto" : "hitl"))
-              }
-              className={`flex-row items-center rounded-lg border px-2.5 py-1.5 ${
-                agentMode === "hitl"
-                  ? "border-amber-300 bg-amber-50"
-                  : "border-green-300 bg-green-50"
-              }`}
-            >
-              <Ionicons
-                name={agentMode === "hitl" ? "shield-checkmark" : "flash"}
-                size={14}
-                color={agentMode === "hitl" ? "#d97706" : "#16a34a"}
-              />
-              <Text
-                className={`ml-1 text-xs font-semibold ${
-                  agentMode === "hitl" ? "text-amber-700" : "text-green-700"
+        {/* Header with session title, history, mode toggle, and filter */}
+        <View className="border-b border-gray-200 bg-white px-4 py-2">
+          <View className="flex-row items-center justify-between">
+            <View className="mr-2 flex-1 flex-row items-center">
+              {/* History / menu button */}
+              <Pressable
+                onPress={openDrawer}
+                className="mr-2 rounded-lg p-1.5 active:bg-gray-100"
+                hitSlop={4}
+              >
+                <Ionicons name="menu-outline" size={22} color={Colors.gray[700]} />
+              </Pressable>
+
+              {/* Session title */}
+              {editingTitle ? (
+                <TextInput
+                  className="flex-1 rounded-lg border border-blue-300 bg-blue-50 px-2 py-1 text-base font-bold text-gray-900"
+                  value={titleDraft}
+                  onChangeText={setTitleDraft}
+                  onBlur={finishEditingTitle}
+                  onSubmitEditing={finishEditingTitle}
+                  autoFocus
+                  returnKeyType="done"
+                  selectTextOnFocus
+                />
+              ) : (
+                <Pressable onPress={startEditingTitle} className="flex-1">
+                  <Text
+                    className="text-lg font-bold text-gray-900"
+                    numberOfLines={1}
+                  >
+                    {activeSession?.title ?? "Ask your Network"}
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+
+            <View className="flex-row items-center gap-2">
+              {/* New chat button */}
+              <Pressable
+                onPress={handleNewChat}
+                className="rounded-lg border border-gray-200 p-1.5 active:bg-gray-50"
+                hitSlop={4}
+              >
+                <Ionicons name="create-outline" size={18} color={Colors.gray[600]} />
+              </Pressable>
+
+              {/* HITL / Auto toggle */}
+              <Pressable
+                onPress={() =>
+                  setAgentMode((m) => (m === "hitl" ? "auto" : "hitl"))
+                }
+                className={`flex-row items-center rounded-lg border px-2.5 py-1.5 ${
+                  agentMode === "hitl"
+                    ? "border-amber-300 bg-amber-50"
+                    : "border-green-300 bg-green-50"
                 }`}
               >
-                {agentMode === "hitl" ? "HITL" : "Auto"}
-              </Text>
-            </Pressable>
+                <Ionicons
+                  name={agentMode === "hitl" ? "shield-checkmark" : "flash"}
+                  size={14}
+                  color={agentMode === "hitl" ? "#d97706" : "#16a34a"}
+                />
+                <Text
+                  className={`ml-1 text-xs font-semibold ${
+                    agentMode === "hitl" ? "text-amber-700" : "text-green-700"
+                  }`}
+                >
+                  {agentMode === "hitl" ? "HITL" : "Auto"}
+                </Text>
+              </Pressable>
 
-            {/* Filter button */}
-            <Pressable
-              onPress={() => setShowFilters(true)}
-              className="flex-row items-center rounded-lg border border-gray-200 px-3 py-1.5 active:bg-gray-50"
-            >
-              <Ionicons
-                name="filter-outline"
-                size={16}
-                color={
-                  activeFilterCount > 0
-                    ? Colors.brand[600]
-                    : Colors.gray[500]
-                }
-              />
-              {activeFilterCount > 0 && (
-                <View className="ml-1 h-4 w-4 items-center justify-center rounded-full bg-blue-600">
-                  <Text className="text-[10px] font-bold text-white">
-                    {activeFilterCount}
-                  </Text>
-                </View>
-              )}
-            </Pressable>
+              {/* Filter button */}
+              <Pressable
+                onPress={() => setShowFilters(true)}
+                className="flex-row items-center rounded-lg border border-gray-200 px-3 py-1.5 active:bg-gray-50"
+              >
+                <Ionicons
+                  name="filter-outline"
+                  size={16}
+                  color={
+                    activeFilterCount > 0
+                      ? Colors.brand[600]
+                      : Colors.gray[500]
+                  }
+                />
+                {activeFilterCount > 0 && (
+                  <View className="ml-1 h-4 w-4 items-center justify-center rounded-full bg-blue-600">
+                    <Text className="text-[10px] font-bold text-white">
+                      {activeFilterCount}
+                    </Text>
+                  </View>
+                )}
+              </Pressable>
+            </View>
           </View>
         </View>
 
@@ -697,6 +1085,89 @@ export default function AskScreen() {
         onApply={handleApplyFilters}
         onClear={handleClearFilters}
       />
+
+      {/* Chat history drawer overlay */}
+      {showHistory && (
+        <Modal
+          visible
+          transparent
+          animationType="none"
+          onRequestClose={closeDrawer}
+          statusBarTranslucent
+        >
+          <View className="flex-1 flex-row">
+            {/* Animated drawer panel */}
+            <Animated.View
+              style={{
+                width: DRAWER_WIDTH,
+                transform: [{ translateX: drawerAnim }],
+              }}
+              className="h-full bg-white shadow-lg"
+            >
+              <SafeAreaView className="flex-1" edges={["top"]}>
+                {/* Drawer header */}
+                <View className="flex-row items-center justify-between border-b border-gray-100 px-4 pb-3 pt-4">
+                  <Text className="text-lg font-bold text-gray-900">
+                    Chat History
+                  </Text>
+                  <Pressable
+                    onPress={closeDrawer}
+                    className="rounded-lg p-1 active:bg-gray-100"
+                    hitSlop={8}
+                  >
+                    <Ionicons name="close" size={22} color={Colors.gray[500]} />
+                  </Pressable>
+                </View>
+
+                {/* New chat button */}
+                <Pressable
+                  onPress={handleNewChat}
+                  className="mx-4 mt-3 mb-2 flex-row items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 active:bg-blue-100"
+                >
+                  <Ionicons name="add-circle-outline" size={20} color={Colors.brand[600]} />
+                  <Text className="ml-2 text-sm font-semibold text-blue-700">
+                    New Chat
+                  </Text>
+                </Pressable>
+
+                {/* Sessions list */}
+                {sessionsLoading ? (
+                  <View className="flex-1 items-center justify-center">
+                    <Text className="text-sm text-gray-400">Loading...</Text>
+                  </View>
+                ) : sessions.length === 0 ? (
+                  <View className="flex-1 items-center justify-center px-6">
+                    <Text className="text-center text-sm text-gray-400">
+                      No chat history yet.
+                    </Text>
+                  </View>
+                ) : (
+                  <FlatList
+                    data={sessions}
+                    renderItem={renderSessionItem}
+                    keyExtractor={(item) => item.id}
+                    contentContainerStyle={{ paddingTop: 8, paddingBottom: 16 }}
+                    showsVerticalScrollIndicator={false}
+                  />
+                )}
+
+                {/* Hint text */}
+                <View className="border-t border-gray-100 px-4 py-3">
+                  <Text className="text-center text-xs text-gray-400">
+                    Long-press a chat to delete
+                  </Text>
+                </View>
+              </SafeAreaView>
+            </Animated.View>
+
+            {/* Backdrop */}
+            <Pressable
+              onPress={closeDrawer}
+              className="flex-1 bg-black/40"
+            />
+          </View>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 }

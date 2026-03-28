@@ -584,6 +584,66 @@ export type Database = {
           },
         ];
       };
+      chat_sessions: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title?: string;
+        };
+        Update: {
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "chat_sessions_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      chat_messages: {
+        Row: {
+          id: string;
+          session_id: string;
+          role: string;
+          content: string;
+          response_json: Json | null;
+          tool_progress_json: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          session_id: string;
+          role: string;
+          content: string;
+          response_json?: Json | null;
+          tool_progress_json?: Json | null;
+        };
+        Update: {
+          content?: string;
+          response_json?: Json | null;
+          tool_progress_json?: Json | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "chat_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       entity_people: {
         Row: {
           id: string;
