@@ -207,6 +207,65 @@ curl -s "https://api.openai.com/v1/models" -H "Authorization: Bearer $KEY" | \
 - Check for design consistency (px-4, shadow-sm, Colors constants)
 - Verify useCallback/useMemo dependency arrays include all referenced variables
 
+## Development Skills
+
+### Skill 1: Pre-Commit API Integration Check
+
+**When:** Before committing any code that calls an external API (OpenAI, Anthropic, Google Calendar, Google Maps).
+
+1. Extract the exact API endpoint, headers, and body from the code
+2. Test with curl using real credentials
+3. Verify the response format matches what the code expects
+4. Test error cases (invalid key, wrong model, rate limit)
+5. Verify the parameter names match the API docs (`max_tokens` vs `max_completion_tokens`)
+
+### Skill 2: Swarm Agent Design Token Injection
+
+**When:** Dispatching multiple agents to build UI.
+
+1. Always include the design token table from CLAUDE.md in every agent prompt
+2. List the exact NativeWind classes for:
+   - Backgrounds: `bg-stone-50`
+   - Cards: `rounded-xl bg-white shadow-sm`
+   - Buttons: `bg-indigo-600 active:bg-indigo-700`
+   - Text: `text-stone-900` / `text-stone-700` / `text-stone-500`
+   - Inputs: `rounded-xl border border-stone-200 bg-stone-50 px-4 py-3`
+3. Specify: "Never use hardcoded hex colors. Import from `@/constants/colors`"
+4. After all agents complete, run a consistency check: `grep -r "bg-gray\|bg-blue\|text-gray" components/`
+
+### Skill 3: Hook Authoring Convention
+
+**When:** Creating a new React hook.
+
+1. Return shape must be: `{ data: T, isLoading: boolean, error: string | null, refetch: () => Promise<void> }`
+2. Use `useCallback` for `refetch`
+3. Use abort signals for unmount cleanup
+4. Error state as `string`, not `Error` object
+5. Loading starts as `true`, set `false` after first fetch
+
+### Skill 4: Component Extraction Criteria
+
+**When:** A component file exceeds 300 lines.
+
+1. If it has 3+ distinct visual sections, extract each as a sub-component
+2. If it has inline utility functions, move them to `lib/`
+3. If it renders lists of items, extract the item component
+4. Create a folder: `components/[Name]/` with sub-components
+5. Re-export from an index file for clean imports
+
+### Skill 5: New Feature Integration Checklist
+
+**When:** Adding a new feature to the PRM app.
+
+1. **Database:** Create table via pg pooler, add to `types/database.ts`
+2. **Supabase:** Enable RLS, create policies
+3. **Types:** Add table types to the `Database` type
+4. **Hook:** Create `use[Feature].ts` following hook convention (Skill 3)
+5. **Screen:** Create `app/(app)/[feature].tsx`, register in `_layout.tsx`
+6. **Agent:** Add tool definition in `lib/tools.ts`
+7. **Settings:** Add management UI if user-configurable
+8. **Build:** Verify with `pnpm exec expo export --platform web`
+
 ## Common Pitfalls (from this project)
 
 1. **Supabase short API keys** (`sb_publishable_`, `sb_secret_`) are NOT JWTs. Use the legacy JWT key for admin API calls (`Authorization: Bearer`).

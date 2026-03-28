@@ -1,42 +1,65 @@
-import { View, Text, Pressable, Linking, Alert } from "react-native";
+import { useState, useCallback } from "react";
+import { View, Text, Pressable, Linking, Alert, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { getInitials } from "@/lib/utils";
 import { Colors } from "@/constants/colors";
+import { supabase } from "@/lib/supabase";
+import { fetchLinkedInPhoto, isLinkedInUrl } from "@/lib/linkedin";
+import { Avatar } from "@/components/Avatar";
 import type { ContactFull } from "@/hooks/useContact";
 
 type ContactHeaderProps = {
   contact: ContactFull;
+  onPhotoUpdated?: () => void;
 };
 
-const AVATAR_COLORS = [
-  "#2563eb",
-  "#7c3aed",
-  "#db2777",
-  "#ea580c",
-  "#16a34a",
-  "#0891b2",
-  "#4f46e5",
-  "#c026d3",
-];
-
-function getAvatarColor(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
-
-export function ContactHeader({ contact }: ContactHeaderProps) {
+export function ContactHeader({ contact, onPhotoUpdated }: ContactHeaderProps) {
   const fullName = [contact.first_name, contact.last_name].filter(Boolean).join(" ");
-  const initials = getInitials(contact.first_name, contact.last_name);
-  const avatarBg = getAvatarColor(fullName);
   const subtitle = [contact.job_title, contact.company].filter(Boolean).join(" at ");
 
   const primaryEmail = contact.contact_emails.find((e) => e.is_primary)?.email ??
     contact.contact_emails[0]?.email;
   const primaryPhone = contact.contact_phones.find((p) => p.is_primary)?.phone ??
     contact.contact_phones[0]?.phone;
+
+  // Find LinkedIn URL from contact_urls
+  const linkedInUrl = contact.contact_urls?.find((u) => isLinkedInUrl(u.url))?.url;
+  const hasLinkedIn = !!linkedInUrl;
+  const hasAvatar = !!contact.avatar_url;
+
+  const [isFetchingPhoto, setIsFetchingPhoto] = useState(false);
+
+  const handleFetchLinkedInPhoto = useCallback(async () => {
+    if (!linkedInUrl) return;
+
+    setIsFetchingPhoto(true);
+    try {
+      const photoUrl = await fetchLinkedInPhoto(linkedInUrl);
+      if (!photoUrl) {
+        Alert.alert(
+          "No Photo Found",
+          "Could not extract a photo from this LinkedIn profile. This may be due to privacy settings or network restrictions.",
+        );
+        return;
+      }
+
+      // Save to contact record
+      const { error } = await supabase
+        .from("contacts")
+        .update({ avatar_url: photoUrl } as never)
+        .eq("id", contact.id);
+
+      if (error) throw error;
+
+      onPhotoUpdated?.();
+    } catch (err) {
+      Alert.alert(
+        "Error",
+        err instanceof Error ? err.message : "Failed to fetch LinkedIn photo",
+      );
+    } finally {
+      setIsFetchingPhoto(false);
+    }
+  }, [linkedInUrl, contact.id, onPhotoUpdated]);
 
   const handleCall = () => {
     if (primaryPhone) {
@@ -65,12 +88,39 @@ export function ContactHeader({ contact }: ContactHeaderProps) {
   return (
     <View className="items-center bg-white px-6 pb-6 pt-4">
       {/* Large Avatar */}
-      <View
-        className="mb-3 h-20 w-20 items-center justify-center rounded-full"
-        style={{ backgroundColor: avatarBg }}
-      >
-        <Text className="text-3xl font-bold text-white">{initials}</Text>
+      <View className="mb-3">
+        <Avatar
+          firstName={contact.first_name}
+          lastName={contact.last_name}
+          imageUrl={contact.avatar_url}
+          size="xl"
+        />
       </View>
+
+      {/* Fetch LinkedIn Photo button */}
+      {hasLinkedIn && !hasAvatar && (
+        <Pressable
+          onPress={handleFetchLinkedInPhoto}
+          disabled={isFetchingPhoto}
+          className="mb-2 flex-row items-center rounded-lg bg-indigo-50 px-3 py-1.5 active:bg-indigo-100"
+        >
+          {isFetchingPhoto ? (
+            <>
+              <ActivityIndicator size="small" color={Colors.brand[600]} />
+              <Text className="ml-1.5 text-xs font-medium text-indigo-600">
+                Fetching...
+              </Text>
+            </>
+          ) : (
+            <>
+              <Ionicons name="camera-outline" size={14} color={Colors.brand[600]} />
+              <Text className="ml-1 text-xs font-medium text-indigo-600">
+                Fetch Photo
+              </Text>
+            </>
+          )}
+        </Pressable>
+      )}
 
       {/* Name */}
       <Text className="text-xl font-bold text-stone-900">{fullName}</Text>

@@ -1,8 +1,8 @@
-import { useState } from "react";
 import { View, Text, Pressable, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/colors";
+import { Avatar } from "@/components/Avatar";
 import type { EntityPerson } from "@/hooks/useEntity";
 
 type EntityPersonCardProps = {
@@ -22,7 +22,6 @@ export function EntityPersonCard({
   const fullName = [person.first_name, person.last_name]
     .filter(Boolean)
     .join(" ");
-  const initial = person.first_name.charAt(0).toUpperCase();
   const isPromoted = !!person.promoted_contact_id;
 
   const handleDelete = () => {
@@ -43,9 +42,11 @@ export function EntityPersonCard({
   return (
     <View className="mb-2 flex-row items-center rounded-xl bg-white p-3 shadow-sm">
       {/* Avatar */}
-      <View className="h-10 w-10 items-center justify-center rounded-full bg-stone-200">
-        <Text className="text-sm font-bold text-stone-600">{initial}</Text>
-      </View>
+      <Avatar
+        firstName={person.first_name}
+        lastName={person.last_name}
+        size="md"
+      />
 
       {/* Info */}
       <View className="ml-3 flex-1">

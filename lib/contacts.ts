@@ -140,6 +140,7 @@ export function mapToAppSchema(
     last_name: contact.lastName || null,
     company: contact.company,
     job_title: contact.jobTitle,
+    avatar_url: contact.imageUri ?? null,
     source: "device",
     source_id: contact.id,
   };

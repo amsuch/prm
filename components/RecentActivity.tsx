@@ -1,7 +1,8 @@
 import { View, Text, Pressable } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { getInitials, formatRelativeTime } from "@/lib/utils";
+import { formatRelativeTime } from "@/lib/utils";
+import { Avatar } from "@/components/Avatar";
 import type { RecentInteraction } from "@/hooks/useDashboard";
 
 type RecentActivityProps = {
@@ -32,10 +33,6 @@ const INTERACTION_COLORS: Record<string, string> = {
 };
 
 function InteractionRow({ interaction }: { interaction: RecentInteraction }) {
-  const initials = getInitials(
-    interaction.contact_first_name,
-    interaction.contact_last_name,
-  );
   const contactName = [
     interaction.contact_first_name,
     interaction.contact_last_name,
@@ -53,9 +50,11 @@ function InteractionRow({ interaction }: { interaction: RecentInteraction }) {
       className="flex-row items-center px-4 py-3 active:bg-stone-50"
     >
       {/* Avatar */}
-      <View className="h-10 w-10 items-center justify-center rounded-full bg-indigo-100">
-        <Text className="text-sm font-semibold text-indigo-700">{initials}</Text>
-      </View>
+      <Avatar
+        firstName={interaction.contact_first_name}
+        lastName={interaction.contact_last_name}
+        size="md"
+      />
 
       {/* Content */}
       <View className="ml-3 flex-1">

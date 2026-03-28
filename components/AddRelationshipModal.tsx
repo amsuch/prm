@@ -15,13 +15,13 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/colors";
 import { useSession } from "@/lib/auth/ctx";
-import { getInitials } from "@/lib/utils";
 import {
   addRelationship,
   getRelationshipTypes,
   searchContactsForRelationship,
   type RelationshipType,
 } from "@/lib/relationships";
+import { Avatar } from "@/components/Avatar";
 import type { RelationshipItem } from "@/hooks/useRelationships";
 import { useDebounce } from "@/hooks/useDebounce";
 
@@ -40,25 +40,6 @@ type SearchResult = {
   company: string | null;
   avatar_url: string | null;
 };
-
-const AVATAR_COLORS = [
-  "#2563eb",
-  "#7c3aed",
-  "#db2777",
-  "#ea580c",
-  "#16a34a",
-  "#0891b2",
-  "#4f46e5",
-  "#c026d3",
-];
-
-function getAvatarColor(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
 
 const CATEGORY_ORDER = ["Family", "Professional", "Social", "Other"];
 
@@ -169,8 +150,6 @@ export function AddRelationshipModal({
 
   const renderSearchResult = ({ item }: { item: SearchResult }) => {
     const fullName = [item.first_name, item.last_name].filter(Boolean).join(" ");
-    const initials = getInitials(item.first_name, item.last_name);
-    const avatarBg = getAvatarColor(fullName);
     const isSelected = selectedContact?.id === item.id;
 
     return (
@@ -180,12 +159,12 @@ export function AddRelationshipModal({
           isSelected ? "bg-indigo-50" : "active:bg-stone-50"
         }`}
       >
-        <View
-          className="h-9 w-9 items-center justify-center rounded-full"
-          style={{ backgroundColor: avatarBg }}
-        >
-          <Text className="text-sm font-bold text-white">{initials}</Text>
-        </View>
+        <Avatar
+          firstName={item.first_name}
+          lastName={item.last_name}
+          imageUrl={item.avatar_url}
+          size="sm"
+        />
         <View className="ml-3 flex-1">
           <Text
             className={`text-sm font-medium ${

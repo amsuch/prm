@@ -80,7 +80,7 @@ export function EntityCategoryManager() {
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState("");
   const [selectedIcon, setSelectedIcon] = useState(ICON_OPTIONS[0].name);
-  const [selectedColor, setSelectedColor] = useState(AvatarColors[0]);
+  const [selectedColor, setSelectedColor] = useState<string>(AvatarColors[0]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 

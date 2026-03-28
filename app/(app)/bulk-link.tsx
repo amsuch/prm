@@ -15,8 +15,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSession } from "@/lib/auth/ctx";
 import { supabase } from "@/lib/supabase";
 import { useRelationshipTypes } from "@/hooks/useRelationshipTypes";
-import { getInitials } from "@/lib/utils";
 import { Colors } from "@/constants/colors";
+import { Avatar } from "@/components/Avatar";
 
 type Contact = {
   id: string;
@@ -28,19 +28,6 @@ type Contact = {
 };
 
 type LinkMode = "all_to_all" | "anchor";
-
-const AVATAR_COLORS = [
-  "#2563eb", "#7c3aed", "#db2777", "#ea580c",
-  "#16a34a", "#0891b2", "#4f46e5", "#c026d3",
-];
-
-function getAvatarColor(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
 
 const CATEGORY_COLORS: Record<string, string> = {
   family: "#e11d48",
@@ -275,9 +262,7 @@ export default function BulkLinkScreen() {
             contentContainerStyle={{ paddingBottom: 100 }}
             renderItem={({ item }) => {
               const fullName = [item.first_name, item.last_name].filter(Boolean).join(" ");
-              const initials = getInitials(item.first_name, item.last_name);
               const isSelected = selectedIds.has(item.id);
-              const avatarBg = getAvatarColor(fullName);
 
               return (
                 <Pressable
@@ -297,12 +282,12 @@ export default function BulkLinkScreen() {
                       <Ionicons name="checkmark" size={14} color="white" />
                     )}
                   </View>
-                  <View
-                    className="h-9 w-9 items-center justify-center rounded-full"
-                    style={{ backgroundColor: avatarBg }}
-                  >
-                    <Text className="text-xs font-bold text-white">{initials}</Text>
-                  </View>
+                  <Avatar
+                    firstName={item.first_name}
+                    lastName={item.last_name}
+                    imageUrl={item.avatar_url}
+                    size="sm"
+                  />
                   <View className="ml-3 flex-1">
                     <Text className="text-sm font-medium text-stone-900">{fullName}</Text>
                     {item.company && (
@@ -433,8 +418,6 @@ export default function BulkLinkScreen() {
                   <View className="mb-6 overflow-hidden rounded-xl bg-white shadow-sm">
                     {selectedContacts.map((c) => {
                       const name = [c.first_name, c.last_name].filter(Boolean).join(" ");
-                      const initials = getInitials(c.first_name, c.last_name);
-                      const avatarBg = getAvatarColor(name);
                       const isAnchor = anchorId === c.id;
 
                       return (
@@ -450,11 +433,13 @@ export default function BulkLinkScreen() {
                             size={18}
                             color={isAnchor ? Colors.brand[600] : Colors.gray[400]}
                           />
-                          <View
-                            className="ml-2 h-7 w-7 items-center justify-center rounded-full"
-                            style={{ backgroundColor: avatarBg }}
-                          >
-                            <Text className="text-xs font-bold text-white">{initials}</Text>
+                          <View className="ml-2">
+                            <Avatar
+                              firstName={c.first_name}
+                              lastName={c.last_name}
+                              imageUrl={c.avatar_url}
+                              size="xs"
+                            />
                           </View>
                           <Text className="ml-2 text-sm text-stone-900">{name}</Text>
                           {isAnchor && (
@@ -615,18 +600,16 @@ export default function BulkLinkScreen() {
           <View className="overflow-hidden rounded-xl bg-white shadow-sm">
             {selectedContacts.slice(0, 15).map((c) => {
               const name = [c.first_name, c.last_name].filter(Boolean).join(" ");
-              const initials = getInitials(c.first_name, c.last_name);
-              const avatarBg = getAvatarColor(name);
               const isAnchor = linkMode === "anchor" && c.id === anchorId;
 
               return (
                 <View key={c.id} className="flex-row items-center border-b border-stone-100 px-4 py-2.5">
-                  <View
-                    className="h-8 w-8 items-center justify-center rounded-full"
-                    style={{ backgroundColor: avatarBg }}
-                  >
-                    <Text className="text-xs font-bold text-white">{initials}</Text>
-                  </View>
+                  <Avatar
+                    firstName={c.first_name}
+                    lastName={c.last_name}
+                    imageUrl={c.avatar_url}
+                    size="sm"
+                  />
                   <Text className="ml-3 flex-1 text-sm text-stone-900">{name}</Text>
                   {isAnchor && (
                     <View className="rounded-full bg-indigo-100 px-2 py-0.5">

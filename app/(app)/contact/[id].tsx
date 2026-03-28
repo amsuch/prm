@@ -101,7 +101,7 @@ export default function ContactDetailScreen() {
         contentContainerStyle={{ paddingBottom: 96 }}
       >
         {/* Header */}
-        <ContactHeader contact={contact} />
+        <ContactHeader contact={contact} onPhotoUpdated={refetch} />
 
         {/* Stats Bar */}
         <View className="mx-4 mt-3 flex-row rounded-xl bg-white p-3 shadow-sm">

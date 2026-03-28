@@ -1,39 +1,19 @@
 import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { getInitials, formatRelativeTime } from "@/lib/utils";
+import { formatRelativeTime } from "@/lib/utils";
 import { Colors } from "@/constants/colors";
+import { Avatar } from "@/components/Avatar";
 import type { ContactWithDetails } from "@/hooks/useContacts";
 
 type ContactCardProps = {
   contact: ContactWithDetails;
 };
 
-const AVATAR_COLORS = [
-  "#2563eb",
-  "#7c3aed",
-  "#db2777",
-  "#ea580c",
-  "#16a34a",
-  "#0891b2",
-  "#4f46e5",
-  "#c026d3",
-];
-
-function getAvatarColor(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
-
 export function ContactCard({ contact }: ContactCardProps) {
   const router = useRouter();
-  const initials = getInitials(contact.first_name, contact.last_name);
   const fullName = [contact.first_name, contact.last_name].filter(Boolean).join(" ");
   const subtitle = [contact.job_title, contact.company].filter(Boolean).join(" at ");
-  const avatarBg = getAvatarColor(fullName);
   const tags =
     contact.contact_tags?.map((ct) => ct.tags).filter(Boolean) ?? [];
 
@@ -43,12 +23,12 @@ export function ContactCard({ contact }: ContactCardProps) {
       className="mx-4 mb-2 flex-row items-center rounded-xl bg-white p-3 shadow-sm active:bg-stone-50"
     >
       {/* Avatar */}
-      <View
-        className="h-12 w-12 items-center justify-center rounded-full"
-        style={{ backgroundColor: avatarBg }}
-      >
-        <Text className="text-lg font-bold text-white">{initials}</Text>
-      </View>
+      <Avatar
+        firstName={contact.first_name}
+        lastName={contact.last_name}
+        imageUrl={contact.avatar_url}
+        size="lg"
+      />
 
       {/* Info */}
       <View className="ml-3 flex-1">

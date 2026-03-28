@@ -14,6 +14,8 @@ import {
 } from "@/lib/entities";
 import { callLLM, type LLMConfig } from "@/lib/llm";
 import { askWithSQL } from "@/lib/sqlAgent";
+import { findContactsByName, formatContactName } from "@/lib/contactLookup";
+import { getToolDefinitions } from "@/lib/tools";
 
 export type AgentResultContact = {
   id: string;
@@ -234,31 +236,21 @@ async function handleCompanyLookup(
   company: string,
   userId: string,
 ): Promise<AgentResponse> {
-  const { data, error } = await supabase
-    .from("contacts")
-    .select("id, first_name, last_name, company, job_title, avatar_url")
-    .eq("user_id", userId)
-    .eq("is_archived", false)
-    .ilike("company", `%${company}%`)
-    .order("first_name")
-    .limit(20);
+  const tool = getToolDefinitions().find((t) => t.name === "search_contacts");
+  const results = (await tool!.execute({ query: company }, userId)) as AgentResultContact[];
 
-  if (error) throw error;
-
-  const contacts = (data as unknown as AgentResultContact[]) ?? [];
-
-  if (contacts.length === 0) {
+  if (results.length === 0) {
     return {
       type: "text",
       message: `I couldn't find any contacts at "${company}". Try checking the spelling or searching for a different company.`,
     };
   }
 
-  const plural = contacts.length === 1 ? "contact" : "contacts";
+  const plural = results.length === 1 ? "contact" : "contacts";
   return {
     type: "contacts",
-    message: `Found ${contacts.length} ${plural} at "${company}":`,
-    contacts,
+    message: `Found ${results.length} ${plural} at "${company}":`,
+    contacts: results,
   };
 }
 
@@ -267,19 +259,7 @@ async function handleLastContact(
   userId: string,
 ): Promise<AgentResponse> {
   // First, find contacts matching the name
-  const { data: contactData, error: contactError } = await supabase
-    .from("contacts")
-    .select("id, first_name, last_name, company, job_title, avatar_url")
-    .eq("user_id", userId)
-    .eq("is_archived", false)
-    .or(
-      `first_name.ilike.%${name}%,last_name.ilike.%${name}%`,
-    )
-    .limit(5);
-
-  if (contactError) throw contactError;
-
-  const contacts = (contactData as unknown as AgentResultContact[]) ?? [];
+  const contacts = await findContactsByName(name, userId, 5);
 
   if (contacts.length === 0) {
     return {
@@ -290,9 +270,7 @@ async function handleLastContact(
 
   // Find the most recent interaction for the first matched contact
   const contact = contacts[0];
-  const fullName = [contact.first_name, contact.last_name]
-    .filter(Boolean)
-    .join(" ");
+  const fullName = formatContactName(contact.first_name, contact.last_name);
 
   const { data: interactionData, error: interactionError } = await supabase
     .from("interactions")
@@ -446,20 +424,7 @@ async function handleRelationships(
   userId: string,
 ): Promise<AgentResponse> {
   // Find contacts matching the name
-  const { data: contactData, error: contactError } = await supabase
-    .from("contacts")
-    .select("id, first_name, last_name")
-    .eq("user_id", userId)
-    .eq("is_archived", false)
-    .or(
-      `first_name.ilike.%${name}%,last_name.ilike.%${name}%`,
-    )
-    .limit(1);
-
-  if (contactError) throw contactError;
-
-  type ContactSlim = { id: string; first_name: string; last_name: string | null };
-  const contacts = (contactData as unknown as ContactSlim[]) ?? [];
+  const contacts = await findContactsByName(name, userId, 1);
 
   if (contacts.length === 0) {
     return {
@@ -469,9 +434,7 @@ async function handleRelationships(
   }
 
   const contact = contacts[0];
-  const fullName = [contact.first_name, contact.last_name]
-    .filter(Boolean)
-    .join(" ");
+  const fullName = formatContactName(contact.first_name, contact.last_name);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: relData, error: relError } = await (supabase.rpc as any)(
@@ -511,95 +474,8 @@ async function handleRelationships(
 }
 
 async function handleStats(userId: string): Promise<AgentResponse> {
-  // Total contacts
-  const { count: totalContacts, error: countError } = await supabase
-    .from("contacts")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .eq("is_archived", false);
-
-  if (countError) throw countError;
-
-  // Contacted this week
-  const weekAgo = new Date();
-  weekAgo.setDate(weekAgo.getDate() - 7);
-  const { count: contactedThisWeek, error: weekError } = await supabase
-    .from("contacts")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .eq("is_archived", false)
-    .gte("last_contacted_at", weekAgo.toISOString());
-
-  if (weekError) throw weekError;
-
-  // Stale contacts (not contacted in 30 days)
-  const thirtyAgo = new Date();
-  thirtyAgo.setDate(thirtyAgo.getDate() - 30);
-  const { count: staleContacts, error: staleError } = await supabase
-    .from("contacts")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .eq("is_archived", false)
-    .or(
-      `last_contacted_at.is.null,last_contacted_at.lt.${thirtyAgo.toISOString()}`,
-    );
-
-  if (staleError) throw staleError;
-
-  // Top companies
-  const { data: companyRaw, error: companyError } = await supabase
-    .from("contacts")
-    .select("company")
-    .eq("user_id", userId)
-    .eq("is_archived", false)
-    .not("company", "is", null)
-    .not("company", "eq", "");
-
-  if (companyError) throw companyError;
-
-  type CompanyRow = { company: string | null };
-  const companyData = (companyRaw as unknown as CompanyRow[]) ?? [];
-
-  const companyCounts = new Map<string, number>();
-  for (const row of companyData) {
-    if (row.company) {
-      const key = row.company;
-      companyCounts.set(key, (companyCounts.get(key) ?? 0) + 1);
-    }
-  }
-  const topCompanies = [...companyCounts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([company, count]) => ({ company, count }));
-
-  // Source breakdown
-  const { data: sourceRaw, error: sourceError } = await supabase
-    .from("contacts")
-    .select("source")
-    .eq("user_id", userId)
-    .eq("is_archived", false);
-
-  if (sourceError) throw sourceError;
-
-  type SourceRow = { source: string | null };
-  const sourceData = (sourceRaw as unknown as SourceRow[]) ?? [];
-
-  const sourceCounts = new Map<string, number>();
-  for (const row of sourceData) {
-    const key = row.source ?? "unknown";
-    sourceCounts.set(key, (sourceCounts.get(key) ?? 0) + 1);
-  }
-  const sourceBreakdown = [...sourceCounts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .map(([source, count]) => ({ source, count }));
-
-  const stats: StatsResult = {
-    totalContacts: totalContacts ?? 0,
-    contactedThisWeek: contactedThisWeek ?? 0,
-    staleContacts: staleContacts ?? 0,
-    topCompanies,
-    sourceBreakdown,
-  };
+  const tool = getToolDefinitions().find((t) => t.name === "get_network_stats");
+  const stats = (await tool!.execute({}, userId)) as StatsResult;
 
   // Format a text summary
   const lines: string[] = [];
@@ -607,18 +483,18 @@ async function handleStats(userId: string): Promise<AgentResponse> {
   lines.push(`${stats.contactedThisWeek} contacted this week.`);
   lines.push(`${stats.staleContacts} need follow-up (30+ days).`);
 
-  if (topCompanies.length > 0) {
+  if (stats.topCompanies.length > 0) {
     lines.push("");
     lines.push("Top companies:");
-    for (const c of topCompanies) {
+    for (const c of stats.topCompanies) {
       lines.push(`  ${c.company} (${c.count})`);
     }
   }
 
-  if (sourceBreakdown.length > 0) {
+  if (stats.sourceBreakdown.length > 0) {
     lines.push("");
     lines.push("Sources:");
-    for (const s of sourceBreakdown) {
+    for (const s of stats.sourceBreakdown) {
       lines.push(`  ${s.source}: ${s.count}`);
     }
   }
@@ -762,40 +638,21 @@ async function handleSearch(
   query: string,
   userId: string,
 ): Promise<AgentResponse> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase.rpc as any)(
-    "search_contacts",
-    {
-      search_query: query,
-      p_user_id: userId,
-    },
-  );
+  const tool = getToolDefinitions().find((t) => t.name === "search_contacts");
+  const results = (await tool!.execute({ query }, userId)) as AgentResultContact[];
 
-  if (error) throw error;
-
-  const rows = (data as unknown as SearchContactRow[]) ?? [];
-
-  const contacts: AgentResultContact[] = rows.map((row) => ({
-    id: row.id,
-    first_name: row.first_name,
-    last_name: row.last_name,
-    company: row.company,
-    job_title: row.job_title,
-    avatar_url: row.avatar_url,
-  }));
-
-  if (contacts.length === 0) {
+  if (results.length === 0) {
     return {
       type: "text",
       message: `No results found for "${query}". Try rephrasing your question or search for a specific name, company, or tag.`,
     };
   }
 
-  const plural = contacts.length === 1 ? "result" : "results";
+  const plural = results.length === 1 ? "result" : "results";
   return {
     type: "contacts",
-    message: `Found ${contacts.length} ${plural} for "${query}":`,
-    contacts,
+    message: `Found ${results.length} ${plural} for "${query}":`,
+    contacts: results,
   };
 }
 
@@ -805,51 +662,20 @@ async function handleAddContact(
 ): Promise<AgentResponse> {
   const { firstName, lastName, company, jobTitle, email, phone } = parsed;
 
-  // Insert the contact
-  const { data: contactData, error: contactError } = await supabase
-    .from("contacts")
-    .insert({
-      user_id: userId,
+  const tool = getToolDefinitions().find((t) => t.name === "create_contact");
+  const result = (await tool!.execute(
+    {
       first_name: firstName,
-      last_name: lastName ?? null,
-      company: company ?? null,
-      job_title: jobTitle ?? null,
-      source: "agent",
-    })
-    .select("id, first_name, last_name, company, job_title, avatar_url")
-    .single();
+      last_name: lastName,
+      company,
+      job_title: jobTitle,
+      email,
+      phone,
+    },
+    userId,
+  )) as { success: boolean; message: string; contact: AgentResultContact };
 
-  if (contactError) throw contactError;
-
-  const contact = contactData as unknown as AgentResultContact;
-
-  // Insert email if provided
-  if (email) {
-    const { error: emailError } = await supabase
-      .from("contact_emails")
-      .insert({
-        contact_id: contact.id,
-        email,
-        label: "work",
-        is_primary: true,
-      });
-    if (emailError) throw emailError;
-  }
-
-  // Insert phone if provided
-  if (phone) {
-    const { error: phoneError } = await supabase
-      .from("contact_phones")
-      .insert({
-        contact_id: contact.id,
-        phone,
-        label: "work",
-        is_primary: true,
-      });
-    if (phoneError) throw phoneError;
-  }
-
-  const fullName = [firstName, lastName].filter(Boolean).join(" ");
+  const fullName = formatContactName(firstName, lastName);
   const details: string[] = [];
   if (company) details.push(`Company: ${company}`);
   if (jobTitle) details.push(`Title: ${jobTitle}`);
@@ -862,7 +688,7 @@ async function handleAddContact(
     type: "action",
     message: `Created contact "${fullName}" successfully.${detailStr}`,
     actionType: "add",
-    contact,
+    contact: result.contact,
   };
 }
 
@@ -871,55 +697,13 @@ async function handleBulkTag(
   filter: { company?: string; source?: string },
   userId: string,
 ): Promise<AgentResponse> {
-  // Find or create the tag
-  let tagId: string;
-  const { data: existingTag, error: tagLookupError } = await supabase
-    .from("tags")
-    .select("id")
-    .eq("user_id", userId)
-    .ilike("name", tagName)
-    .limit(1);
+  const tool = getToolDefinitions().find((t) => t.name === "bulk_tag_contacts");
+  const result = (await tool!.execute(
+    { tag: tagName, company: filter.company, source: filter.source },
+    userId,
+  )) as { success: boolean; message: string; count: number; skipped: number };
 
-  if (tagLookupError) throw tagLookupError;
-
-  type TagIdRow = { id: string };
-  const existingTags = (existingTag as unknown as TagIdRow[]) ?? [];
-
-  if (existingTags.length > 0) {
-    tagId = existingTags[0].id;
-  } else {
-    // Create the tag
-    const { data: newTag, error: tagCreateError } = await supabase
-      .from("tags")
-      .insert({ user_id: userId, name: tagName })
-      .select("id")
-      .single();
-
-    if (tagCreateError) throw tagCreateError;
-    tagId = (newTag as unknown as TagIdRow).id;
-  }
-
-  // Find contacts matching the filter
-  let query = supabase
-    .from("contacts")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("is_archived", false);
-
-  if (filter.company) {
-    query = query.ilike("company", `%${filter.company}%`);
-  }
-  if (filter.source) {
-    query = query.ilike("source", filter.source);
-  }
-
-  const { data: contactData, error: contactError } = await query;
-  if (contactError) throw contactError;
-
-  type ContactIdRow = { id: string };
-  const contacts = (contactData as unknown as ContactIdRow[]) ?? [];
-
-  if (contacts.length === 0) {
+  if (!result.success) {
     const filterDesc = filter.company
       ? `at "${filter.company}"`
       : `from "${filter.source}"`;
@@ -929,48 +713,20 @@ async function handleBulkTag(
     };
   }
 
-  // Get existing contact_tags for this tag to avoid duplicates
-  const { data: existingCtData, error: existingCtError } = await supabase
-    .from("contact_tags")
-    .select("contact_id")
-    .eq("tag_id", tagId)
-    .in("contact_id", contacts.map((c) => c.id));
-
-  if (existingCtError) throw existingCtError;
-
-  type ContactIdTagRow = { contact_id: string };
-  const existingContactIds = new Set(
-    ((existingCtData as unknown as ContactIdTagRow[]) ?? []).map((ct) => ct.contact_id),
-  );
-
-  // Insert contact_tags for contacts that don't already have the tag
-  const newContactTags = contacts
-    .filter((c) => !existingContactIds.has(c.id))
-    .map((c) => ({ contact_id: c.id, tag_id: tagId }));
-
-  if (newContactTags.length > 0) {
-    const { error: insertError } = await supabase
-      .from("contact_tags")
-      .insert(newContactTags);
-    if (insertError) throw insertError;
-  }
-
-  const taggedCount = newContactTags.length;
-  const skippedCount = existingContactIds.size;
   const filterDesc = filter.company
     ? `at "${filter.company}"`
     : `from "${filter.source}"`;
 
-  let message = `Tagged ${taggedCount} contact${taggedCount === 1 ? "" : "s"} ${filterDesc} as "${tagName}".`;
-  if (skippedCount > 0) {
-    message += ` (${skippedCount} already had this tag)`;
+  let message = `Tagged ${result.count} contact${result.count === 1 ? "" : "s"} ${filterDesc} as "${tagName}".`;
+  if (result.skipped > 0) {
+    message += ` (${result.skipped} already had this tag)`;
   }
 
   return {
     type: "action",
     message,
     actionType: "bulk_tag",
-    count: taggedCount,
+    count: result.count,
   };
 }
 
@@ -1108,105 +864,22 @@ async function handleArchiveContacts(
   filter: { days?: number; tag?: string; company?: string },
   userId: string,
 ): Promise<AgentResponse> {
-  let contactIds: string[] = [];
+  const tool = getToolDefinitions().find((t) => t.name === "archive_contacts");
+  const result = (await tool!.execute(
+    {
+      days_inactive: filter.days,
+      tag: filter.tag,
+      company: filter.company,
+    },
+    userId,
+  )) as { success: boolean; message: string; count: number };
 
-  if (filter.days) {
-    // Find contacts not contacted in N days
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - filter.days);
-
-    const { data, error } = await supabase
-      .from("contacts")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("is_archived", false)
-      .or(
-        `last_contacted_at.is.null,last_contacted_at.lt.${cutoff.toISOString()}`,
-      );
-
-    if (error) throw error;
-
-    type ContactIdRow = { id: string };
-    contactIds = ((data as unknown as ContactIdRow[]) ?? []).map((c) => c.id);
-  } else if (filter.tag) {
-    // Find contacts by tag
-    const { data: tagData, error: tagError } = await supabase
-      .from("tags")
-      .select("id")
-      .eq("user_id", userId)
-      .ilike("name", `%${filter.tag}%`)
-      .limit(1);
-
-    if (tagError) throw tagError;
-
-    type TagIdRow = { id: string };
-    const tags = (tagData as unknown as TagIdRow[]) ?? [];
-    if (tags.length === 0) {
-      return {
-        type: "text",
-        message: `No tag found matching "${filter.tag}".`,
-      };
-    }
-
-    const { data: ctData, error: ctError } = await supabase
-      .from("contact_tags")
-      .select("contact_id")
-      .eq("tag_id", tags[0].id);
-
-    if (ctError) throw ctError;
-
-    type ContactIdTagRow = { contact_id: string };
-    const taggedContactIds = ((ctData as unknown as ContactIdTagRow[]) ?? []).map(
-      (ct) => ct.contact_id,
-    );
-
-    if (taggedContactIds.length === 0) {
-      return {
-        type: "text",
-        message: `No contacts are tagged "${filter.tag}".`,
-      };
-    }
-
-    // Only archive non-archived contacts
-    const { data: activeData, error: activeError } = await supabase
-      .from("contacts")
-      .select("id")
-      .in("id", taggedContactIds)
-      .eq("user_id", userId)
-      .eq("is_archived", false);
-
-    if (activeError) throw activeError;
-
-    type ContactIdRow = { id: string };
-    contactIds = ((activeData as unknown as ContactIdRow[]) ?? []).map((c) => c.id);
-  } else if (filter.company) {
-    const { data, error } = await supabase
-      .from("contacts")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("is_archived", false)
-      .ilike("company", `%${filter.company}%`);
-
-    if (error) throw error;
-
-    type ContactIdRow = { id: string };
-    contactIds = ((data as unknown as ContactIdRow[]) ?? []).map((c) => c.id);
-  }
-
-  if (contactIds.length === 0) {
+  if (!result.success) {
     return {
       type: "text",
-      message: "No contacts matched the archive criteria.",
+      message: result.message,
     };
   }
-
-  // Set is_archived = true on all matched contacts
-  const { error: updateError } = await supabase
-    .from("contacts")
-    .update({ is_archived: true })
-    .in("id", contactIds);
-
-  if (updateError) throw updateError;
 
   let filterDesc: string;
   if (filter.days) filterDesc = `not contacted in ${filter.days}+ days`;
@@ -1216,10 +889,9 @@ async function handleArchiveContacts(
 
   return {
     type: "action",
-    message: `Archived ${contactIds.length} contact${contactIds.length === 1 ? "" : "s"} ${filterDesc}.`,
+    message: `Archived ${result.count} contact${result.count === 1 ? "" : "s"} ${filterDesc}.`,
     actionType: "archive",
-    count: contactIds.length,
-
+    count: result.count,
   };
 }
 
@@ -1228,19 +900,7 @@ async function handleEnrichContact(
   userId: string,
 ): Promise<AgentResponse> {
   // Find the contact by name
-  const { data: contactData, error: contactError } = await supabase
-    .from("contacts")
-    .select("id, first_name, last_name, company, job_title, avatar_url")
-    .eq("user_id", userId)
-    .eq("is_archived", false)
-    .or(
-      `first_name.ilike.%${name}%,last_name.ilike.%${name}%`,
-    )
-    .limit(1);
-
-  if (contactError) throw contactError;
-
-  const contacts = (contactData as unknown as AgentResultContact[]) ?? [];
+  const contacts = await findContactsByName(name, userId, 1);
 
   if (contacts.length === 0) {
     return {
@@ -1250,9 +910,7 @@ async function handleEnrichContact(
   }
 
   const contact = contacts[0];
-  const fullName = [contact.first_name, contact.last_name]
-    .filter(Boolean)
-    .join(" ");
+  const fullName = formatContactName(contact.first_name, contact.last_name);
 
   // Fetch email and phone for current info display
   const { data: emailData } = await supabase
@@ -1440,27 +1098,13 @@ async function handleLinkContacts(
   userId: string,
 ): Promise<AgentResponse> {
   // Find contact A
-  const { data: dataA, error: errA } = await supabase
-    .from("contacts")
-    .select("id, first_name, last_name, company, job_title, avatar_url")
-    .eq("user_id", userId).eq("is_archived", false)
-    .or(`first_name.ilike.%${nameA}%,last_name.ilike.%${nameA}%`)
-    .limit(1);
-  if (errA) throw errA;
-  const contactsA = (dataA as unknown as AgentResultContact[]) ?? [];
+  const contactsA = await findContactsByName(nameA, userId, 1);
   if (contactsA.length === 0) {
     return { type: "text", message: `Couldn't find a contact matching "${nameA}".` };
   }
 
   // Find contact B
-  const { data: dataB, error: errB } = await supabase
-    .from("contacts")
-    .select("id, first_name, last_name, company, job_title, avatar_url")
-    .eq("user_id", userId).eq("is_archived", false)
-    .or(`first_name.ilike.%${nameB}%,last_name.ilike.%${nameB}%`)
-    .limit(1);
-  if (errB) throw errB;
-  const contactsB = (dataB as unknown as AgentResultContact[]) ?? [];
+  const contactsB = await findContactsByName(nameB, userId, 1);
   if (contactsB.length === 0) {
     return { type: "text", message: `Couldn't find a contact matching "${nameB}".` };
   }
@@ -1571,64 +1215,48 @@ async function handleEntityLookup(
   query: string,
   userId: string,
 ): Promise<AgentResponse> {
-  let dbQuery = supabase
-    .from("entities")
-    .select("*, entity_people(id)")
-    .eq("user_id", userId)
-    .eq("is_archived", false)
-    .order("name");
+  // Map common plural/singular words to category search
+  const categoryMap: Record<string, string> = {
+    restaurants: "restaurant",
+    restaurant: "restaurant",
+    gyms: "gym",
+    gym: "gym",
+    companies: "company",
+    company: "company",
+    clubs: "club",
+    club: "club",
+    schools: "school",
+    school: "school",
+    churches: "church",
+    church: "church",
+    stores: "store",
+    store: "store",
+    places: "",
+    place: "",
+    entities: "",
+    entity: "",
+    organizations: "",
+    organization: "",
+  };
+
+  let category: string | undefined;
+  let searchQuery: string | undefined;
 
   if (query) {
-    // Map common plural/singular words to category search
-    const categoryMap: Record<string, string> = {
-      restaurants: "restaurant",
-      restaurant: "restaurant",
-      gyms: "gym",
-      gym: "gym",
-      companies: "company",
-      company: "company",
-      clubs: "club",
-      club: "club",
-      schools: "school",
-      school: "school",
-      churches: "church",
-      church: "church",
-      stores: "store",
-      store: "store",
-      places: "",
-      place: "",
-      entities: "",
-      entity: "",
-      organizations: "",
-      organization: "",
-    };
-
     const categorySearch = categoryMap[query.toLowerCase()];
     if (categorySearch !== undefined && categorySearch !== "") {
-      dbQuery = dbQuery.ilike("category", `%${categorySearch}%`);
+      category = categorySearch;
     } else if (categorySearch === undefined) {
-      // Freeform search
-      dbQuery = dbQuery.or(
-        `name.ilike.%${query}%,category.ilike.%${query}%`,
-      );
+      searchQuery = query;
     }
-    // If categorySearch === "", show all entities
+    // If categorySearch === "", show all entities (no filter)
   }
 
-  const { data, error } = await dbQuery.limit(20);
-  if (error) throw error;
-
-  type RawEntity = EntityRow & { entity_people: { id: string }[] };
-  const rawEntities = (data ?? []) as unknown as RawEntity[];
-
-  const entities: EntityResult[] = rawEntities.map((e) => ({
-    id: e.id,
-    name: e.name,
-    category: e.category,
-    address: e.address,
-    phone: e.phone,
-    people_count: e.entity_people?.length ?? 0,
-  }));
+  const tool = getToolDefinitions().find((t) => t.name === "list_entities");
+  const entities = (await tool!.execute(
+    { category, query: searchQuery },
+    userId,
+  )) as EntityResult[];
 
   if (entities.length === 0) {
     const suffix = query ? ` matching "${query}"` : "";
@@ -1653,11 +1281,8 @@ async function handleCreateEntity(
   address: string | undefined,
   userId: string,
 ): Promise<AgentResponse> {
-  const entity = await createEntity(userId, {
-    name,
-    category: category ?? null,
-    address: address ?? null,
-  });
+  const tool = getToolDefinitions().find((t) => t.name === "create_entity");
+  await tool!.execute({ name, category, address }, userId);
 
   const details: string[] = [];
   if (category) details.push(`Category: ${category}`);
@@ -1677,7 +1302,7 @@ async function handleAddEntityPerson(
   role: string | undefined,
   userId: string,
 ): Promise<AgentResponse> {
-  // Find the entity by name
+  // Find the entity by name to get its ID
   const { data: entityData, error: entityError } = await supabase
     .from("entities")
     .select("id, name")
@@ -1705,11 +1330,11 @@ async function handleAddEntityPerson(
   const firstName = nameParts[0];
   const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : undefined;
 
-  await addPersonToEntity(entity.id, userId, {
-    first_name: firstName,
-    last_name: lastName,
-    role: role ?? null,
-  });
+  const tool = getToolDefinitions().find((t) => t.name === "add_entity_person");
+  await tool!.execute(
+    { entity_id: entity.id, first_name: firstName, last_name: lastName, role },
+    userId,
+  );
 
   return {
     type: "action",

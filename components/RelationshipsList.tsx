@@ -2,8 +2,8 @@ import { View, Text, Pressable, Alert, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/colors";
-import { getInitials } from "@/lib/utils";
 import { removeRelationship } from "@/lib/relationships";
+import { Avatar } from "@/components/Avatar";
 import type {
   RelationshipItem,
   GroupedRelationships,
@@ -16,25 +16,6 @@ type RelationshipsListProps = {
   onAddPress: () => void;
   onRefresh: () => void;
 };
-
-const AVATAR_COLORS = [
-  "#2563eb",
-  "#7c3aed",
-  "#db2777",
-  "#ea580c",
-  "#16a34a",
-  "#0891b2",
-  "#4f46e5",
-  "#c026d3",
-];
-
-function getAvatarColor(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
 
 const CATEGORY_ICONS: Record<string, string> = {
   Family: "heart-outline",
@@ -63,8 +44,6 @@ function RelationshipCard({
   const fullName = [item.related_first_name, item.related_last_name]
     .filter(Boolean)
     .join(" ");
-  const initials = getInitials(item.related_first_name, item.related_last_name);
-  const avatarBg = getAvatarColor(fullName);
 
   const handleLongPress = () => {
     Alert.alert(
@@ -87,12 +66,11 @@ function RelationshipCard({
       onLongPress={handleLongPress}
       className="flex-row items-center rounded-xl bg-white px-3 py-2.5 active:bg-stone-50"
     >
-      <View
-        className="h-10 w-10 items-center justify-center rounded-full"
-        style={{ backgroundColor: avatarBg }}
-      >
-        <Text className="text-sm font-bold text-white">{initials}</Text>
-      </View>
+      <Avatar
+        firstName={item.related_first_name}
+        lastName={item.related_last_name}
+        size="md"
+      />
       <View className="ml-3 flex-1">
         <Text className="text-sm font-semibold text-stone-900" numberOfLines={1}>
           {fullName}
