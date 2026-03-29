@@ -47,7 +47,7 @@ function InteractionRow({ interaction }: { interaction: RecentInteraction }) {
       onPress={() =>
         router.push(`/(app)/contact/${interaction.contact_id}` as const)
       }
-      className="flex-row items-center px-4 py-3 active:bg-stone-50"
+      className="flex-row items-center px-4 py-3 active:bg-stone-50 dark:active:bg-stone-800"
     >
       {/* Avatar */}
       <Avatar
@@ -59,20 +59,20 @@ function InteractionRow({ interaction }: { interaction: RecentInteraction }) {
       {/* Content */}
       <View className="ml-3 flex-1">
         <View className="flex-row items-center">
-          <Text className="text-sm font-semibold text-stone-900" numberOfLines={1}>
+          <Text className="text-sm font-semibold text-stone-900 dark:text-stone-100" numberOfLines={1}>
             {contactName}
           </Text>
         </View>
         <View className="mt-0.5 flex-row items-center">
           <Ionicons name={icon} size={12} color={iconColor} />
-          <Text className="ml-1 text-xs text-stone-500" numberOfLines={1}>
+          <Text className="ml-1 text-xs text-stone-500 dark:text-stone-400 dark:text-stone-500" numberOfLines={1}>
             {interaction.title || interaction.type}
           </Text>
         </View>
       </View>
 
       {/* Time */}
-      <Text className="ml-2 text-xs text-stone-400">
+      <Text className="ml-2 text-xs text-stone-400 dark:text-stone-500">
         {formatRelativeTime(interaction.occurred_at)}
       </Text>
     </Pressable>
@@ -82,7 +82,7 @@ function InteractionRow({ interaction }: { interaction: RecentInteraction }) {
 export function RecentActivity({ interactions, isLoading }: RecentActivityProps) {
   if (isLoading) {
     return (
-      <View className="rounded-xl bg-white shadow-sm">
+      <View className="rounded-xl bg-white dark:bg-stone-900 shadow-sm">
         {[1, 2, 3].map((i) => (
           <View key={i} className="flex-row items-center px-4 py-3">
             <View className="h-10 w-10 rounded-full bg-stone-100" />
@@ -100,8 +100,8 @@ export function RecentActivity({ interactions, isLoading }: RecentActivityProps)
     return (
       <View className="items-center rounded-xl bg-white py-12 shadow-sm">
         <Ionicons name="time-outline" size={40} color="#d1d5db" />
-        <Text className="mt-2 text-stone-400">No activity yet</Text>
-        <Text className="mt-1 text-sm text-stone-400">
+        <Text className="mt-2 text-stone-400 dark:text-stone-500">No activity yet</Text>
+        <Text className="mt-1 text-sm text-stone-400 dark:text-stone-500">
           Log interactions to see them here
         </Text>
       </View>
@@ -109,10 +109,10 @@ export function RecentActivity({ interactions, isLoading }: RecentActivityProps)
   }
 
   return (
-    <View className="overflow-hidden rounded-xl bg-white shadow-sm">
+    <View className="overflow-hidden rounded-xl bg-white dark:bg-stone-900 shadow-sm">
       {interactions.map((interaction, index) => (
         <View key={interaction.id}>
-          {index > 0 && <View className="ml-17 h-px bg-stone-100" />}
+          {index > 0 && <View className="ml-17 h-px bg-stone-100 dark:bg-stone-800" />}
           <InteractionRow interaction={interaction} />
         </View>
       ))}

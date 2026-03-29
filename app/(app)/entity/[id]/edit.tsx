@@ -125,30 +125,30 @@ export default function EditEntityScreen() {
 
   if (entityLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-stone-50">
+      <View className="flex-1 items-center justify-center bg-stone-50 dark:bg-stone-950">
         <ActivityIndicator size="large" color={Colors.brand[600]} />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-stone-50">
+    <View className="flex-1 bg-stone-50 dark:bg-stone-950">
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
       >
         {/* Google Maps Import */}
-        <View className="mx-4 mt-4 rounded-xl bg-white p-4 shadow-sm">
+        <View className="mx-4 mt-4 rounded-xl bg-white p-4 shadow-sm dark:border dark:border-stone-800 dark:bg-stone-900">
           <View className="flex-row items-center mb-2">
             <Ionicons name="map-outline" size={16} color={Colors.brand[600]} />
-            <Text className="ml-1.5 text-sm font-medium text-stone-700">
+            <Text className="ml-1.5 text-sm font-medium text-stone-700 dark:text-stone-300">
               Paste Google Maps Link
             </Text>
           </View>
           <View className="flex-row items-center gap-2">
             <TextInput
-              className="flex-1 rounded-xl border border-stone-200 bg-stone-50 px-4 py-2.5 text-sm text-stone-900"
+              className="flex-1 rounded-xl border border-stone-200 bg-stone-50 px-4 py-2.5 text-sm text-stone-900 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100"
               placeholder="https://maps.google.com/..."
               placeholderTextColor={Colors.gray[400]}
               value={mapsLink}
@@ -164,7 +164,7 @@ export default function EditEntityScreen() {
               disabled={isParsingMap || !mapsLink.trim() || !isGoogleMapsUrl(mapsLink)}
               className={`rounded-xl px-4 py-2.5 ${
                 isParsingMap || !mapsLink.trim() || !isGoogleMapsUrl(mapsLink)
-                  ? "bg-stone-200"
+                  ? "bg-stone-200 dark:bg-stone-700"
                   : "bg-indigo-600 active:bg-indigo-700"
               }`}
             >
@@ -174,7 +174,7 @@ export default function EditEntityScreen() {
                 <Text
                   className={`text-sm font-medium ${
                     !mapsLink.trim() || !isGoogleMapsUrl(mapsLink)
-                      ? "text-stone-400"
+                      ? "text-stone-400 dark:text-stone-500"
                       : "text-white"
                   }`}
                 >
@@ -188,18 +188,18 @@ export default function EditEntityScreen() {
           )}
         </View>
 
-        <View className="mx-4 mt-4 rounded-xl bg-white p-4 shadow-sm">
+        <View className="mx-4 mt-4 rounded-xl bg-white p-4 shadow-sm dark:border dark:border-stone-800 dark:bg-stone-900">
           {error && (
-            <View className="mb-3 rounded-lg bg-red-50 p-3">
-              <Text className="text-sm text-red-700">{error}</Text>
+            <View className="mb-3 rounded-lg bg-red-50 p-3 dark:bg-red-950">
+              <Text className="text-sm text-red-700 dark:text-red-400">{error}</Text>
             </View>
           )}
 
           {/* Name */}
           <View className="mb-3">
-            <Text className="mb-1 text-sm font-medium text-stone-700">Name *</Text>
+            <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">Name *</Text>
             <TextInput
-              className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-base text-stone-900"
+              className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-base text-stone-900 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100"
               placeholder="e.g. Joe's Diner, Planet Fitness"
               placeholderTextColor={Colors.gray[400]}
               value={name}
@@ -209,12 +209,12 @@ export default function EditEntityScreen() {
 
           {/* Category Picker */}
           <View className="mb-3" style={{ zIndex: 10 }}>
-            <Text className="mb-1 text-sm font-medium text-stone-700">Category</Text>
+            <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">Category</Text>
 
             {/* Selected category display / trigger */}
             <Pressable
               onPress={() => setShowCategoryPicker(!showCategoryPicker)}
-              className="flex-row items-center justify-between rounded-xl border border-stone-200 bg-stone-50 px-4 py-3"
+              className="flex-row items-center justify-between rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 dark:border-stone-700 dark:bg-stone-800"
             >
               {category ? (
                 <View className="flex-row items-center">
@@ -225,7 +225,7 @@ export default function EditEntityScreen() {
                       color={selectedCategory.color}
                     />
                   )}
-                  <Text className={`text-base text-stone-900 ${selectedCategory ? "ml-2" : ""}`}>
+                  <Text className={`text-base text-stone-900 dark:text-stone-100 ${selectedCategory ? "ml-2" : ""}`}>
                     {category}
                   </Text>
                 </View>
@@ -243,7 +243,7 @@ export default function EditEntityScreen() {
 
             {/* Category dropdown */}
             {showCategoryPicker && (
-              <View className="absolute left-0 right-0 top-16 z-20 rounded-xl border border-stone-200 bg-white shadow-lg">
+              <View className="absolute left-0 right-0 top-16 z-20 rounded-xl border border-stone-200 bg-white shadow-lg dark:border-stone-700 dark:bg-stone-800">
                 <ScrollView
                   style={{ maxHeight: 240 }}
                   keyboardShouldPersistTaps="handled"
@@ -256,9 +256,9 @@ export default function EditEntityScreen() {
                         setCategory("");
                         setShowCategoryPicker(false);
                       }}
-                      className="border-b border-stone-100 px-4 py-2.5 active:bg-stone-50"
+                      className="border-b border-stone-100 px-4 py-2.5 active:bg-stone-50 dark:border-stone-700 dark:active:bg-stone-700"
                     >
-                      <Text className="text-sm text-stone-400 italic">None</Text>
+                      <Text className="text-sm text-stone-400 italic dark:text-stone-500">None</Text>
                     </Pressable>
                   )}
 
@@ -272,8 +272,8 @@ export default function EditEntityScreen() {
                       <Pressable
                         key={cat.id}
                         onPress={() => handleSelectCategory(cat)}
-                        className={`flex-row items-center border-b border-stone-50 px-4 py-2.5 active:bg-stone-50 ${
-                          category === cat.name ? "bg-indigo-50" : ""
+                        className={`flex-row items-center border-b border-stone-50 px-4 py-2.5 active:bg-stone-50 dark:border-stone-700 dark:active:bg-stone-700 ${
+                          category === cat.name ? "bg-indigo-50 dark:bg-indigo-950" : ""
                         }`}
                       >
                         <Ionicons
@@ -283,7 +283,7 @@ export default function EditEntityScreen() {
                         />
                         <Text
                           className={`ml-2.5 text-sm font-medium ${
-                            category === cat.name ? "text-indigo-700" : "text-stone-700"
+                            category === cat.name ? "text-indigo-700 dark:text-indigo-400" : "text-stone-700 dark:text-stone-300"
                           }`}
                         >
                           {cat.name}
@@ -297,11 +297,11 @@ export default function EditEntityScreen() {
                   )}
 
                   {/* Custom category input */}
-                  <View className="border-t border-stone-200 px-4 py-2.5">
-                    <Text className="mb-1 text-xs text-stone-400">Or type custom:</Text>
+                  <View className="border-t border-stone-200 px-4 py-2.5 dark:border-stone-700">
+                    <Text className="mb-1 text-xs text-stone-400 dark:text-stone-500">Or type custom:</Text>
                     <View className="flex-row items-center gap-2">
                       <TextInput
-                        className="flex-1 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-900"
+                        className="flex-1 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-900 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100"
                         placeholder="Custom category"
                         placeholderTextColor={Colors.gray[400]}
                         value={customCategory}
@@ -312,13 +312,13 @@ export default function EditEntityScreen() {
                         disabled={!customCategory.trim()}
                         className={`rounded-lg px-3 py-2 ${
                           !customCategory.trim()
-                            ? "bg-stone-200"
+                            ? "bg-stone-200 dark:bg-stone-700"
                             : "bg-indigo-600 active:bg-indigo-700"
                         }`}
                       >
                         <Text
                           className={`text-xs font-medium ${
-                            !customCategory.trim() ? "text-stone-400" : "text-white"
+                            !customCategory.trim() ? "text-stone-400 dark:text-stone-500" : "text-white"
                           }`}
                         >
                           Use
@@ -333,9 +333,9 @@ export default function EditEntityScreen() {
 
           {/* Address */}
           <View className="mb-3">
-            <Text className="mb-1 text-sm font-medium text-stone-700">Address</Text>
+            <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">Address</Text>
             <TextInput
-              className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-base text-stone-900"
+              className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-base text-stone-900 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100"
               placeholder="Street address"
               placeholderTextColor={Colors.gray[400]}
               value={address}
@@ -345,9 +345,9 @@ export default function EditEntityScreen() {
 
           {/* Phone */}
           <View className="mb-3">
-            <Text className="mb-1 text-sm font-medium text-stone-700">Phone</Text>
+            <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">Phone</Text>
             <TextInput
-              className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-base text-stone-900"
+              className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-base text-stone-900 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100"
               placeholder="Phone number"
               placeholderTextColor={Colors.gray[400]}
               value={phone}
@@ -358,9 +358,9 @@ export default function EditEntityScreen() {
 
           {/* Website */}
           <View className="mb-3">
-            <Text className="mb-1 text-sm font-medium text-stone-700">Website</Text>
+            <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">Website</Text>
             <TextInput
-              className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-base text-stone-900"
+              className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-base text-stone-900 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100"
               placeholder="https://example.com"
               placeholderTextColor={Colors.gray[400]}
               value={website}
@@ -372,9 +372,9 @@ export default function EditEntityScreen() {
 
           {/* Notes */}
           <View className="mb-3">
-            <Text className="mb-1 text-sm font-medium text-stone-700">Notes</Text>
+            <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">Notes</Text>
             <TextInput
-              className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-base text-stone-900"
+              className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-base text-stone-900 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100"
               placeholder="Optional notes about this place"
               placeholderTextColor={Colors.gray[400]}
               value={notes}

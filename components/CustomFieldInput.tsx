@@ -28,7 +28,7 @@ export function CustomFieldInput({
       case "text":
         return (
           <TextInput
-            className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900"
+            className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100"
             placeholder={`Enter ${name.toLowerCase()}`}
             placeholderTextColor={Colors.gray[400]}
             value={typeof value === "string" ? value : ""}
@@ -39,7 +39,7 @@ export function CustomFieldInput({
       case "number":
         return (
           <TextInput
-            className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900"
+            className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100"
             placeholder={`Enter ${name.toLowerCase()}`}
             placeholderTextColor={Colors.gray[400]}
             value={value !== null && value !== undefined ? String(value) : ""}
@@ -54,7 +54,7 @@ export function CustomFieldInput({
       case "url":
         return (
           <TextInput
-            className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900"
+            className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100"
             placeholder="https://..."
             placeholderTextColor={Colors.gray[400]}
             value={typeof value === "string" ? value : ""}
@@ -67,7 +67,7 @@ export function CustomFieldInput({
       case "date":
         return (
           <TextInput
-            className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900"
+            className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100"
             placeholder="YYYY-MM-DD"
             placeholderTextColor={Colors.gray[400]}
             value={typeof value === "string" ? value : ""}
@@ -84,7 +84,7 @@ export function CustomFieldInput({
               trackColor={{ false: Colors.gray[200], true: Colors.brand[400] }}
               thumbColor={value ? Colors.brand[600] : Colors.gray[50]}
             />
-            <Text className="text-sm text-stone-600">
+            <Text className="text-sm text-stone-600 dark:text-stone-400">
               {value ? "Yes" : "No"}
             </Text>
           </View>
@@ -102,12 +102,12 @@ export function CustomFieldInput({
                   className={`rounded-full px-3 py-1.5 ${
                     isSelected
                       ? "bg-indigo-600"
-                      : "bg-white border border-stone-200"
+                      : "bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700"
                   }`}
                 >
                   <Text
                     className={`text-sm ${
-                      isSelected ? "text-white font-medium" : "text-stone-600"
+                      isSelected ? "text-white font-medium" : "text-stone-600 dark:text-stone-400"
                     }`}
                   >
                     {opt}
@@ -137,7 +137,7 @@ export function CustomFieldInput({
                   className={`flex-row items-center rounded-full px-3 py-1.5 ${
                     isSelected
                       ? "bg-indigo-600"
-                      : "bg-white border border-stone-200"
+                      : "bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700"
                   }`}
                 >
                   {isSelected && (
@@ -150,7 +150,7 @@ export function CustomFieldInput({
                   )}
                   <Text
                     className={`text-sm ${
-                      isSelected ? "text-white font-medium" : "text-stone-600"
+                      isSelected ? "text-white font-medium" : "text-stone-600 dark:text-stone-400"
                     }`}
                   >
                     {opt}
@@ -165,7 +165,7 @@ export function CustomFieldInput({
       default:
         return (
           <TextInput
-            className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900"
+            className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100"
             placeholder={`Enter ${name.toLowerCase()}`}
             placeholderTextColor={Colors.gray[400]}
             value={typeof value === "string" ? value : ""}
@@ -177,7 +177,7 @@ export function CustomFieldInput({
 
   return (
     <View className="mb-4">
-      <Text className="mb-1.5 text-sm font-medium text-stone-700">
+      <Text className="mb-1.5 text-sm font-medium text-stone-700 dark:text-stone-300">
         {name}
         {is_required && <Text className="text-red-500"> *</Text>}
       </Text>

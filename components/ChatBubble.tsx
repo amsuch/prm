@@ -1,6 +1,7 @@
 import { View, Text } from "react-native";
 import type { AgentResponse, PendingAction } from "@/lib/agent";
 import type { ToolCall } from "@/lib/agentLoop";
+import { Shadows } from "@/constants/shadows";
 import { ContactCards } from "./chat/ContactResults";
 import { InteractionCard } from "./chat/InteractionResult";
 import { RelationshipCards } from "./chat/RelationshipResults";
@@ -50,7 +51,7 @@ export function ChatBubble({
   // Agent message
   return (
     <View className="mb-3 px-4">
-      <View className="max-w-[90%] rounded-2xl rounded-bl-md bg-white px-4 py-3 shadow-sm">
+      <View className="max-w-[90%] rounded-2xl rounded-bl-md bg-white dark:bg-stone-900 px-4 py-3 shadow-sm" style={Shadows.xs}>
         {isLoading ? (
           <View>
             {/* Tool progress indicators */}
@@ -61,7 +62,7 @@ export function ChatBubble({
                 <View className="mr-2 h-2 w-2 rounded-full bg-stone-300" />
                 <View className="mr-2 h-2 w-2 rounded-full bg-stone-400" />
                 <View className="h-2 w-2 rounded-full bg-stone-500" />
-                <Text className="ml-3 text-sm text-stone-400">
+                <Text className="ml-3 text-sm text-stone-400 dark:text-stone-500">
                   Thinking...
                 </Text>
               </View>

@@ -85,13 +85,13 @@ function CategoryRow({
           value={editName}
           onChangeText={setEditName}
           placeholder="Category name"
-          className="mb-3 rounded-xl border border-stone-200 bg-stone-50 px-4 py-2.5 text-sm text-stone-900"
+          className="mb-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 px-4 py-2.5 text-sm text-stone-900 dark:text-stone-100"
           placeholderTextColor={Colors.gray[400]}
           autoFocus
         />
 
         {/* Icon picker */}
-        <Text className="mb-1.5 text-xs font-medium text-stone-500">Icon</Text>
+        <Text className="mb-1.5 text-xs font-medium text-stone-500 dark:text-stone-400">Icon</Text>
         <View className="mb-3 flex-row flex-wrap gap-2">
           {ICON_OPTIONS.map((icon) => (
             <Pressable
@@ -99,8 +99,8 @@ function CategoryRow({
               onPress={() => setEditIcon(icon.name)}
               className={`items-center justify-center rounded-lg p-2 ${
                 editIcon === icon.name
-                  ? "bg-indigo-100 border border-indigo-300"
-                  : "bg-stone-50 border border-stone-200"
+                  ? "bg-indigo-100 dark:bg-indigo-900 border border-indigo-300"
+                  : "bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700"
               }`}
               style={{ width: 40, height: 40 }}
             >
@@ -118,7 +118,7 @@ function CategoryRow({
         </View>
 
         {/* Color picker */}
-        <Text className="mb-1.5 text-xs font-medium text-stone-500">Color</Text>
+        <Text className="mb-1.5 text-xs font-medium text-stone-500 dark:text-stone-400">Color</Text>
         <View className="mb-3 flex-row flex-wrap gap-2">
           {AvatarColors.map((color) => (
             <Pressable
@@ -144,9 +144,9 @@ function CategoryRow({
         <View className="flex-row gap-2">
           <Pressable
             onPress={handleCancel}
-            className="flex-1 items-center rounded-lg border border-stone-200 py-2.5 active:bg-stone-50"
+            className="flex-1 items-center rounded-lg border border-stone-200 dark:border-stone-700 py-2.5 active:bg-stone-50 dark:active:bg-stone-800"
           >
-            <Text className="text-sm font-medium text-stone-600">Cancel</Text>
+            <Text className="text-sm font-medium text-stone-600 dark:text-stone-400">Cancel</Text>
           </Pressable>
           <Pressable
             onPress={handleSave}
@@ -179,7 +179,7 @@ function CategoryRow({
           size={18}
           color={category.color}
         />
-        <Text className="ml-2.5 text-sm font-medium text-stone-900">
+        <Text className="ml-2.5 text-sm font-medium text-stone-900 dark:text-stone-100">
           {category.name}
         </Text>
         <View
@@ -187,13 +187,13 @@ function CategoryRow({
           style={{ backgroundColor: category.color }}
         />
         {category.is_system && (
-          <Text className="ml-2 text-xs text-stone-400">System</Text>
+          <Text className="ml-2 text-xs text-stone-400 dark:text-stone-500">System</Text>
         )}
       </Pressable>
       {!category.is_system && (
         <Pressable
           onPress={() => onDelete(category.id, category.name)}
-          className="ml-2 rounded-lg p-2 active:bg-red-50"
+          className="ml-2 rounded-lg p-2 active:bg-red-50 dark:active:bg-red-950"
           hitSlop={8}
         >
           <Ionicons name="trash-outline" size={16} color={Colors.error} />
@@ -291,7 +291,7 @@ export function EntityCategoryManager() {
       {categories.length === 0 && !isAdding && (
         <View className="items-center py-6">
           <Ionicons name="grid-outline" size={28} color={Colors.gray[300]} />
-          <Text className="mt-1 text-sm text-stone-400">
+          <Text className="mt-1 text-sm text-stone-400 dark:text-stone-500">
             No categories defined
           </Text>
         </View>
@@ -299,15 +299,15 @@ export function EntityCategoryManager() {
 
       {categories.map((cat, index) => (
         <View key={cat.id}>
-          {index > 0 && <View className="ml-4 h-px bg-stone-100" />}
+          {index > 0 && <View className="ml-4 h-px bg-stone-100 dark:bg-stone-800" />}
           <CategoryRow category={cat} onDelete={handleDelete} onUpdate={updateCategory} />
         </View>
       ))}
 
       {/* Add Category form */}
       {isAdding ? (
-        <View className="border-t border-stone-100 px-4 py-3">
-          <Text className="mb-2 text-sm font-medium text-stone-700">
+        <View className="border-t border-stone-100 dark:border-stone-800 px-4 py-3">
+          <Text className="mb-2 text-sm font-medium text-stone-700 dark:text-stone-300">
             New Category
           </Text>
 
@@ -316,13 +316,13 @@ export function EntityCategoryManager() {
             value={newName}
             onChangeText={setNewName}
             placeholder="Category name"
-            className="mb-3 rounded-xl border border-stone-200 bg-stone-50 px-4 py-2.5 text-sm text-stone-900"
+            className="mb-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 px-4 py-2.5 text-sm text-stone-900 dark:text-stone-100"
             placeholderTextColor={Colors.gray[400]}
             autoFocus
           />
 
           {/* Icon picker */}
-          <Text className="mb-1.5 text-xs font-medium text-stone-500">Icon</Text>
+          <Text className="mb-1.5 text-xs font-medium text-stone-500 dark:text-stone-400">Icon</Text>
           <View className="mb-3 flex-row flex-wrap gap-2">
             {ICON_OPTIONS.map((icon) => (
               <Pressable
@@ -349,7 +349,7 @@ export function EntityCategoryManager() {
           </View>
 
           {/* Color picker */}
-          <Text className="mb-1.5 text-xs font-medium text-stone-500">Color</Text>
+          <Text className="mb-1.5 text-xs font-medium text-stone-500 dark:text-stone-400">Color</Text>
           <View className="mb-3 flex-row flex-wrap gap-2">
             {AvatarColors.map((color) => (
               <Pressable
@@ -381,9 +381,9 @@ export function EntityCategoryManager() {
                 setSelectedColor(AvatarColors[0]);
                 setSaveError(null);
               }}
-              className="flex-1 items-center rounded-lg border border-stone-200 py-2.5 active:bg-stone-50"
+              className="flex-1 items-center rounded-lg border border-stone-200 dark:border-stone-700 py-2.5 active:bg-stone-50 dark:active:bg-stone-800"
             >
-              <Text className="text-sm font-medium text-stone-600">Cancel</Text>
+              <Text className="text-sm font-medium text-stone-600 dark:text-stone-400">Cancel</Text>
             </Pressable>
             <Pressable
               onPress={handleAdd}
@@ -403,10 +403,10 @@ export function EntityCategoryManager() {
           </View>
         </View>
       ) : (
-        <View className="border-t border-stone-100 px-4 py-3">
+        <View className="border-t border-stone-100 dark:border-stone-800 px-4 py-3">
           <Pressable
             onPress={() => setIsAdding(true)}
-            className="flex-row items-center justify-center rounded-lg border border-dashed border-stone-300 py-2.5 active:bg-stone-50"
+            className="flex-row items-center justify-center rounded-lg border border-dashed border-stone-300 dark:border-stone-600 py-2.5 active:bg-stone-50 dark:active:bg-stone-800"
           >
             <Ionicons name="add" size={18} color={Colors.brand[600]} />
             <Text className="ml-1 text-sm font-medium text-indigo-600">

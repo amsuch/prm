@@ -40,7 +40,7 @@ export function EntityPersonCard({
   };
 
   return (
-    <View className="mb-2 flex-row items-center rounded-xl bg-white p-3 shadow-sm">
+    <View className="mb-2 flex-row items-center rounded-xl bg-white dark:bg-stone-900 dark:border dark:border-stone-800 p-3 shadow-sm">
       {/* Avatar */}
       <Avatar
         firstName={person.first_name}
@@ -50,9 +50,9 @@ export function EntityPersonCard({
 
       {/* Info */}
       <View className="ml-3 flex-1">
-        <Text className="text-sm font-semibold text-stone-900">{fullName}</Text>
+        <Text className="text-sm font-semibold text-stone-900 dark:text-stone-100">{fullName}</Text>
         {person.role && (
-          <Text className="mt-0.5 text-xs text-stone-500">{person.role}</Text>
+          <Text className="mt-0.5 text-xs text-stone-500 dark:text-stone-400">{person.role}</Text>
         )}
       </View>
 
@@ -61,7 +61,7 @@ export function EntityPersonCard({
         {isPromoted ? (
           <Pressable
             onPress={() => router.push(`/contact/${person.promoted_contact_id}`)}
-            className="flex-row items-center rounded-full bg-green-50 px-3 py-1.5 active:bg-green-100"
+            className="flex-row items-center rounded-full bg-green-50 dark:bg-green-950 px-3 py-1.5 active:bg-green-100"
           >
             <Ionicons name="person" size={14} color="#16a34a" />
             <Text className="ml-1 text-xs font-medium text-green-700">
@@ -72,7 +72,7 @@ export function EntityPersonCard({
           <Pressable
             onPress={() => onPromote(person)}
             disabled={isPromoting}
-            className="flex-row items-center rounded-full bg-indigo-50 px-3 py-1.5 active:bg-indigo-100"
+            className="flex-row items-center rounded-full bg-indigo-50 dark:bg-indigo-950 px-3 py-1.5 active:bg-indigo-100"
             style={{ opacity: isPromoting ? 0.5 : 1 }}
           >
             <Ionicons name="arrow-up-circle" size={14} color={Colors.brand[600]} />
@@ -84,7 +84,7 @@ export function EntityPersonCard({
 
         <Pressable
           onPress={handleDelete}
-          className="rounded-full p-1.5 active:bg-red-50"
+          className="rounded-full p-1.5 active:bg-red-50 dark:active:bg-red-950"
           hitSlop={8}
         >
           <Ionicons name="trash-outline" size={16} color={Colors.error} />

@@ -88,10 +88,10 @@ export function AddPersonModal({
           className="flex-1"
           onPress={handleClose}
         />
-        <View className="rounded-t-2xl bg-white px-5 pb-8 pt-5 shadow-lg">
+        <View className="rounded-t-2xl bg-white dark:bg-stone-900 px-5 pb-8 pt-5 shadow-lg">
           {/* Header */}
           <View className="mb-4 flex-row items-center justify-between">
-            <Text className="text-lg font-semibold text-stone-900">
+            <Text className="text-lg font-semibold text-stone-900 dark:text-stone-100">
               Add Person
             </Text>
             <Pressable onPress={handleClose} hitSlop={8}>
@@ -100,18 +100,18 @@ export function AddPersonModal({
           </View>
 
           {error && (
-            <View className="mb-3 rounded-lg bg-red-50 p-3">
+            <View className="mb-3 rounded-lg bg-red-50 dark:bg-red-950 p-3">
               <Text className="text-sm text-red-700">{error}</Text>
             </View>
           )}
 
           {/* First Name */}
           <View className="mb-3">
-            <Text className="mb-1 text-sm font-medium text-stone-700">
+            <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">
               First Name *
             </Text>
             <TextInput
-              className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-base text-stone-900"
+              className="rounded-lg border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 px-3 py-2.5 text-base text-stone-900 dark:text-stone-100"
               placeholder="First name"
               placeholderTextColor={Colors.gray[400]}
               value={firstName}
@@ -122,11 +122,11 @@ export function AddPersonModal({
 
           {/* Last Name */}
           <View className="mb-3">
-            <Text className="mb-1 text-sm font-medium text-stone-700">
+            <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">
               Last Name
             </Text>
             <TextInput
-              className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-base text-stone-900"
+              className="rounded-lg border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 px-3 py-2.5 text-base text-stone-900 dark:text-stone-100"
               placeholder="Last name"
               placeholderTextColor={Colors.gray[400]}
               value={lastName}
@@ -136,11 +136,11 @@ export function AddPersonModal({
 
           {/* Role */}
           <View className="mb-3">
-            <Text className="mb-1 text-sm font-medium text-stone-700">
+            <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">
               Role
             </Text>
             <TextInput
-              className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-base text-stone-900"
+              className="rounded-lg border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 px-3 py-2.5 text-base text-stone-900 dark:text-stone-100"
               placeholder="e.g. Waiter, Barista, Trainer"
               placeholderTextColor={Colors.gray[400]}
               value={role}
@@ -150,11 +150,11 @@ export function AddPersonModal({
 
           {/* Notes */}
           <View className="mb-4">
-            <Text className="mb-1 text-sm font-medium text-stone-700">
+            <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">
               Notes
             </Text>
             <TextInput
-              className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-base text-stone-900"
+              className="rounded-lg border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 px-3 py-2.5 text-base text-stone-900 dark:text-stone-100"
               placeholder="Optional notes"
               placeholderTextColor={Colors.gray[400]}
               value={notes}

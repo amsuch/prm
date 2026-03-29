@@ -46,9 +46,9 @@ function TypeRow({
     <View className="flex-row items-center justify-between px-4 py-3">
       <View className="flex-1">
         <View className="flex-row items-center">
-          <Text className="text-sm font-medium text-stone-900">{type.name}</Text>
+          <Text className="text-sm font-medium text-stone-900 dark:text-stone-100">{type.name}</Text>
           {isAsymmetric && (
-            <Text className="ml-1.5 text-sm text-stone-400">
+            <Text className="ml-1.5 text-sm text-stone-400 dark:text-stone-500">
               / {type.reverse_name}
             </Text>
           )}
@@ -62,13 +62,13 @@ function TypeRow({
           )}
         </View>
         {type.is_system && (
-          <Text className="mt-0.5 text-xs text-stone-400">System</Text>
+          <Text className="mt-0.5 text-xs text-stone-400 dark:text-stone-500">System</Text>
         )}
       </View>
       {!type.is_system && (
         <Pressable
           onPress={() => onDelete(type.id, type.name)}
-          className="ml-2 rounded-lg p-2 active:bg-red-50"
+          className="ml-2 rounded-lg p-2 active:bg-red-50 dark:active:bg-red-950"
           hitSlop={8}
         >
           <Ionicons name="trash-outline" size={16} color="#ef4444" />
@@ -199,7 +199,7 @@ export function RelationshipTypeManager() {
       {types.length === 0 && !isAdding && (
         <View className="items-center py-6">
           <Ionicons name="people-outline" size={28} color="#d1d5db" />
-          <Text className="mt-1 text-sm text-stone-400">
+          <Text className="mt-1 text-sm text-stone-400 dark:text-stone-500">
             No relationship types defined
           </Text>
         </View>
@@ -207,15 +207,15 @@ export function RelationshipTypeManager() {
 
       {grouped.map((group, groupIndex) => (
         <View key={group.category}>
-          {groupIndex > 0 && <View className="mx-4 h-px bg-stone-100" />}
+          {groupIndex > 0 && <View className="mx-4 h-px bg-stone-100 dark:bg-stone-800" />}
           <View className="px-4 pb-1 pt-3">
-            <Text className="text-xs font-semibold uppercase tracking-wide text-stone-400">
+            <Text className="text-xs font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
               {group.category}
             </Text>
           </View>
           {group.types.map((type, index) => (
             <View key={type.id}>
-              {index > 0 && <View className="ml-4 h-px bg-stone-50" />}
+              {index > 0 && <View className="ml-4 h-px bg-stone-50 dark:bg-stone-800" />}
               <TypeRow type={type} onDelete={handleDelete} />
             </View>
           ))}
@@ -224,8 +224,8 @@ export function RelationshipTypeManager() {
 
       {/* Add Type form */}
       {isAdding ? (
-        <View className="border-t border-stone-100 px-4 py-3">
-          <Text className="mb-2 text-sm font-medium text-stone-700">
+        <View className="border-t border-stone-100 dark:border-stone-800 px-4 py-3">
+          <Text className="mb-2 text-sm font-medium text-stone-700 dark:text-stone-300">
             New Relationship Type
           </Text>
 
@@ -234,7 +234,7 @@ export function RelationshipTypeManager() {
             value={newName}
             onChangeText={handleNameChange}
             placeholder="Name (e.g. Mentor)"
-            className="mb-3 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm text-stone-900"
+            className="mb-3 rounded-lg border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100"
             placeholderTextColor="#a8a29e"
             autoFocus
           />
@@ -242,24 +242,24 @@ export function RelationshipTypeManager() {
           {/* Reverse Name (only if asymmetric) */}
           {!isSymmetric && (
             <View className="mb-3">
-              <Text className="mb-1.5 text-xs font-medium text-stone-500">
+              <Text className="mb-1.5 text-xs font-medium text-stone-500 dark:text-stone-400">
                 Reverse Name
               </Text>
               <TextInput
                 value={newReverseName}
                 onChangeText={setNewReverseName}
                 placeholder="Reverse name (e.g. Mentee)"
-                className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm text-stone-900"
+                className="rounded-lg border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100"
                 placeholderTextColor="#a8a29e"
               />
-              <Text className="mt-1 text-xs text-stone-400">
+              <Text className="mt-1 text-xs text-stone-400 dark:text-stone-500">
                 If A is &quot;{newName || "Mentor"}&quot; to B, then B is &quot;{newReverseName || "Mentee"}&quot; to A
               </Text>
             </View>
           )}
 
           {/* Category picker */}
-          <Text className="mb-1.5 text-xs font-medium text-stone-500">
+          <Text className="mb-1.5 text-xs font-medium text-stone-500 dark:text-stone-400">
             Category
           </Text>
           <View className="mb-3 flex-row flex-wrap gap-2">
@@ -268,12 +268,12 @@ export function RelationshipTypeManager() {
                 key={cat}
                 onPress={() => setNewCategory(cat)}
                 className={`rounded-lg px-3 py-1.5 ${
-                  newCategory === cat ? "bg-indigo-600" : "bg-stone-100"
+                  newCategory === cat ? "bg-indigo-600" : "bg-stone-100 dark:bg-stone-800"
                 }`}
               >
                 <Text
                   className={`text-xs font-medium ${
-                    newCategory === cat ? "text-white" : "text-stone-600"
+                    newCategory === cat ? "text-white" : "text-stone-600 dark:text-stone-400"
                   }`}
                 >
                   {cat}
@@ -285,8 +285,8 @@ export function RelationshipTypeManager() {
           {/* Symmetric toggle */}
           <View className="mb-3 flex-row items-center justify-between">
             <View>
-              <Text className="text-sm font-medium text-stone-700">Symmetric</Text>
-              <Text className="text-xs text-stone-400">
+              <Text className="text-sm font-medium text-stone-700 dark:text-stone-300">Symmetric</Text>
+              <Text className="text-xs text-stone-400 dark:text-stone-500">
                 Both sides use the same label (e.g. Friend)
               </Text>
             </View>
@@ -313,9 +313,9 @@ export function RelationshipTypeManager() {
                 setIsSymmetric(true);
                 setSaveError(null);
               }}
-              className="flex-1 items-center rounded-lg border border-stone-200 py-2.5 active:bg-stone-50"
+              className="flex-1 items-center rounded-lg border border-stone-200 dark:border-stone-700 py-2.5 active:bg-stone-50 dark:active:bg-stone-800"
             >
-              <Text className="text-sm font-medium text-stone-600">Cancel</Text>
+              <Text className="text-sm font-medium text-stone-600 dark:text-stone-400">Cancel</Text>
             </Pressable>
             <Pressable
               onPress={handleAdd}
@@ -335,10 +335,10 @@ export function RelationshipTypeManager() {
           </View>
         </View>
       ) : (
-        <View className="border-t border-stone-100 px-4 py-3">
+        <View className="border-t border-stone-100 dark:border-stone-800 px-4 py-3">
           <Pressable
             onPress={() => setIsAdding(true)}
-            className="flex-row items-center justify-center rounded-lg border border-dashed border-stone-300 py-2.5 active:bg-stone-50"
+            className="flex-row items-center justify-center rounded-lg border border-dashed border-stone-300 dark:border-stone-600 py-2.5 active:bg-stone-50 dark:active:bg-stone-800"
           >
             <Ionicons name="add" size={18} color="#2563eb" />
             <Text className="ml-1 text-sm font-medium text-indigo-600">

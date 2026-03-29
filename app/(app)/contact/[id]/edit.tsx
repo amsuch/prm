@@ -12,18 +12,18 @@ export default function EditContactScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-stone-50">
+      <View className="flex-1 items-center justify-center bg-stone-50 dark:bg-stone-950">
         <ActivityIndicator size="large" color={Colors.brand[600]} />
-        <Text className="mt-3 text-sm text-stone-400">Loading contact...</Text>
+        <Text className="mt-3 text-sm text-stone-400 dark:text-stone-500">Loading contact...</Text>
       </View>
     );
   }
 
   if (error || !contact) {
     return (
-      <View className="flex-1 items-center justify-center bg-stone-50 px-8">
+      <View className="flex-1 items-center justify-center bg-stone-50 px-8 dark:bg-stone-950">
         <Ionicons name="alert-circle-outline" size={48} color={Colors.error} />
-        <Text className="mt-3 text-center text-base font-medium text-stone-700">
+        <Text className="mt-3 text-center text-base font-medium text-stone-700 dark:text-stone-300">
           {error ?? "Contact not found"}
         </Text>
         <Pressable

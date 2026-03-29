@@ -60,15 +60,15 @@ export function ErrorFallback({
 }: ErrorFallbackProps) {
   return (
     <View className="flex-1 items-center justify-center px-8 py-16">
-      <View className="mb-4 h-20 w-20 items-center justify-center rounded-full bg-red-100">
+      <View className="mb-4 h-20 w-20 items-center justify-center rounded-full bg-red-100 dark:bg-red-950">
         <Ionicons name="alert-circle-outline" size={40} color="#ef4444" />
       </View>
 
-      <Text className="text-center text-lg font-semibold text-stone-900">
+      <Text className="text-center text-lg font-semibold text-stone-900 dark:text-stone-100">
         Something went wrong
       </Text>
 
-      <Text className="mt-2 text-center text-sm leading-5 text-stone-500">
+      <Text className="mt-2 text-center text-sm leading-5 text-stone-500 dark:text-stone-400">
         {message ?? error?.message ?? "An unexpected error occurred. Please try again."}
       </Text>
 

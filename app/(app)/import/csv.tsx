@@ -196,7 +196,7 @@ export default function CSVImportScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 bg-stone-50">
+      <View className="flex-1 bg-stone-50 dark:bg-stone-950">
         <LoadingSpinner message="Reading file..." />
       </View>
     );
@@ -204,16 +204,16 @@ export default function CSVImportScreen() {
 
   if (error && step === "pick") {
     return (
-      <View className="flex-1 bg-stone-50">
+      <View className="flex-1 bg-stone-50 dark:bg-stone-950">
         <ErrorFallback message={error} onRetry={handleReset} />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-stone-50">
+    <View className="flex-1 bg-stone-50 dark:bg-stone-950">
       {/* Step indicator */}
-      <View className="border-b border-stone-200 bg-white px-4 py-3">
+      <View className="border-b border-stone-200 bg-white px-4 py-3 dark:border-stone-800 dark:bg-stone-900">
         <StepIndicator
           currentStep={step}
           steps={[
@@ -236,23 +236,23 @@ export default function CSVImportScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* File info */}
-          <View className="mb-4 flex-row items-center rounded-xl border border-stone-200 bg-white px-4 py-3">
+          <View className="mb-4 flex-row items-center rounded-xl border border-stone-200 bg-white px-4 py-3 dark:border-stone-700 dark:bg-stone-900">
             <View className="mr-3 h-10 w-10 items-center justify-center rounded-lg bg-green-100">
               <Ionicons name="document-text" size={22} color="#10b981" />
             </View>
             <View className="flex-1">
               <Text
-                className="text-sm font-medium text-stone-900"
+                className="text-sm font-medium text-stone-900 dark:text-stone-100"
                 numberOfLines={1}
               >
                 {fileName}
               </Text>
-              <Text className="text-xs text-stone-500">
+              <Text className="text-xs text-stone-500 dark:text-stone-400">
                 {parsedData.totalRows} rows, {parsedData.headers.length} columns
               </Text>
             </View>
             <Pressable
-              className="rounded-md p-2 active:bg-stone-100"
+              className="rounded-md p-2 active:bg-stone-100 dark:active:bg-stone-700"
               onPress={handleReset}
             >
               <Ionicons name="close-circle-outline" size={22} color="#9ca3af" />
@@ -261,9 +261,9 @@ export default function CSVImportScreen() {
 
           {/* Error banner */}
           {error && (
-            <View className="mb-4 flex-row items-center rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+            <View className="mb-4 flex-row items-center rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-800 dark:bg-red-950">
               <Ionicons name="alert-circle" size={18} color="#ef4444" />
-              <Text className="ml-2 flex-1 text-sm text-red-700">{error}</Text>
+              <Text className="ml-2 flex-1 text-sm text-red-700 dark:text-red-400">{error}</Text>
             </View>
           )}
 
@@ -290,7 +290,7 @@ export default function CSVImportScreen() {
             className={`flex-row items-center justify-center gap-2 rounded-xl py-4 ${
               mapping.first_name
                 ? "bg-indigo-600 active:bg-indigo-700"
-                : "bg-stone-300"
+                : "bg-stone-300 dark:bg-stone-700"
             }`}
             onPress={handleStartImport}
             disabled={!mapping.first_name}
@@ -324,7 +324,7 @@ export default function CSVImportScreen() {
               </Pressable>
 
               <Pressable
-                className="flex-row items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white py-4 active:bg-stone-50"
+                className="flex-row items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white py-4 active:bg-stone-50 dark:border-stone-700 dark:bg-stone-800 dark:active:bg-stone-700"
                 onPress={handleReset}
               >
                 <Ionicons name="cloud-upload-outline" size={20} color="#2563eb" />
@@ -347,20 +347,20 @@ function PickFileStep({ onPickFile }: { onPickFile: () => void }) {
     <View className="flex-1 items-center justify-center px-6">
       <View className="w-full max-w-sm items-center">
         {/* Icon */}
-        <View className="mb-6 h-24 w-24 items-center justify-center rounded-full bg-indigo-100">
+        <View className="mb-6 h-24 w-24 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/50">
           <Ionicons name="document-text-outline" size={48} color="#2563eb" />
         </View>
 
-        <Text className="text-center text-xl font-bold text-stone-900">
+        <Text className="text-center text-xl font-bold text-stone-900 dark:text-stone-100">
           Import LinkedIn CSV
         </Text>
-        <Text className="mt-2 text-center text-sm leading-5 text-stone-500">
+        <Text className="mt-2 text-center text-sm leading-5 text-stone-500 dark:text-stone-400">
           Export your connections from LinkedIn, then upload the CSV file here.
           We will automatically detect and map the columns.
         </Text>
 
         {/* Steps */}
-        <View className="mt-6 w-full rounded-xl border border-stone-200 bg-white p-4">
+        <View className="mt-6 w-full rounded-xl border border-stone-200 bg-white p-4 dark:border-stone-700 dark:bg-stone-900">
           <InstructionStep
             number={1}
             text='Go to LinkedIn > My Network > Connections > "Export connections"'
@@ -396,7 +396,7 @@ function InstructionStep({ number, text }: { number: number; text: string }) {
       <View className="mr-3 h-6 w-6 items-center justify-center rounded-full bg-indigo-600">
         <Text className="text-xs font-bold text-white">{number}</Text>
       </View>
-      <Text className="flex-1 text-sm leading-5 text-stone-600">{text}</Text>
+      <Text className="flex-1 text-sm leading-5 text-stone-600 dark:text-stone-400">{text}</Text>
     </View>
   );
 }
@@ -424,7 +424,7 @@ function StepIndicator({
               {idx > 0 && (
                 <View
                   className={`h-0.5 w-full flex-1 ${
-                    isComplete || isActive ? "bg-indigo-600" : "bg-stone-200"
+                    isComplete || isActive ? "bg-indigo-600" : "bg-stone-200 dark:bg-stone-700"
                   }`}
                 />
               )}
@@ -433,8 +433,8 @@ function StepIndicator({
                   isComplete
                     ? "bg-indigo-600"
                     : isActive
-                      ? "border-2 border-indigo-600 bg-white"
-                      : "border-2 border-stone-200 bg-white"
+                      ? "border-2 border-indigo-600 bg-white dark:bg-stone-900"
+                      : "border-2 border-stone-200 bg-white dark:border-stone-700 dark:bg-stone-900"
                 }`}
               >
                 {isComplete ? (
@@ -442,7 +442,7 @@ function StepIndicator({
                 ) : (
                   <Text
                     className={`text-xs font-bold ${
-                      isActive ? "text-indigo-600" : "text-stone-400"
+                      isActive ? "text-indigo-600" : "text-stone-400 dark:text-stone-500"
                     }`}
                   >
                     {idx + 1}
@@ -452,14 +452,14 @@ function StepIndicator({
               {idx < steps.length - 1 && (
                 <View
                   className={`h-0.5 w-full flex-1 ${
-                    isComplete ? "bg-indigo-600" : "bg-stone-200"
+                    isComplete ? "bg-indigo-600" : "bg-stone-200 dark:bg-stone-700"
                   }`}
                 />
               )}
             </View>
             <Text
               className={`mt-1 text-center text-xs ${
-                isActive ? "font-semibold text-indigo-600" : "text-stone-400"
+                isActive ? "font-semibold text-indigo-600" : "text-stone-400 dark:text-stone-500"
               }`}
               numberOfLines={1}
             >

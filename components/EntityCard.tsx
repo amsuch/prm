@@ -1,8 +1,9 @@
-import { View, Text, Pressable } from "react-native";
+import { View, Text } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/colors";
 import { getAvatarColor } from "@/components/Avatar";
+import { AnimatedPressable } from "@/components/AnimatedPressable";
 import type { EntityWithCount } from "@/hooks/useEntities";
 
 type EntityCardProps = {
@@ -32,9 +33,10 @@ export function EntityCard({ entity }: EntityCardProps) {
   const avatarBg = getAvatarColor(entity.name);
 
   return (
-    <Pressable
+    <AnimatedPressable
+      scaleDown={0.98}
       onPress={() => router.push(`/entity/${entity.id}` as never)}
-      className="mx-4 mb-2 flex-row items-center rounded-xl bg-white p-3 shadow-sm active:bg-stone-50"
+      className="mx-4 mb-2 flex-row items-center rounded-xl bg-white dark:bg-stone-900 dark:border dark:border-stone-800 p-3 shadow-sm active:bg-stone-50 dark:active:bg-stone-800"
     >
       {/* Avatar */}
       <View
@@ -46,7 +48,7 @@ export function EntityCard({ entity }: EntityCardProps) {
 
       {/* Info */}
       <View className="ml-3 flex-1">
-        <Text className="text-base font-semibold text-stone-900" numberOfLines={1}>
+        <Text className="text-base font-semibold text-stone-900 dark:text-stone-100" numberOfLines={1}>
           {entity.name}
         </Text>
         {entity.category && (
@@ -62,18 +64,18 @@ export function EntityCard({ entity }: EntityCardProps) {
                 {entity.category}
               </Text>
             </View>
-            <Text className="ml-2 text-xs text-stone-400">
+            <Text className="ml-2 text-xs text-stone-400 dark:text-stone-500">
               {entity.people_count} {entity.people_count === 1 ? "person" : "people"}
             </Text>
           </View>
         )}
         {!entity.category && entity.people_count > 0 && (
-          <Text className="mt-0.5 text-xs text-stone-400">
+          <Text className="mt-0.5 text-xs text-stone-400 dark:text-stone-500">
             {entity.people_count} {entity.people_count === 1 ? "person" : "people"}
           </Text>
         )}
         {entity.address && (
-          <Text className="mt-0.5 text-sm text-stone-500" numberOfLines={1}>
+          <Text className="mt-0.5 text-sm text-stone-500 dark:text-stone-400" numberOfLines={1}>
             {entity.address}
           </Text>
         )}
@@ -85,6 +87,6 @@ export function EntityCard({ entity }: EntityCardProps) {
         size={16}
         color={Colors.gray[300]}
       />
-    </Pressable>
+    </AnimatedPressable>
   );
 }

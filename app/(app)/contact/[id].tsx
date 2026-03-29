@@ -68,18 +68,18 @@ export default function ContactDetailScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-stone-50">
+      <View className="flex-1 items-center justify-center bg-stone-50 dark:bg-stone-950">
         <ActivityIndicator size="large" color={Colors.brand[600]} />
-        <Text className="mt-3 text-sm text-stone-400">Loading contact...</Text>
+        <Text className="mt-3 text-sm text-stone-400 dark:text-stone-500">Loading contact...</Text>
       </View>
     );
   }
 
   if (error || !contact) {
     return (
-      <View className="flex-1 items-center justify-center bg-stone-50 px-8">
+      <View className="flex-1 items-center justify-center bg-stone-50 px-8 dark:bg-stone-950">
         <Ionicons name="alert-circle-outline" size={48} color={Colors.error} />
-        <Text className="mt-3 text-center text-base font-medium text-stone-700">
+        <Text className="mt-3 text-center text-base font-medium text-stone-700 dark:text-stone-300">
           {error ?? "Contact not found"}
         </Text>
         <Pressable
@@ -96,7 +96,7 @@ export default function ContactDetailScreen() {
   const interactionCount = interactions.length;
 
   return (
-    <View className="flex-1 bg-stone-50">
+    <View className="flex-1 bg-stone-50 dark:bg-stone-950">
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 96 }}
@@ -105,22 +105,22 @@ export default function ContactDetailScreen() {
         <ContactHeader contact={contact} onPhotoUpdated={refetch} />
 
         {/* Stats Bar */}
-        <View className="mx-4 mt-3 flex-row rounded-xl bg-white p-3 shadow-sm">
-          <View className="flex-1 items-center border-r border-stone-100">
-            <Text className="text-xs text-stone-400">Last Contacted</Text>
-            <Text className="mt-0.5 text-sm font-semibold text-stone-700">
+        <View className="mx-4 mt-3 flex-row rounded-xl bg-white p-3 shadow-sm dark:border dark:border-stone-800 dark:bg-stone-900">
+          <View className="flex-1 items-center border-r border-stone-100 dark:border-stone-800">
+            <Text className="text-xs text-stone-400 dark:text-stone-500">Last Contacted</Text>
+            <Text className="mt-0.5 text-sm font-semibold text-stone-700 dark:text-stone-300">
               {formatRelativeTime(contact.last_contacted_at)}
             </Text>
           </View>
-          <View className="flex-1 items-center border-r border-stone-100">
-            <Text className="text-xs text-stone-400">Interactions</Text>
-            <Text className="mt-0.5 text-sm font-semibold text-stone-700">
+          <View className="flex-1 items-center border-r border-stone-100 dark:border-stone-800">
+            <Text className="text-xs text-stone-400 dark:text-stone-500">Interactions</Text>
+            <Text className="mt-0.5 text-sm font-semibold text-stone-700 dark:text-stone-300">
               {interactionCount}
             </Text>
           </View>
           <View className="flex-1 items-center">
-            <Text className="text-xs text-stone-400">Connected</Text>
-            <Text className="mt-0.5 text-sm font-semibold text-stone-700">
+            <Text className="text-xs text-stone-400 dark:text-stone-500">Connected</Text>
+            <Text className="mt-0.5 text-sm font-semibold text-stone-700 dark:text-stone-300">
               {formatDate(contact.created_at)}
             </Text>
           </View>
@@ -134,7 +134,7 @@ export default function ContactDetailScreen() {
           onToggle={toggleSection}
         />
         {!collapsedSections.has("info") && (
-          <View className="mx-4 rounded-xl bg-white p-4 shadow-sm">
+          <View className="mx-4 rounded-xl bg-white p-4 shadow-sm dark:border dark:border-stone-800 dark:bg-stone-900">
             {/* Emails */}
             {contact.contact_emails.length > 0 && (
               <View className="mb-3">
@@ -142,12 +142,12 @@ export default function ContactDetailScreen() {
                   <Pressable
                     key={email.id}
                     onPress={() => Linking.openURL(`mailto:${email.email}`)}
-                    className="mb-1.5 flex-row items-center rounded-lg bg-stone-50 p-2.5 active:bg-stone-100"
+                    className="mb-1.5 flex-row items-center rounded-lg bg-stone-50 p-2.5 active:bg-stone-100 dark:bg-stone-800 dark:active:bg-stone-700"
                   >
                     <Ionicons name="mail-outline" size={16} color={Colors.brand[600]} />
                     <View className="ml-2 flex-1">
-                      <Text className="text-sm text-indigo-600">{email.email}</Text>
-                      <Text className="text-xs capitalize text-stone-400">
+                      <Text className="text-sm text-indigo-600 dark:text-indigo-400">{email.email}</Text>
+                      <Text className="text-xs capitalize text-stone-400 dark:text-stone-500">
                         {email.label}
                         {email.is_primary ? " (primary)" : ""}
                       </Text>
@@ -165,12 +165,12 @@ export default function ContactDetailScreen() {
                   <Pressable
                     key={phone.id}
                     onPress={() => Linking.openURL(`tel:${phone.phone}`)}
-                    className="mb-1.5 flex-row items-center rounded-lg bg-stone-50 p-2.5 active:bg-stone-100"
+                    className="mb-1.5 flex-row items-center rounded-lg bg-stone-50 p-2.5 active:bg-stone-100 dark:bg-stone-800 dark:active:bg-stone-700"
                   >
                     <Ionicons name="call-outline" size={16} color="#16a34a" />
                     <View className="ml-2 flex-1">
-                      <Text className="text-sm text-stone-800">{phone.phone}</Text>
-                      <Text className="text-xs capitalize text-stone-400">
+                      <Text className="text-sm text-stone-800 dark:text-stone-200">{phone.phone}</Text>
+                      <Text className="text-xs capitalize text-stone-400 dark:text-stone-500">
                         {phone.label}
                         {phone.is_primary ? " (primary)" : ""}
                       </Text>
@@ -188,14 +188,14 @@ export default function ContactDetailScreen() {
                   <Pressable
                     key={url.id}
                     onPress={() => Linking.openURL(url.url)}
-                    className="mb-1.5 flex-row items-center rounded-lg bg-stone-50 p-2.5 active:bg-stone-100"
+                    className="mb-1.5 flex-row items-center rounded-lg bg-stone-50 p-2.5 active:bg-stone-100 dark:bg-stone-800 dark:active:bg-stone-700"
                   >
                     <Ionicons name="link-outline" size={16} color="#7c3aed" />
                     <View className="ml-2 flex-1">
-                      <Text className="text-sm text-indigo-600" numberOfLines={1}>
+                      <Text className="text-sm text-indigo-600 dark:text-indigo-400" numberOfLines={1}>
                         {url.url}
                       </Text>
-                      <Text className="text-xs capitalize text-stone-400">
+                      <Text className="text-xs capitalize text-stone-400 dark:text-stone-500">
                         {url.label}
                       </Text>
                     </View>
@@ -209,7 +209,7 @@ export default function ContactDetailScreen() {
             {contact.contact_emails.length === 0 &&
               contact.contact_phones.length === 0 &&
               contact.contact_urls.length === 0 && (
-                <Text className="py-2 text-center text-sm text-stone-400">
+                <Text className="py-2 text-center text-sm text-stone-400 dark:text-stone-500">
                   No contact information added
                 </Text>
               )}
@@ -226,7 +226,7 @@ export default function ContactDetailScreen() {
               onToggle={toggleSection}
             />
             {!collapsedSections.has("tags") && (
-              <View className="mx-4 rounded-xl bg-white p-4 shadow-sm">
+              <View className="mx-4 rounded-xl bg-white p-4 shadow-sm dark:border dark:border-stone-800 dark:bg-stone-900">
                 <TagPills tags={tags} />
               </View>
             )}
@@ -261,7 +261,7 @@ export default function ContactDetailScreen() {
               onToggle={toggleSection}
             />
             {!collapsedSections.has("custom") && (
-              <View className="mx-4 rounded-xl bg-white p-4 shadow-sm">
+              <View className="mx-4 rounded-xl bg-white p-4 shadow-sm dark:border dark:border-stone-800 dark:bg-stone-900">
                 <CustomFieldsView
                   customFields={contact.custom_fields}
                   definitions={definitions}
@@ -279,7 +279,7 @@ export default function ContactDetailScreen() {
           onToggle={toggleSection}
         />
         {!collapsedSections.has("notes") && (
-          <View className="mx-4 rounded-xl bg-white p-4 shadow-sm">
+          <View className="mx-4 rounded-xl bg-white p-4 shadow-sm dark:border dark:border-stone-800 dark:bg-stone-900">
             {contact.notes ? (
               <MarkdownText>{contact.notes}</MarkdownText>
             ) : (
@@ -288,7 +288,7 @@ export default function ContactDetailScreen() {
                 className="flex-row items-center justify-center py-4"
               >
                 <Ionicons name="document-text-outline" size={18} color={Colors.gray[400]} />
-                <Text className="ml-2 text-sm text-stone-400">Add notes...</Text>
+                <Text className="ml-2 text-sm text-stone-400 dark:text-stone-500">Add notes...</Text>
               </Pressable>
             )}
           </View>
@@ -298,7 +298,7 @@ export default function ContactDetailScreen() {
         {contact.source && (
           <View className="mx-4 mt-4 mb-4 flex-row items-center justify-center">
             <Ionicons name="information-circle-outline" size={14} color={Colors.gray[300]} />
-            <Text className="ml-1 text-xs text-stone-300">
+            <Text className="ml-1 text-xs text-stone-300 dark:text-stone-600">
               Source: {contact.source}
               {contact.source_id ? ` (${contact.source_id})` : ""}
             </Text>
@@ -307,13 +307,13 @@ export default function ContactDetailScreen() {
       </ScrollView>
 
       {/* Bottom Action Bar */}
-      <View className="absolute bottom-0 left-0 right-0 flex-row border-t border-stone-100 bg-white px-4 pb-8 pt-3">
+      <View className="absolute bottom-0 left-0 right-0 flex-row border-t border-stone-100 bg-white px-4 pb-8 pt-3 dark:border-stone-800 dark:bg-stone-900">
         <Pressable
           onPress={() => router.push(`/contact/${id}/edit`)}
-          className="mr-2 flex-1 flex-row items-center justify-center rounded-xl border border-stone-200 bg-white py-3 active:bg-stone-50"
+          className="mr-2 flex-1 flex-row items-center justify-center rounded-xl border border-stone-200 bg-white py-3 active:bg-stone-50 dark:border-stone-700 dark:bg-stone-800 dark:active:bg-stone-700"
         >
           <Ionicons name="create-outline" size={18} color={Colors.gray[700]} />
-          <Text className="ml-2 text-sm font-semibold text-stone-700">Edit</Text>
+          <Text className="ml-2 text-sm font-semibold text-stone-700 dark:text-stone-300">Edit</Text>
         </Pressable>
         <Pressable
           onPress={() => setShowLogInteraction(true)}
@@ -368,7 +368,7 @@ function SectionHeader({
       onPress={() => onToggle(sectionId)}
       className="mx-4 mt-4 mb-2 flex-row items-center justify-between"
     >
-      <Text className="text-sm font-semibold uppercase tracking-wide text-stone-500">
+      <Text className="text-sm font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
         {title}
       </Text>
       <Ionicons

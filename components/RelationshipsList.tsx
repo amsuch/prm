@@ -64,7 +64,7 @@ function RelationshipCard({
     <Pressable
       onPress={() => router.push(`/contact/${item.related_contact_id}`)}
       onLongPress={handleLongPress}
-      className="flex-row items-center rounded-xl bg-white px-3 py-2.5 active:bg-stone-50"
+      className="flex-row items-center rounded-xl bg-white dark:bg-stone-900 px-3 py-2.5 active:bg-stone-50 dark:active:bg-stone-800"
     >
       <Avatar
         firstName={item.related_first_name}
@@ -72,15 +72,15 @@ function RelationshipCard({
         size="md"
       />
       <View className="ml-3 flex-1">
-        <Text className="text-sm font-semibold text-stone-900" numberOfLines={1}>
+        <Text className="text-sm font-semibold text-stone-900 dark:text-stone-100" numberOfLines={1}>
           {fullName}
         </Text>
-        <Text className="mt-0.5 text-xs text-stone-500" numberOfLines={1}>
+        <Text className="mt-0.5 text-xs text-stone-500 dark:text-stone-400" numberOfLines={1}>
           {item.relationship_name}
           {item.related_company ? ` \u00B7 ${item.related_company}` : ""}
         </Text>
         {item.notes ? (
-          <Text className="mt-0.5 text-xs text-stone-400" numberOfLines={1}>
+          <Text className="mt-0.5 text-xs text-stone-400 dark:text-stone-500" numberOfLines={1}>
             {item.notes}
           </Text>
         ) : null}
@@ -117,13 +117,13 @@ export function RelationshipsList({
       <View className="mb-2 flex-row items-center justify-between">
         <View className="flex-row items-center">
           <Ionicons name="git-network-outline" size={18} color={Colors.gray[600]} />
-          <Text className="ml-2 text-base font-semibold text-stone-900">
+          <Text className="ml-2 text-base font-semibold text-stone-900 dark:text-stone-100">
             Relationships
           </Text>
         </View>
         <Pressable
           onPress={onAddPress}
-          className="flex-row items-center rounded-lg bg-indigo-50 px-2.5 py-1 active:bg-indigo-100"
+          className="flex-row items-center rounded-lg bg-indigo-50 dark:bg-indigo-950 px-2.5 py-1 active:bg-indigo-100"
         >
           <Ionicons name="add" size={16} color={Colors.brand[600]} />
           <Text className="ml-0.5 text-xs font-semibold text-indigo-700">Add</Text>
@@ -132,20 +132,20 @@ export function RelationshipsList({
 
       {/* Loading State */}
       {isLoading && (
-        <View className="items-center rounded-xl bg-white py-6 shadow-sm">
+        <View className="items-center rounded-xl bg-white dark:bg-stone-900 py-6 shadow-sm">
           <ActivityIndicator size="small" color={Colors.brand[600]} />
         </View>
       )}
 
       {/* Error State */}
       {error && !isLoading && (
-        <View className="items-center rounded-xl bg-white py-6 shadow-sm">
+        <View className="items-center rounded-xl bg-white dark:bg-stone-900 py-6 shadow-sm">
           <Text className="text-sm text-red-500">{error}</Text>
           <Pressable
             onPress={onRefresh}
-            className="mt-2 rounded-lg bg-stone-100 px-3 py-1"
+            className="mt-2 rounded-lg bg-stone-100 dark:bg-stone-800 px-3 py-1"
           >
-            <Text className="text-xs font-medium text-stone-600">Retry</Text>
+            <Text className="text-xs font-medium text-stone-600 dark:text-stone-400">Retry</Text>
           </Pressable>
         </View>
       )}
@@ -154,10 +154,10 @@ export function RelationshipsList({
       {!isLoading && !error && !hasRelationships && (
         <Pressable
           onPress={onAddPress}
-          className="items-center rounded-xl bg-white py-6 shadow-sm active:bg-stone-50"
+          className="items-center rounded-xl bg-white dark:bg-stone-900 py-6 shadow-sm active:bg-stone-50 dark:active:bg-stone-800"
         >
           <Ionicons name="people-outline" size={28} color={Colors.gray[300]} />
-          <Text className="mt-2 text-sm text-stone-400">No relationships yet</Text>
+          <Text className="mt-2 text-sm text-stone-400 dark:text-stone-500">No relationships yet</Text>
           <Text className="mt-1 text-xs text-indigo-600">Tap to add one</Text>
         </Pressable>
       )}
@@ -187,11 +187,11 @@ export function RelationshipsList({
                   >
                     {category}
                   </Text>
-                  <View className="ml-1.5 rounded-full bg-stone-100 px-1.5">
-                    <Text className="text-xs text-stone-500">{items.length}</Text>
+                  <View className="ml-1.5 rounded-full bg-stone-100 dark:bg-stone-800 px-1.5">
+                    <Text className="text-xs text-stone-500 dark:text-stone-400">{items.length}</Text>
                   </View>
                 </View>
-                <View className="gap-1 rounded-xl bg-white p-1 shadow-sm">
+                <View className="gap-1 rounded-xl bg-white dark:bg-stone-900 p-1 shadow-sm">
                   {items.map((item) => (
                     <RelationshipCard
                       key={item.relationship_id}

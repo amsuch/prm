@@ -840,27 +840,27 @@ export default function AskScreen() {
           onPress={() => handleSwitchSession(item.id)}
           onLongPress={() => handleDeleteSession(item.id)}
           className={`mx-2 mb-1 rounded-xl px-4 py-3 ${
-            isActive ? "bg-indigo-50" : "active:bg-stone-100"
+            isActive ? "bg-indigo-50 dark:bg-indigo-950" : "active:bg-stone-100 dark:active:bg-stone-800"
           }`}
         >
           <View className="flex-row items-center justify-between">
             <View className="mr-3 flex-1">
               <Text
                 className={`text-sm font-medium ${
-                  isActive ? "text-indigo-700" : "text-stone-900"
+                  isActive ? "text-indigo-700 dark:text-indigo-300" : "text-stone-900 dark:text-stone-100"
                 }`}
                 numberOfLines={1}
               >
                 {item.title}
               </Text>
-              <Text className="mt-0.5 text-xs text-stone-400">
+              <Text className="mt-0.5 text-xs text-stone-400 dark:text-stone-500">
                 {formatSessionDate(item.updated_at)}
               </Text>
             </View>
             <Pressable
               onPress={() => handleDeleteSession(item.id)}
               hitSlop={8}
-              className="rounded-lg p-1 active:bg-stone-200"
+              className="rounded-lg p-1 active:bg-stone-200 dark:active:bg-stone-700"
             >
               <Ionicons name="trash-outline" size={16} color={Colors.gray[400]} />
             </Pressable>
@@ -872,20 +872,20 @@ export default function AskScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-stone-50" edges={["bottom"]}>
+    <SafeAreaView className="flex-1 bg-stone-50 dark:bg-stone-950" edges={["bottom"]}>
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       >
         {/* Header with session title, history, mode toggle, and filter */}
-        <View className="border-b border-stone-200 bg-white px-4 py-2">
+        <View className="border-b border-stone-200 bg-white px-4 py-2 dark:border-stone-800 dark:bg-stone-900">
           <View className="flex-row items-center justify-between">
             <View className="mr-2 flex-1 flex-row items-center">
               {/* History / menu button */}
               <Pressable
                 onPress={openDrawer}
-                className="mr-2 rounded-lg p-1.5 active:bg-stone-100"
+                className="mr-2 rounded-lg p-1.5 active:bg-stone-100 dark:active:bg-stone-800"
                 hitSlop={4}
               >
                 <Ionicons name="menu-outline" size={22} color={Colors.gray[700]} />
@@ -894,7 +894,7 @@ export default function AskScreen() {
               {/* Session title */}
               {editingTitle ? (
                 <TextInput
-                  className="flex-1 rounded-lg border border-indigo-300 bg-indigo-50 px-2 py-1 text-base font-bold text-stone-900"
+                  className="flex-1 rounded-lg border border-indigo-300 bg-indigo-50 px-2 py-1 text-base font-bold text-stone-900 dark:border-indigo-700 dark:bg-indigo-950 dark:text-stone-100"
                   value={titleDraft}
                   onChangeText={setTitleDraft}
                   onBlur={finishEditingTitle}
@@ -906,7 +906,7 @@ export default function AskScreen() {
               ) : (
                 <Pressable onPress={startEditingTitle} className="flex-1">
                   <Text
-                    className="text-lg font-bold text-stone-900"
+                    className="text-lg font-bold text-stone-900 dark:text-stone-100"
                     numberOfLines={1}
                   >
                     {activeSession?.title ?? "Ask your Network"}
@@ -919,7 +919,7 @@ export default function AskScreen() {
               {/* New chat button */}
               <Pressable
                 onPress={handleNewChat}
-                className="rounded-lg border border-stone-200 p-1.5 active:bg-stone-50"
+                className="rounded-lg border border-stone-200 p-1.5 active:bg-stone-50 dark:border-stone-800 dark:active:bg-stone-800"
                 hitSlop={4}
               >
                 <Ionicons name="create-outline" size={18} color={Colors.gray[600]} />
@@ -932,8 +932,8 @@ export default function AskScreen() {
                 }
                 className={`flex-row items-center rounded-lg border px-2.5 py-1.5 ${
                   agentMode === "hitl"
-                    ? "border-amber-300 bg-amber-50"
-                    : "border-green-300 bg-green-50"
+                    ? "border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950"
+                    : "border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-950"
                 }`}
               >
                 <Ionicons
@@ -953,7 +953,7 @@ export default function AskScreen() {
               {/* Filter button */}
               <Pressable
                 onPress={() => setShowFilters(true)}
-                className="flex-row items-center rounded-lg border border-stone-200 px-3 py-1.5 active:bg-stone-50"
+                className="flex-row items-center rounded-lg border border-stone-200 px-3 py-1.5 active:bg-stone-50 dark:border-stone-800 dark:active:bg-stone-800"
               >
                 <Ionicons
                   name="filter-outline"
@@ -979,7 +979,7 @@ export default function AskScreen() {
         {/* Mode description bar */}
         <View
           className={`flex-row items-center px-4 py-1.5 ${
-            agentMode === "hitl" ? "bg-amber-50" : "bg-green-50"
+            agentMode === "hitl" ? "bg-amber-50 dark:bg-amber-950" : "bg-green-50 dark:bg-green-950"
           }`}
         >
           <Ionicons
@@ -1001,17 +1001,17 @@ export default function AskScreen() {
         {/* Chat area */}
         {!hasMessages ? (
           <View className="flex-1 items-center justify-center px-6">
-            <View className="mb-6 h-16 w-16 items-center justify-center rounded-full bg-indigo-100">
+            <View className="mb-6 h-16 w-16 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900">
               <Ionicons
                 name="chatbubble-ellipses-outline"
                 size={32}
                 color={Colors.brand[600]}
               />
             </View>
-            <Text className="mb-2 text-center text-xl font-bold text-stone-900">
+            <Text className="mb-2 text-center text-xl font-bold text-stone-900 dark:text-stone-100">
               Ask about your network
             </Text>
-            <Text className="mb-8 text-center text-base text-stone-500">
+            <Text className="mb-8 text-center text-base text-stone-500 dark:text-stone-400">
               Ask questions or give commands in plain English.{"\n"}
               The agent can read and modify your contacts.
             </Text>
@@ -1038,12 +1038,12 @@ export default function AskScreen() {
         )}
 
         {/* Input area */}
-        <View className="border-t border-stone-200 bg-white px-4 pb-2 pt-3">
+        <View className="border-t border-stone-200 bg-white px-4 pb-2 pt-3 dark:border-stone-800 dark:bg-stone-900">
           <View className="flex-row items-end">
-            <View className="mr-2 flex-1 flex-row items-end rounded-2xl border border-stone-200 bg-stone-50 px-4 py-2">
+            <View className="mr-2 flex-1 flex-row items-end rounded-2xl border border-stone-200 bg-stone-50 px-4 py-2 dark:border-stone-800 dark:bg-stone-800">
               <TextInput
                 ref={inputRef}
-                className="max-h-24 flex-1 text-base text-stone-900"
+                className="max-h-24 flex-1 text-base text-stone-900 dark:text-stone-100"
                 placeholder="Ask a question or give a command..."
                 placeholderTextColor={Colors.gray[400]}
                 value={inputText}
@@ -1060,8 +1060,8 @@ export default function AskScreen() {
               disabled={!inputText.trim() || isProcessing}
               className={`h-11 w-11 items-center justify-center rounded-full ${
                 inputText.trim() && !isProcessing
-                  ? "bg-indigo-600 active:bg-indigo-700"
-                  : "bg-stone-200"
+                  ? "bg-indigo-600 active:bg-indigo-700 dark:bg-indigo-500 dark:active:bg-indigo-600"
+                  : "bg-stone-200 dark:bg-stone-700"
               }`}
             >
               <Ionicons
@@ -1102,17 +1102,17 @@ export default function AskScreen() {
                 width: DRAWER_WIDTH,
                 transform: [{ translateX: drawerAnim }],
               }}
-              className="h-full bg-white shadow-lg"
+              className="h-full bg-white shadow-lg dark:bg-stone-900"
             >
               <SafeAreaView className="flex-1" edges={["top"]}>
                 {/* Drawer header */}
-                <View className="flex-row items-center justify-between border-b border-stone-100 px-4 pb-3 pt-4">
-                  <Text className="text-lg font-bold text-stone-900">
+                <View className="flex-row items-center justify-between border-b border-stone-100 px-4 pb-3 pt-4 dark:border-stone-800">
+                  <Text className="text-lg font-bold text-stone-900 dark:text-stone-100">
                     Chat History
                   </Text>
                   <Pressable
                     onPress={closeDrawer}
-                    className="rounded-lg p-1 active:bg-stone-100"
+                    className="rounded-lg p-1 active:bg-stone-100 dark:active:bg-stone-800"
                     hitSlop={8}
                   >
                     <Ionicons name="close" size={22} color={Colors.gray[500]} />
@@ -1122,10 +1122,10 @@ export default function AskScreen() {
                 {/* New chat button */}
                 <Pressable
                   onPress={handleNewChat}
-                  className="mx-4 mt-3 mb-2 flex-row items-center justify-center rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 active:bg-indigo-100"
+                  className="mx-4 mt-3 mb-2 flex-row items-center justify-center rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 active:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950 dark:active:bg-indigo-900"
                 >
                   <Ionicons name="add-circle-outline" size={20} color={Colors.brand[600]} />
-                  <Text className="ml-2 text-sm font-semibold text-indigo-700">
+                  <Text className="ml-2 text-sm font-semibold text-indigo-700 dark:text-indigo-300">
                     New Chat
                   </Text>
                 </Pressable>
@@ -1133,11 +1133,11 @@ export default function AskScreen() {
                 {/* Sessions list */}
                 {sessionsLoading ? (
                   <View className="flex-1 items-center justify-center">
-                    <Text className="text-sm text-stone-400">Loading...</Text>
+                    <Text className="text-sm text-stone-400 dark:text-stone-500">Loading...</Text>
                   </View>
                 ) : sessions.length === 0 ? (
                   <View className="flex-1 items-center justify-center px-6">
-                    <Text className="text-center text-sm text-stone-400">
+                    <Text className="text-center text-sm text-stone-400 dark:text-stone-500">
                       No chat history yet.
                     </Text>
                   </View>
@@ -1152,8 +1152,8 @@ export default function AskScreen() {
                 )}
 
                 {/* Hint text */}
-                <View className="border-t border-stone-100 px-4 py-3">
-                  <Text className="text-center text-xs text-stone-400">
+                <View className="border-t border-stone-100 px-4 py-3 dark:border-stone-800">
+                  <Text className="text-center text-xs text-stone-400 dark:text-stone-500">
                     Long-press a chat to delete
                   </Text>
                 </View>

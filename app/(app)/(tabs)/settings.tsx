@@ -21,6 +21,7 @@ import { EntityCategoryManager } from "@/components/EntityCategoryManager";
 import { useTags } from "@/hooks/useTags";
 import { useUserEmails } from "@/hooks/useUserEmails";
 import { useCalendarSync } from "@/hooks/useCalendarSync";
+import { useTheme, type ThemePreference } from "@/lib/theme";
 
 const TAG_COLORS = [
   "#2563eb",
@@ -37,9 +38,53 @@ const TAG_COLORS = [
 
 function SectionHeader({ title }: { title: string }) {
   return (
-    <Text className="mb-2 mt-6 px-4 text-xs font-semibold uppercase tracking-wider text-stone-400">
+    <Text className="mb-2 mt-6 px-4 text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
       {title}
     </Text>
+  );
+}
+
+const THEME_OPTIONS: { value: ThemePreference; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { value: "light", label: "Light", icon: "sunny-outline" },
+  { value: "dark", label: "Dark", icon: "moon-outline" },
+  { value: "system", label: "System", icon: "phone-portrait-outline" },
+];
+
+function ThemeToggle() {
+  const { preference, setTheme } = useTheme();
+
+  return (
+    <View className="mx-4 flex-row overflow-hidden rounded-xl bg-white dark:bg-stone-900 shadow-sm">
+      {THEME_OPTIONS.map((opt) => {
+        const isActive = preference === opt.value;
+        return (
+          <Pressable
+            key={opt.value}
+            onPress={() => setTheme(opt.value)}
+            className={`flex-1 flex-row items-center justify-center py-3 ${
+              isActive
+                ? "bg-indigo-50 dark:bg-indigo-950"
+                : "active:bg-stone-50 dark:active:bg-stone-800"
+            }`}
+          >
+            <Ionicons
+              name={opt.icon}
+              size={16}
+              color={isActive ? Colors.brand[600] : Colors.gray[400]}
+            />
+            <Text
+              className={`ml-1.5 text-sm font-medium ${
+                isActive
+                  ? "text-indigo-600 dark:text-indigo-400"
+                  : "text-stone-500 dark:text-stone-400"
+              }`}
+            >
+              {opt.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 
@@ -91,10 +136,10 @@ function ProfileCard() {
   }, [session?.user?.id, fullName]);
 
   return (
-    <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm">
+    <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm dark:bg-stone-900 dark:border dark:border-stone-800">
       <View className="items-center px-4 py-6">
-        <View className="h-16 w-16 items-center justify-center rounded-full bg-indigo-100">
-          <Text className="text-xl font-bold text-indigo-700">{initials}</Text>
+        <View className="h-16 w-16 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900">
+          <Text className="text-xl font-bold text-indigo-700 dark:text-indigo-300">{initials}</Text>
         </View>
 
         {isEditing ? (
@@ -103,7 +148,7 @@ function ProfileCard() {
               value={fullName}
               onChangeText={setFullName}
               placeholder="Full name"
-              className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-center text-base text-stone-900"
+              className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-center text-base text-stone-900 dark:border-stone-800 dark:bg-stone-800 dark:text-stone-100"
               placeholderTextColor={Colors.gray[400]}
               autoFocus
             />
@@ -115,9 +160,9 @@ function ProfileCard() {
                     session?.user?.user_metadata?.full_name ?? "",
                   );
                 }}
-                className="rounded-lg border border-stone-200 px-4 py-2 active:bg-stone-50"
+                className="rounded-lg border border-stone-200 px-4 py-2 active:bg-stone-50 dark:border-stone-800 dark:active:bg-stone-800"
               >
-                <Text className="text-sm font-medium text-stone-600">
+                <Text className="text-sm font-medium text-stone-600 dark:text-stone-400">
                   Cancel
                 </Text>
               </Pressable>
@@ -138,13 +183,13 @@ function ProfileCard() {
           </View>
         ) : (
           <>
-            <Text className="mt-3 text-lg font-semibold text-stone-900">
+            <Text className="mt-3 text-lg font-semibold text-stone-900 dark:text-stone-100">
               {displayName}
             </Text>
-            <Text className="mt-0.5 text-sm text-stone-500">{email}</Text>
+            <Text className="mt-0.5 text-sm text-stone-500 dark:text-stone-400">{email}</Text>
             <Pressable
               onPress={() => setIsEditing(true)}
-              className="mt-3 rounded-lg border border-stone-200 px-4 py-1.5 active:bg-stone-50"
+              className="mt-3 rounded-lg border border-stone-200 px-4 py-1.5 active:bg-stone-50 dark:border-stone-800 dark:active:bg-stone-800"
             >
               <Text className="text-sm font-medium text-indigo-600">
                 Edit Name
@@ -206,21 +251,21 @@ function TagRow({
           value={editName}
           onChangeText={setEditName}
           placeholder="Tag name"
-          className="mb-3 rounded-xl border border-stone-200 bg-stone-50 px-4 py-2.5 text-sm text-stone-900"
+          className="mb-3 rounded-xl border border-stone-200 bg-stone-50 px-4 py-2.5 text-sm text-stone-900 dark:border-stone-800 dark:bg-stone-800 dark:text-stone-100"
           placeholderTextColor={Colors.gray[400]}
           autoFocus
           onSubmitEditing={handleSave}
         />
 
         {/* Color picker */}
-        <Text className="mb-1.5 text-xs font-medium text-stone-500">Color</Text>
+        <Text className="mb-1.5 text-xs font-medium text-stone-500 dark:text-stone-400">Color</Text>
         <View className="mb-3 flex-row flex-wrap gap-2">
           {TAG_COLORS.map((color) => (
             <Pressable
               key={color}
               onPress={() => setEditColor(color)}
               className={`h-8 w-8 items-center justify-center rounded-full ${
-                editColor === color ? "border-2 border-stone-400" : ""
+                editColor === color ? "border-2 border-stone-400 dark:border-stone-500" : ""
               }`}
               style={{ backgroundColor: color }}
             >
@@ -234,9 +279,9 @@ function TagRow({
         <View className="flex-row gap-2">
           <Pressable
             onPress={handleCancel}
-            className="flex-1 items-center rounded-lg border border-stone-200 py-2.5 active:bg-stone-50"
+            className="flex-1 items-center rounded-lg border border-stone-200 py-2.5 active:bg-stone-50 dark:border-stone-800 dark:active:bg-stone-800"
           >
-            <Text className="text-sm font-medium text-stone-600">Cancel</Text>
+            <Text className="text-sm font-medium text-stone-600 dark:text-stone-400">Cancel</Text>
           </Pressable>
           <Pressable
             onPress={handleSave}
@@ -244,7 +289,7 @@ function TagRow({
             className={`flex-1 items-center rounded-lg py-2.5 ${
               isSaving || !editName.trim()
                 ? "bg-indigo-300"
-                : "bg-indigo-600 active:bg-indigo-700"
+                : "bg-indigo-600 active:bg-indigo-700 dark:bg-indigo-500 dark:active:bg-indigo-600"
             }`}
           >
             {isSaving ? (
@@ -277,14 +322,14 @@ function TagRow({
           onPress={() => setIsEditing(true)}
           className="ml-2.5 flex-1 active:opacity-70"
         >
-          <Text className="text-sm font-medium text-stone-900">
+          <Text className="text-sm font-medium text-stone-900 dark:text-stone-100">
             {tag.name}
           </Text>
         </Pressable>
       </View>
       <Pressable
         onPress={() => onDelete(tag.id, tag.name)}
-        className="rounded-lg p-2 active:bg-red-50"
+        className="rounded-lg p-2 active:bg-red-50 dark:active:bg-red-950"
         hitSlop={8}
       >
         <Ionicons name="trash-outline" size={16} color={Colors.error} />
@@ -396,37 +441,37 @@ function TagManager() {
       {tags.length === 0 && !isAdding && (
         <View className="items-center py-6">
           <Ionicons name="pricetag-outline" size={28} color={Colors.gray[300]} />
-          <Text className="mt-1 text-sm text-stone-400">No tags created</Text>
+          <Text className="mt-1 text-sm text-stone-400 dark:text-stone-500">No tags created</Text>
         </View>
       )}
 
       {tags.map((tag, index) => (
         <View key={tag.id}>
-          {index > 0 && <View className="ml-4 h-px bg-stone-100" />}
+          {index > 0 && <View className="ml-4 h-px bg-stone-100 dark:bg-stone-800" />}
           <TagRow tag={tag} onDelete={handleDeleteTag} onUpdate={handleUpdateTag} />
         </View>
       ))}
 
       {isAdding ? (
-        <View className="border-t border-stone-100 px-4 py-3">
+        <View className="border-t border-stone-100 px-4 py-3 dark:border-stone-800">
           <TextInput
             value={newTagName}
             onChangeText={setNewTagName}
             placeholder="Tag name"
-            className="mb-3 rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-base text-stone-900"
+            className="mb-3 rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-base text-stone-900 dark:border-stone-800 dark:bg-stone-800 dark:text-stone-100"
             placeholderTextColor={Colors.gray[400]}
             autoFocus
           />
 
           {/* Color picker */}
-          <Text className="mb-1.5 text-xs font-medium text-stone-500">Color</Text>
+          <Text className="mb-1.5 text-xs font-medium text-stone-500 dark:text-stone-400">Color</Text>
           <View className="mb-3 flex-row flex-wrap gap-2">
             {TAG_COLORS.map((color) => (
               <Pressable
                 key={color}
                 onPress={() => setSelectedColor(color)}
                 className={`h-8 w-8 items-center justify-center rounded-full ${
-                  selectedColor === color ? "border-2 border-stone-400" : ""
+                  selectedColor === color ? "border-2 border-stone-400 dark:border-stone-500" : ""
                 }`}
                 style={{ backgroundColor: color }}
               >
@@ -444,9 +489,9 @@ function TagManager() {
                 setNewTagName("");
                 setSelectedColor(TAG_COLORS[0]);
               }}
-              className="flex-1 items-center rounded-lg border border-stone-200 py-2.5 active:bg-stone-50"
+              className="flex-1 items-center rounded-lg border border-stone-200 py-2.5 active:bg-stone-50 dark:border-stone-800 dark:active:bg-stone-800"
             >
-              <Text className="text-sm font-medium text-stone-600">Cancel</Text>
+              <Text className="text-sm font-medium text-stone-600 dark:text-stone-400">Cancel</Text>
             </Pressable>
             <Pressable
               onPress={handleAddTag}
@@ -454,7 +499,7 @@ function TagManager() {
               className={`flex-1 items-center rounded-lg py-2.5 ${
                 isSaving || !newTagName.trim()
                   ? "bg-indigo-300"
-                  : "bg-indigo-600 active:bg-indigo-700"
+                  : "bg-indigo-600 active:bg-indigo-700 dark:bg-indigo-500 dark:active:bg-indigo-600"
               }`}
             >
               {isSaving ? (
@@ -466,13 +511,13 @@ function TagManager() {
           </View>
         </View>
       ) : (
-        <View className="border-t border-stone-100 px-4 py-3">
+        <View className="border-t border-stone-100 px-4 py-3 dark:border-stone-800">
           <Pressable
             onPress={() => setIsAdding(true)}
-            className="flex-row items-center justify-center rounded-lg border border-dashed border-stone-300 py-2.5 active:bg-stone-50"
+            className="flex-row items-center justify-center rounded-lg border border-dashed border-stone-300 py-2.5 active:bg-stone-50 dark:border-stone-600 dark:active:bg-stone-800"
           >
             <Ionicons name="add" size={18} color={Colors.brand[600]} />
-            <Text className="ml-1 text-sm font-medium text-indigo-600">
+            <Text className="ml-1 text-sm font-medium text-indigo-600 dark:text-indigo-400">
               Add Tag
             </Text>
           </Pressable>
@@ -543,7 +588,7 @@ function UserEmailManager() {
   return (
     <View>
       <View className="px-4 pt-3 pb-1">
-        <Text className="text-xs text-stone-500">
+        <Text className="text-xs text-stone-500 dark:text-stone-400">
           Your emails are filtered out when matching calendar attendees.
         </Text>
       </View>
@@ -557,27 +602,27 @@ function UserEmailManager() {
       {!isLoading && emails.length === 0 && !isAdding && (
         <View className="items-center py-6">
           <Ionicons name="mail-outline" size={28} color={Colors.gray[300]} />
-          <Text className="mt-1 text-sm text-stone-400">No emails added</Text>
+          <Text className="mt-1 text-sm text-stone-400 dark:text-stone-500">No emails added</Text>
         </View>
       )}
 
       {emails.map((item, index) => (
         <View key={item.id}>
-          {index > 0 && <View className="ml-4 h-px bg-stone-100" />}
+          {index > 0 && <View className="ml-4 h-px bg-stone-100 dark:bg-stone-800" />}
           <View className="flex-row items-center justify-between px-4 py-3">
             <View className="flex-1 flex-row items-center">
               <Ionicons name="mail-outline" size={16} color={Colors.gray[500]} />
-              <Text className="ml-2 flex-1 text-sm font-medium text-stone-900" numberOfLines={1}>
+              <Text className="ml-2 flex-1 text-sm font-medium text-stone-900 dark:text-stone-100" numberOfLines={1}>
                 {item.email}
               </Text>
               <View
                 className={`ml-2 rounded-full px-2 py-0.5 ${
-                  item.label === "work" ? "bg-indigo-100" : "bg-purple-100"
+                  item.label === "work" ? "bg-indigo-100 dark:bg-indigo-900" : "bg-purple-100 dark:bg-purple-900"
                 }`}
               >
                 <Text
                   className={`text-xs font-medium ${
-                    item.label === "work" ? "text-indigo-700" : "text-purple-700"
+                    item.label === "work" ? "text-indigo-700 dark:text-indigo-300" : "text-purple-700 dark:text-purple-300"
                   }`}
                 >
                   {item.label}
@@ -586,7 +631,7 @@ function UserEmailManager() {
             </View>
             <Pressable
               onPress={() => handleRemove(item.id, item.email)}
-              className="ml-2 rounded-lg p-2 active:bg-red-50"
+              className="ml-2 rounded-lg p-2 active:bg-red-50 dark:active:bg-red-950"
               hitSlop={8}
             >
               <Ionicons name="trash-outline" size={16} color={Colors.error} />
@@ -596,12 +641,12 @@ function UserEmailManager() {
       ))}
 
       {isAdding ? (
-        <View className="border-t border-stone-100 px-4 py-3">
+        <View className="border-t border-stone-100 px-4 py-3 dark:border-stone-800">
           <TextInput
             value={newEmail}
             onChangeText={setNewEmail}
             placeholder="email@example.com"
-            className="mb-3 rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-base text-stone-900"
+            className="mb-3 rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-base text-stone-900 dark:border-stone-800 dark:bg-stone-800 dark:text-stone-100"
             placeholderTextColor={Colors.gray[400]}
             autoFocus
             autoCapitalize="none"
@@ -609,19 +654,19 @@ function UserEmailManager() {
             keyboardType="email-address"
           />
 
-          <Text className="mb-1.5 text-xs font-medium text-stone-500">Label</Text>
+          <Text className="mb-1.5 text-xs font-medium text-stone-500 dark:text-stone-400">Label</Text>
           <View className="mb-3 flex-row gap-2">
             <Pressable
               onPress={() => setNewLabel("work")}
               className={`flex-1 items-center rounded-lg border py-2 ${
                 newLabel === "work"
-                  ? "border-indigo-600 bg-indigo-50"
-                  : "border-stone-200 bg-white active:bg-stone-50"
+                  ? "border-indigo-600 bg-indigo-50 dark:bg-indigo-950"
+                  : "border-stone-200 bg-white active:bg-stone-50 dark:border-stone-800 dark:bg-stone-900 dark:active:bg-stone-800"
               }`}
             >
               <Text
                 className={`text-sm font-medium ${
-                  newLabel === "work" ? "text-indigo-700" : "text-stone-600"
+                  newLabel === "work" ? "text-indigo-700 dark:text-indigo-300" : "text-stone-600 dark:text-stone-400"
                 }`}
               >
                 Work
@@ -631,13 +676,13 @@ function UserEmailManager() {
               onPress={() => setNewLabel("personal")}
               className={`flex-1 items-center rounded-lg border py-2 ${
                 newLabel === "personal"
-                  ? "border-purple-600 bg-purple-50"
-                  : "border-stone-200 bg-white active:bg-stone-50"
+                  ? "border-purple-600 bg-purple-50 dark:bg-purple-950"
+                  : "border-stone-200 bg-white active:bg-stone-50 dark:border-stone-800 dark:bg-stone-900 dark:active:bg-stone-800"
               }`}
             >
               <Text
                 className={`text-sm font-medium ${
-                  newLabel === "personal" ? "text-purple-700" : "text-stone-600"
+                  newLabel === "personal" ? "text-purple-700 dark:text-purple-300" : "text-stone-600 dark:text-stone-400"
                 }`}
               >
                 Personal
@@ -652,9 +697,9 @@ function UserEmailManager() {
                 setNewEmail("");
                 setNewLabel("work");
               }}
-              className="flex-1 items-center rounded-lg border border-stone-200 py-2.5 active:bg-stone-50"
+              className="flex-1 items-center rounded-lg border border-stone-200 py-2.5 active:bg-stone-50 dark:border-stone-800 dark:active:bg-stone-800"
             >
-              <Text className="text-sm font-medium text-stone-600">Cancel</Text>
+              <Text className="text-sm font-medium text-stone-600 dark:text-stone-400">Cancel</Text>
             </Pressable>
             <Pressable
               onPress={handleAdd}
@@ -662,7 +707,7 @@ function UserEmailManager() {
               className={`flex-1 items-center rounded-lg py-2.5 ${
                 isSaving || !newEmail.trim()
                   ? "bg-indigo-300"
-                  : "bg-indigo-600 active:bg-indigo-700"
+                  : "bg-indigo-600 active:bg-indigo-700 dark:bg-indigo-500 dark:active:bg-indigo-600"
               }`}
             >
               {isSaving ? (
@@ -674,13 +719,13 @@ function UserEmailManager() {
           </View>
         </View>
       ) : (
-        <View className="border-t border-stone-100 px-4 py-3">
+        <View className="border-t border-stone-100 px-4 py-3 dark:border-stone-800">
           <Pressable
             onPress={() => setIsAdding(true)}
-            className="flex-row items-center justify-center rounded-lg border border-dashed border-stone-300 py-2.5 active:bg-stone-50"
+            className="flex-row items-center justify-center rounded-lg border border-dashed border-stone-300 py-2.5 active:bg-stone-50 dark:border-stone-600 dark:active:bg-stone-800"
           >
             <Ionicons name="add" size={18} color={Colors.brand[600]} />
-            <Text className="ml-1 text-sm font-medium text-indigo-600">
+            <Text className="ml-1 text-sm font-medium text-indigo-600 dark:text-indigo-400">
               Add Email
             </Text>
           </Pressable>
@@ -763,13 +808,13 @@ function CalendarManager() {
   if (!isConnected) {
     return (
       <View className="px-4 py-4">
-        <Text className="mb-3 text-xs text-stone-500">
+        <Text className="mb-3 text-xs text-stone-500 dark:text-stone-400">
           Connect your Google Calendar to auto-create interactions from meeting
           events.
         </Text>
         <Pressable
           onPress={handleConnect}
-          className="flex-row items-center justify-center rounded-lg bg-indigo-600 py-3 active:bg-indigo-700"
+          className="flex-row items-center justify-center rounded-lg bg-indigo-600 py-3 active:bg-indigo-700 dark:bg-indigo-500 dark:active:bg-indigo-600"
         >
           <Ionicons name="logo-google" size={18} color="white" />
           <Text className="ml-2 text-sm font-semibold text-white">
@@ -784,11 +829,11 @@ function CalendarManager() {
     <View className="px-4 py-4">
       {/* Connection status */}
       <View className="mb-3 flex-row items-center">
-        <View className="rounded-full bg-green-100 px-2.5 py-1">
-          <Text className="text-xs font-semibold text-green-700">Connected</Text>
+        <View className="rounded-full bg-green-100 px-2.5 py-1 dark:bg-green-900">
+          <Text className="text-xs font-semibold text-green-700 dark:text-green-300">Connected</Text>
         </View>
         {lastSyncAt && (
-          <Text className="ml-2 text-xs text-stone-400">
+          <Text className="ml-2 text-xs text-stone-400 dark:text-stone-500">
             Last sync: {formatDate(lastSyncAt)}
           </Text>
         )}
@@ -821,8 +866,8 @@ function CalendarManager() {
 
       {/* Sync result */}
       {syncResult && (
-        <View className="mb-3 rounded-lg bg-green-50 px-3 py-2.5">
-          <Text className="text-xs font-medium text-green-800">
+        <View className="mb-3 rounded-lg bg-green-50 px-3 py-2.5 dark:bg-green-950">
+          <Text className="text-xs font-medium text-green-800 dark:text-green-300">
             Sync complete: {syncResult.eventsProcessed} events processed,{" "}
             {syncResult.interactionsCreated} interactions created,{" "}
             {syncResult.suggestionsCreated} suggestions added
@@ -832,8 +877,8 @@ function CalendarManager() {
 
       {/* Sync error */}
       {syncError && (
-        <View className="mb-3 rounded-lg bg-red-50 px-3 py-2.5">
-          <Text className="text-xs font-medium text-red-800">{syncError}</Text>
+        <View className="mb-3 rounded-lg bg-red-50 px-3 py-2.5 dark:bg-red-950">
+          <Text className="text-xs font-medium text-red-800 dark:text-red-300">{syncError}</Text>
         </View>
       )}
 
@@ -857,10 +902,10 @@ function CalendarManager() {
       {/* Disconnect */}
       <Pressable
         onPress={handleDisconnect}
-        className="flex-row items-center justify-center rounded-lg border border-stone-200 py-2.5 active:bg-stone-50"
+        className="flex-row items-center justify-center rounded-lg border border-stone-200 py-2.5 active:bg-stone-50 dark:border-stone-800 dark:active:bg-stone-800"
       >
         <Ionicons name="unlink-outline" size={16} color={Colors.gray[500]} />
-        <Text className="ml-1.5 text-sm font-medium text-stone-500">
+        <Text className="ml-1.5 text-sm font-medium text-stone-500 dark:text-stone-400">
           Disconnect
         </Text>
       </Pressable>
@@ -970,21 +1015,21 @@ function AIKeyManager() {
 
   return (
     <View className="px-4 py-4">
-      <Text className="mb-3 text-xs text-stone-500">
+      <Text className="mb-3 text-xs text-stone-500 dark:text-stone-400">
         Add an API key to enable AI-powered answers in the Ask tab.
       </Text>
 
       {/* Provider toggle */}
-      <View className="mb-3 flex-row overflow-hidden rounded-xl border border-stone-200">
+      <View className="mb-3 flex-row overflow-hidden rounded-xl border border-stone-200 dark:border-stone-800">
         <Pressable
           onPress={() => { setProvider("anthropic"); setModel(AI_MODELS.anthropic[0].id); setSaved(false); }}
           className={`flex-1 items-center py-2.5 ${
-            provider === "anthropic" ? "bg-indigo-600" : "bg-white active:bg-stone-50"
+            provider === "anthropic" ? "bg-indigo-600 dark:bg-indigo-500" : "bg-white active:bg-stone-50 dark:bg-stone-900 dark:active:bg-stone-800"
           }`}
         >
           <Text
             className={`text-sm font-medium ${
-              provider === "anthropic" ? "text-white" : "text-stone-600"
+              provider === "anthropic" ? "text-white" : "text-stone-600 dark:text-stone-400"
             }`}
           >
             Claude
@@ -993,12 +1038,12 @@ function AIKeyManager() {
         <Pressable
           onPress={() => { setProvider("openai"); setModel(AI_MODELS.openai[0].id); setSaved(false); }}
           className={`flex-1 items-center py-2.5 ${
-            provider === "openai" ? "bg-indigo-600" : "bg-white active:bg-stone-50"
+            provider === "openai" ? "bg-indigo-600 dark:bg-indigo-500" : "bg-white active:bg-stone-50 dark:bg-stone-900 dark:active:bg-stone-800"
           }`}
         >
           <Text
             className={`text-sm font-medium ${
-              provider === "openai" ? "text-white" : "text-stone-600"
+              provider === "openai" ? "text-white" : "text-stone-600 dark:text-stone-400"
             }`}
           >
             GPT
@@ -1007,7 +1052,7 @@ function AIKeyManager() {
       </View>
 
       {/* Model picker */}
-      <Text className="mb-1.5 text-xs font-medium text-stone-500">Model</Text>
+      <Text className="mb-1.5 text-xs font-medium text-stone-500 dark:text-stone-400">Model</Text>
       <View className="mb-3 flex-row flex-wrap gap-2">
         {AI_MODELS[provider].map((m) => (
           <Pressable
@@ -1015,20 +1060,20 @@ function AIKeyManager() {
             onPress={() => { setModel(m.id); setSaved(false); }}
             className={`rounded-lg border px-3 py-2 ${
               model === m.id
-                ? "border-indigo-600 bg-indigo-50"
-                : "border-stone-200 bg-white active:bg-stone-50"
+                ? "border-indigo-600 bg-indigo-50 dark:bg-indigo-950"
+                : "border-stone-200 bg-white active:bg-stone-50 dark:border-stone-800 dark:bg-stone-900 dark:active:bg-stone-800"
             }`}
           >
             <Text
               className={`text-sm font-medium ${
-                model === m.id ? "text-indigo-700" : "text-stone-700"
+                model === m.id ? "text-indigo-700 dark:text-indigo-300" : "text-stone-700 dark:text-stone-300"
               }`}
             >
               {m.label}
             </Text>
             <Text
               className={`text-xs ${
-                model === m.id ? "text-indigo-500" : "text-stone-400"
+                model === m.id ? "text-indigo-500 dark:text-indigo-400" : "text-stone-400 dark:text-stone-500"
               }`}
             >
               {m.tier}
@@ -1038,7 +1083,7 @@ function AIKeyManager() {
       </View>
 
       {/* API Key input */}
-      <View className="mb-3 flex-row items-center rounded-xl border border-stone-200 bg-stone-50">
+      <View className="mb-3 flex-row items-center rounded-xl border border-stone-200 bg-stone-50 dark:border-stone-800 dark:bg-stone-800">
         <TextInput
           value={showKey ? apiKey : (apiKey ? maskedKey : "")}
           onChangeText={(t) => { setApiKey(t); setSaved(false); }}
@@ -1048,7 +1093,7 @@ function AIKeyManager() {
               : "sk-..."
           }
           placeholderTextColor={Colors.gray[400]}
-          className="flex-1 px-3 py-2.5 text-sm text-stone-900"
+          className="flex-1 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100"
           autoCapitalize="none"
           autoCorrect={false}
           secureTextEntry={!showKey && !!apiKey}
@@ -1072,7 +1117,7 @@ function AIKeyManager() {
         onPress={() => setShowPrompt(!showPrompt)}
         className="mb-2 flex-row items-center justify-between"
       >
-        <Text className="text-xs font-medium text-stone-500">System Prompt</Text>
+        <Text className="text-xs font-medium text-stone-500 dark:text-stone-400">System Prompt</Text>
         <View className="flex-row items-center">
           {systemPrompt !== DEFAULT_SYSTEM_PROMPT && (
             <Text className="mr-2 text-xs text-indigo-500">Customized</Text>
@@ -1094,7 +1139,7 @@ function AIKeyManager() {
             multiline
             numberOfLines={6}
             textAlignVertical="top"
-            className="mb-2 min-h-[120px] rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-base text-stone-900"
+            className="mb-2 min-h-[120px] rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-base text-stone-900 dark:border-stone-800 dark:bg-stone-800 dark:text-stone-100"
           />
           {systemPrompt !== DEFAULT_SYSTEM_PROMPT && (
             <Pressable
@@ -1114,8 +1159,8 @@ function AIKeyManager() {
           disabled={isSaving || !apiKey.trim() || saved}
           className={`flex-1 items-center rounded-lg py-2.5 ${
             isSaving || !apiKey.trim() || saved
-              ? "bg-stone-200"
-              : "bg-indigo-600 active:bg-indigo-700"
+              ? "bg-stone-200 dark:bg-stone-700"
+              : "bg-indigo-600 active:bg-indigo-700 dark:bg-indigo-500 dark:active:bg-indigo-600"
           }`}
         >
           {isSaving ? (
@@ -1123,7 +1168,7 @@ function AIKeyManager() {
           ) : (
             <Text
               className={`text-sm font-medium ${
-                !apiKey.trim() || saved ? "text-stone-400" : "text-white"
+                !apiKey.trim() || saved ? "text-stone-400 dark:text-stone-500" : "text-white"
               }`}
             >
               {saved ? "Saved" : "Save Key"}
@@ -1134,9 +1179,9 @@ function AIKeyManager() {
           <Pressable
             onPress={handleClear}
             disabled={isSaving}
-            className="items-center rounded-lg border border-stone-200 px-4 py-2.5 active:bg-stone-50"
+            className="items-center rounded-lg border border-stone-200 px-4 py-2.5 active:bg-stone-50 dark:border-stone-800 dark:active:bg-stone-800"
           >
-            <Text className="text-sm font-medium text-stone-500">Clear</Text>
+            <Text className="text-sm font-medium text-stone-500 dark:text-stone-400">Clear</Text>
           </Pressable>
         )}
       </View>
@@ -1180,65 +1225,69 @@ export default function SettingsScreen() {
   }, [signOut]);
 
   return (
-    <ScrollView className="flex-1 bg-stone-50" contentContainerClassName="pb-24">
+    <ScrollView className="flex-1 bg-stone-50 dark:bg-stone-950" contentContainerClassName="pb-24">
       {/* Profile */}
       <SectionHeader title="Profile" />
       <ProfileCard />
 
+      {/* Appearance */}
+      <SectionHeader title="Appearance" />
+      <ThemeToggle />
+
       {/* Custom Fields */}
       <SectionHeader title="Custom Fields" />
-      <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm">
+      <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm dark:bg-stone-900 dark:border dark:border-stone-800">
         <CustomFieldManager />
       </View>
 
       {/* Tags */}
       <SectionHeader title="Tags" />
-      <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm">
+      <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm dark:bg-stone-900 dark:border dark:border-stone-800">
         <TagManager />
       </View>
 
       {/* Entity Categories */}
       <SectionHeader title="Entity Categories" />
-      <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm">
+      <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm dark:bg-stone-900 dark:border dark:border-stone-800">
         <EntityCategoryManager />
       </View>
 
       {/* Relationship Types */}
       <SectionHeader title="Relationship Types" />
-      <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm">
+      <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm dark:bg-stone-900 dark:border dark:border-stone-800">
         <RelationshipTypeManager />
       </View>
 
       {/* My Emails */}
       <SectionHeader title="My Emails" />
-      <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm">
+      <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm dark:bg-stone-900 dark:border dark:border-stone-800">
         <UserEmailManager />
       </View>
 
       {/* Google Calendar */}
       <SectionHeader title="Google Calendar" />
-      <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm">
+      <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm dark:bg-stone-900 dark:border dark:border-stone-800">
         <CalendarManager />
       </View>
 
       {/* AI API Keys */}
       <SectionHeader title="AI Provider" />
-      <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm">
+      <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm dark:bg-stone-900 dark:border dark:border-stone-800">
         <AIKeyManager />
       </View>
 
       {/* About */}
       <SectionHeader title="About" />
-      <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm">
+      <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm dark:bg-stone-900 dark:border dark:border-stone-800">
         <View className="px-4 py-4">
           <View className="flex-row items-center justify-between">
-            <Text className="text-sm text-stone-500">Version</Text>
-            <Text className="text-sm font-medium text-stone-900">1.0.0</Text>
+            <Text className="text-sm text-stone-500 dark:text-stone-400">Version</Text>
+            <Text className="text-sm font-medium text-stone-900 dark:text-stone-100">1.0.0</Text>
           </View>
-          <View className="mt-3 h-px bg-stone-100" />
+          <View className="mt-3 h-px bg-stone-100 dark:bg-stone-800" />
           <View className="mt-3 flex-row items-center">
             <Ionicons name="heart-outline" size={14} color={Colors.gray[500]} />
-            <Text className="ml-1.5 text-sm text-stone-500">
+            <Text className="ml-1.5 text-sm text-stone-500 dark:text-stone-400">
               Built with Expo + Supabase
             </Text>
           </View>

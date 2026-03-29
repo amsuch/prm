@@ -342,24 +342,24 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
       className="flex-1"
     >
       <ScrollView
-        className="flex-1 bg-stone-50"
+        className="flex-1 bg-stone-50 dark:bg-stone-950"
         contentContainerStyle={{ paddingBottom: 100 }}
         keyboardShouldPersistTaps="handled"
       >
         {/* Basic Info Section */}
-        <View className="mx-4 mt-4 rounded-xl bg-white p-4 shadow-sm">
-          <Text className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-400">
+        <View className="mx-4 mt-4 rounded-xl bg-white dark:bg-stone-900 p-4 shadow-sm">
+          <Text className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
             Basic Information
           </Text>
 
           {/* First Name */}
           <View className="mb-3">
-            <Text className="mb-1 text-sm font-medium text-stone-700">
+            <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">
               First Name <Text className="text-red-500">*</Text>
             </Text>
             <TextInput
-              className={`rounded-lg border bg-white px-3 py-2.5 text-sm text-stone-900 ${
-                getFieldError("first_name") ? "border-red-400" : "border-stone-200"
+              className={`rounded-lg border bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100 ${
+                getFieldError("first_name") ? "border-red-400" : "border-stone-200 dark:border-stone-700"
               }`}
               placeholder="First name"
               placeholderTextColor={Colors.gray[400]}
@@ -376,9 +376,9 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
 
           {/* Last Name */}
           <View className="mb-3">
-            <Text className="mb-1 text-sm font-medium text-stone-700">Last Name</Text>
+            <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">Last Name</Text>
             <TextInput
-              className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900"
+              className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100"
               placeholder="Last name"
               placeholderTextColor={Colors.gray[400]}
               value={lastName}
@@ -389,9 +389,9 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
 
           {/* Company with autocomplete */}
           <View className="mb-3" style={{ zIndex: 10 }}>
-            <Text className="mb-1 text-sm font-medium text-stone-700">Company</Text>
+            <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">Company</Text>
             <TextInput
-              className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900"
+              className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100"
               placeholder="Company"
               placeholderTextColor={Colors.gray[400]}
               value={company}
@@ -408,7 +408,7 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
             />
             {showCompanySuggestions && filteredCompanies.length > 0 && (
               <View
-                className="rounded-lg border border-stone-200 bg-white shadow-md"
+                className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 shadow-md"
                 style={{
                   position: Platform.OS === "web" ? ("absolute" as const) : ("relative" as const),
                   top: Platform.OS === "web" ? 68 : 0,
@@ -431,10 +431,10 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
                         setShowCompanySuggestions(false);
                       }}
                       className={`px-3 py-2.5 active:bg-indigo-50 ${
-                        idx > 0 ? "border-t border-stone-100" : ""
+                        idx > 0 ? "border-t border-stone-100 dark:border-stone-800" : ""
                       }`}
                     >
-                      <Text className="text-sm text-stone-900">{c}</Text>
+                      <Text className="text-sm text-stone-900 dark:text-stone-100">{c}</Text>
                     </Pressable>
                   ))}
                 </ScrollView>
@@ -444,9 +444,9 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
 
           {/* Job Title */}
           <View className="mb-3">
-            <Text className="mb-1 text-sm font-medium text-stone-700">Job Title</Text>
+            <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">Job Title</Text>
             <TextInput
-              className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900"
+              className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100"
               placeholder="Job title"
               placeholderTextColor={Colors.gray[400]}
               value={jobTitle}
@@ -457,9 +457,9 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
 
           {/* Department */}
           <View className="mb-3">
-            <Text className="mb-1 text-sm font-medium text-stone-700">Department</Text>
+            <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">Department</Text>
             <TextInput
-              className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900"
+              className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100"
               placeholder="Department"
               placeholderTextColor={Colors.gray[400]}
               value={department}
@@ -470,9 +470,9 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
 
           {/* Birthday */}
           <View className="mb-3">
-            <Text className="mb-1 text-sm font-medium text-stone-700">Birthday</Text>
+            <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">Birthday</Text>
             <TextInput
-              className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900"
+              className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100"
               placeholder="YYYY-MM-DD"
               placeholderTextColor={Colors.gray[400]}
               value={birthday}
@@ -482,9 +482,9 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
 
           {/* Notes */}
           <View>
-            <Text className="mb-1 text-sm font-medium text-stone-700">Notes</Text>
+            <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">Notes</Text>
             <TextInput
-              className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900"
+              className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100"
               placeholder="Add notes..."
               placeholderTextColor={Colors.gray[400]}
               value={notes}
@@ -498,14 +498,14 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
         </View>
 
         {/* Emails Section */}
-        <View className="mx-4 mt-3 rounded-xl bg-white p-4 shadow-sm">
+        <View className="mx-4 mt-3 rounded-xl bg-white dark:bg-stone-900 p-4 shadow-sm">
           <View className="mb-3 flex-row items-center justify-between">
-            <Text className="text-sm font-semibold uppercase tracking-wide text-stone-400">
+            <Text className="text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
               Email Addresses
             </Text>
             <Pressable
               onPress={handleAddEmail}
-              className="flex-row items-center rounded-lg bg-indigo-50 px-2.5 py-1"
+              className="flex-row items-center rounded-lg bg-indigo-50 dark:bg-indigo-950 px-2.5 py-1"
             >
               <Ionicons name="add" size={14} color={Colors.brand[600]} />
               <Text className="ml-0.5 text-xs font-medium text-indigo-700">Add</Text>
@@ -572,14 +572,14 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
         </View>
 
         {/* Phones Section */}
-        <View className="mx-4 mt-3 rounded-xl bg-white p-4 shadow-sm">
+        <View className="mx-4 mt-3 rounded-xl bg-white dark:bg-stone-900 p-4 shadow-sm">
           <View className="mb-3 flex-row items-center justify-between">
-            <Text className="text-sm font-semibold uppercase tracking-wide text-stone-400">
+            <Text className="text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
               Phone Numbers
             </Text>
             <Pressable
               onPress={handleAddPhone}
-              className="flex-row items-center rounded-lg bg-indigo-50 px-2.5 py-1"
+              className="flex-row items-center rounded-lg bg-indigo-50 dark:bg-indigo-950 px-2.5 py-1"
             >
               <Ionicons name="add" size={14} color={Colors.brand[600]} />
               <Text className="ml-0.5 text-xs font-medium text-indigo-700">Add</Text>
@@ -644,14 +644,14 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
         </View>
 
         {/* URLs Section */}
-        <View className="mx-4 mt-3 rounded-xl bg-white p-4 shadow-sm">
+        <View className="mx-4 mt-3 rounded-xl bg-white dark:bg-stone-900 p-4 shadow-sm">
           <View className="mb-3 flex-row items-center justify-between">
-            <Text className="text-sm font-semibold uppercase tracking-wide text-stone-400">
+            <Text className="text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
               URLs
             </Text>
             <Pressable
               onPress={handleAddUrl}
-              className="flex-row items-center rounded-lg bg-indigo-50 px-2.5 py-1"
+              className="flex-row items-center rounded-lg bg-indigo-50 dark:bg-indigo-950 px-2.5 py-1"
             >
               <Ionicons name="add" size={14} color={Colors.brand[600]} />
               <Text className="ml-0.5 text-xs font-medium text-indigo-700">Add</Text>
@@ -659,7 +659,7 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
           </View>
 
           {urls.length === 0 && (
-            <Text className="py-2 text-center text-sm text-stone-400">
+            <Text className="py-2 text-center text-sm text-stone-400 dark:text-stone-500">
               No URLs added
             </Text>
           )}
@@ -718,8 +718,8 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
         </View>
 
         {/* Tags Section */}
-        <View className="mx-4 mt-3 rounded-xl bg-white p-4 shadow-sm">
-          <Text className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-400">
+        <View className="mx-4 mt-3 rounded-xl bg-white dark:bg-stone-900 p-4 shadow-sm">
+          <Text className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
             Tags
           </Text>
           <TagSelector
@@ -732,8 +732,8 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
 
         {/* Custom Fields Section */}
         {definitions.length > 0 && (
-          <View className="mx-4 mt-3 rounded-xl bg-white p-4 shadow-sm">
-            <Text className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-400">
+          <View className="mx-4 mt-3 rounded-xl bg-white dark:bg-stone-900 p-4 shadow-sm">
+            <Text className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
               Custom Fields
             </Text>
             {definitions.map((def) => (
@@ -749,7 +749,7 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
       </ScrollView>
 
       {/* Save Button */}
-      <View className="absolute bottom-0 left-0 right-0 border-t border-stone-100 bg-white px-4 pb-8 pt-3">
+      <View className="absolute bottom-0 left-0 right-0 border-t border-stone-100 dark:border-stone-800 bg-white dark:bg-stone-900 px-4 pb-8 pt-3">
         <Pressable
           onPress={handleSave}
           disabled={isSaving}

@@ -1,5 +1,6 @@
 import { View, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Shadows } from "@/constants/shadows";
 import type { DashboardStats as StatsType } from "@/hooks/useDashboard";
 
 type DashboardStatsProps = {
@@ -27,7 +28,10 @@ function StatCard({
   bgTintClass,
 }: StatCardProps) {
   return (
-    <View className="flex-1 rounded-xl bg-white p-4 shadow-sm">
+    <View
+      className="flex-1 rounded-xl bg-white dark:bg-stone-900 dark:border dark:border-stone-800 p-4 shadow-sm"
+      style={Shadows.md}
+    >
       <View className="flex-row items-center justify-between">
         <Text className={`text-2xl font-bold ${colorClass}`}>
           {value}
@@ -45,17 +49,17 @@ export function DashboardStats({ stats, isLoading }: DashboardStatsProps) {
   if (isLoading) {
     return (
       <View className="flex-row gap-3">
-        <View className="flex-1 rounded-xl bg-white p-4 shadow-sm">
-          <View className="h-8 w-16 rounded bg-stone-100" />
-          <View className="mt-2 h-3 w-20 rounded bg-stone-100" />
+        <View className="flex-1 rounded-xl bg-white dark:bg-stone-900 dark:border dark:border-stone-800 p-4 shadow-sm">
+          <View className="h-8 w-16 rounded bg-stone-100 dark:bg-stone-800" />
+          <View className="mt-2 h-3 w-20 rounded bg-stone-100 dark:bg-stone-800" />
         </View>
-        <View className="flex-1 rounded-xl bg-white p-4 shadow-sm">
-          <View className="h-8 w-16 rounded bg-stone-100" />
-          <View className="mt-2 h-3 w-20 rounded bg-stone-100" />
+        <View className="flex-1 rounded-xl bg-white dark:bg-stone-900 dark:border dark:border-stone-800 p-4 shadow-sm">
+          <View className="h-8 w-16 rounded bg-stone-100 dark:bg-stone-800" />
+          <View className="mt-2 h-3 w-20 rounded bg-stone-100 dark:bg-stone-800" />
         </View>
-        <View className="flex-1 rounded-xl bg-white p-4 shadow-sm">
-          <View className="h-8 w-16 rounded bg-stone-100" />
-          <View className="mt-2 h-3 w-20 rounded bg-stone-100" />
+        <View className="flex-1 rounded-xl bg-white dark:bg-stone-900 dark:border dark:border-stone-800 p-4 shadow-sm">
+          <View className="h-8 w-16 rounded bg-stone-100 dark:bg-stone-800" />
+          <View className="mt-2 h-3 w-20 rounded bg-stone-100 dark:bg-stone-800" />
         </View>
       </View>
     );
@@ -67,28 +71,28 @@ export function DashboardStats({ stats, isLoading }: DashboardStatsProps) {
         value={stats.totalContacts}
         label="Total Contacts"
         colorClass="text-indigo-600"
-        textColor="text-stone-500"
+        textColor="text-stone-500 dark:text-stone-400"
         icon="people"
         iconColor="#2563eb"
-        bgTintClass="bg-indigo-50"
+        bgTintClass="bg-indigo-50 dark:bg-indigo-950"
       />
       <StatCard
         value={stats.contactedThisWeek}
         label="This Week"
         colorClass="text-green-600"
-        textColor="text-stone-500"
+        textColor="text-stone-500 dark:text-stone-400"
         icon="chatbubble"
         iconColor="#16a34a"
-        bgTintClass="bg-green-50"
+        bgTintClass="bg-green-50 dark:bg-green-950"
       />
       <StatCard
         value={stats.staleContacts}
         label="Stale"
         colorClass="text-amber-600"
-        textColor="text-stone-500"
+        textColor="text-stone-500 dark:text-stone-400"
         icon="alert-circle"
         iconColor="#d97706"
-        bgTintClass="bg-amber-50"
+        bgTintClass="bg-amber-50 dark:bg-amber-950"
       />
     </View>
   );

@@ -68,14 +68,14 @@ function FieldRow({
   return (
     <View className="flex-row items-center justify-between px-4 py-3">
       <View className="flex-1 flex-row items-center">
-        <Text className="text-sm font-medium text-stone-900">{field.name}</Text>
+        <Text className="text-sm font-medium text-stone-900 dark:text-stone-100">{field.name}</Text>
         <View className="ml-2">
           <FieldTypeBadge type={field.field_type} />
         </View>
       </View>
       <Pressable
         onPress={() => onDelete(field.id, field.name)}
-        className="ml-2 rounded-lg p-2 active:bg-red-50"
+        className="ml-2 rounded-lg p-2 active:bg-red-50 dark:active:bg-red-950"
         hitSlop={8}
       >
         <Ionicons name="trash-outline" size={18} color="#ef4444" />
@@ -208,7 +208,7 @@ export function CustomFieldManager() {
       {definitions.length === 0 && !isAdding && (
         <View className="items-center py-6">
           <Ionicons name="list-outline" size={28} color="#d1d5db" />
-          <Text className="mt-1 text-sm text-stone-400">
+          <Text className="mt-1 text-sm text-stone-400 dark:text-stone-500">
             No custom fields defined
           </Text>
         </View>
@@ -216,15 +216,15 @@ export function CustomFieldManager() {
 
       {definitions.map((field, index) => (
         <View key={field.id}>
-          {index > 0 && <View className="ml-4 h-px bg-stone-100" />}
+          {index > 0 && <View className="ml-4 h-px bg-stone-100 dark:bg-stone-800" />}
           <FieldRow field={field} onDelete={handleDelete} />
         </View>
       ))}
 
       {/* Add Field form */}
       {isAdding ? (
-        <View className="border-t border-stone-100 px-4 py-3">
-          <Text className="mb-2 text-sm font-medium text-stone-700">
+        <View className="border-t border-stone-100 dark:border-stone-800 px-4 py-3">
+          <Text className="mb-2 text-sm font-medium text-stone-700 dark:text-stone-300">
             New Field
           </Text>
 
@@ -233,13 +233,13 @@ export function CustomFieldManager() {
             value={newName}
             onChangeText={setNewName}
             placeholder="Field name"
-            className="mb-3 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm text-stone-900"
+            className="mb-3 rounded-lg border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100"
             placeholderTextColor="#a8a29e"
             autoFocus
           />
 
           {/* Type picker */}
-          <Text className="mb-1.5 text-xs font-medium text-stone-500">
+          <Text className="mb-1.5 text-xs font-medium text-stone-500 dark:text-stone-400">
             Field Type
           </Text>
           <View className="mb-3 flex-row flex-wrap gap-2">
@@ -248,12 +248,12 @@ export function CustomFieldManager() {
                 key={type}
                 onPress={() => setNewType(type)}
                 className={`rounded-lg px-3 py-1.5 ${
-                  newType === type ? "bg-indigo-600" : "bg-stone-100"
+                  newType === type ? "bg-indigo-600" : "bg-stone-100 dark:bg-stone-800"
                 }`}
               >
                 <Text
                   className={`text-xs font-medium ${
-                    newType === type ? "text-white" : "text-stone-600"
+                    newType === type ? "text-white" : "text-stone-600 dark:text-stone-400"
                   }`}
                 >
                   {FIELD_TYPE_LABELS[type]}
@@ -265,14 +265,14 @@ export function CustomFieldManager() {
           {/* Options input (for select/multi_select) */}
           {(newType === "select" || newType === "multi_select") && (
             <View className="mb-3">
-              <Text className="mb-1.5 text-xs font-medium text-stone-500">
+              <Text className="mb-1.5 text-xs font-medium text-stone-500 dark:text-stone-400">
                 Options (comma-separated)
               </Text>
               <TextInput
                 value={newOptions}
                 onChangeText={setNewOptions}
                 placeholder="Option 1, Option 2, Option 3"
-                className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm text-stone-900"
+                className="rounded-lg border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100"
                 placeholderTextColor="#a8a29e"
               />
             </View>
@@ -292,9 +292,9 @@ export function CustomFieldManager() {
                 setNewOptions("");
                 setSaveError(null);
               }}
-              className="flex-1 items-center rounded-lg border border-stone-200 py-2.5 active:bg-stone-50"
+              className="flex-1 items-center rounded-lg border border-stone-200 dark:border-stone-700 py-2.5 active:bg-stone-50 dark:active:bg-stone-800"
             >
-              <Text className="text-sm font-medium text-stone-600">Cancel</Text>
+              <Text className="text-sm font-medium text-stone-600 dark:text-stone-400">Cancel</Text>
             </Pressable>
             <Pressable
               onPress={handleAdd}
@@ -314,10 +314,10 @@ export function CustomFieldManager() {
           </View>
         </View>
       ) : (
-        <View className="border-t border-stone-100 px-4 py-3">
+        <View className="border-t border-stone-100 dark:border-stone-800 px-4 py-3">
           <Pressable
             onPress={() => setIsAdding(true)}
-            className="flex-row items-center justify-center rounded-lg border border-dashed border-stone-300 py-2.5 active:bg-stone-50"
+            className="flex-row items-center justify-center rounded-lg border border-dashed border-stone-300 dark:border-stone-600 py-2.5 active:bg-stone-50 dark:active:bg-stone-800"
           >
             <Ionicons name="add" size={18} color="#2563eb" />
             <Text className="ml-1 text-sm font-medium text-indigo-600">

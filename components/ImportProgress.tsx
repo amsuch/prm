@@ -16,7 +16,7 @@ export function ImportProgress({ progress, label }: ImportProgressProps) {
   const isComplete = progress.current >= progress.total;
 
   return (
-    <View className="rounded-xl border border-stone-200 bg-white p-5">
+    <View className="rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-5">
       {/* Header */}
       <View className="mb-4 flex-row items-center gap-3">
         {isComplete ? (
@@ -29,12 +29,12 @@ export function ImportProgress({ progress, label }: ImportProgressProps) {
           </View>
         )}
         <View className="flex-1">
-          <Text className="text-base font-semibold text-stone-900">
+          <Text className="text-base font-semibold text-stone-900 dark:text-stone-100">
             {isComplete
               ? "Import Complete"
               : label ?? "Importing contacts..."}
           </Text>
-          <Text className="text-sm text-stone-500">
+          <Text className="text-sm text-stone-500 dark:text-stone-400">
             {progress.current} of {progress.total} processed
           </Text>
         </View>
@@ -42,7 +42,7 @@ export function ImportProgress({ progress, label }: ImportProgressProps) {
       </View>
 
       {/* Progress bar */}
-      <View className="mb-4 h-2.5 overflow-hidden rounded-full bg-stone-100">
+      <View className="mb-4 h-2.5 overflow-hidden rounded-full bg-stone-100 dark:bg-stone-800">
         <View
           className={`h-full rounded-full ${
             isComplete ? "bg-green-500" : "bg-indigo-600"

@@ -41,12 +41,12 @@ export function FilterChips({ activeFilter, onFilterChange, tags }: FilterChipsP
             key={chip.id}
             onPress={() => onFilterChange(chip.id)}
             className={`rounded-full px-4 py-1.5 ${
-              isActive ? "bg-indigo-600" : "bg-white border border-stone-200"
+              isActive ? "bg-indigo-600" : "bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700"
             }`}
           >
             <Text
               className={`text-sm font-medium ${
-                isActive ? "text-white" : "text-stone-600"
+                isActive ? "text-white" : "text-stone-600 dark:text-stone-400"
               }`}
             >
               {chip.label}
