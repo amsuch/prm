@@ -14,7 +14,7 @@ export function SearchBar({
   placeholder = "Search contacts...",
 }: SearchBarProps) {
   return (
-    <View className="mx-4 mt-3 mb-2 flex-row items-center rounded-xl bg-white dark:bg-stone-900 px-3 py-2 shadow-sm">
+    <View className="mx-4 mt-3 mb-3 flex-row items-center rounded-xl bg-white dark:bg-stone-900 px-4 py-2.5 shadow-sm">
       <Ionicons name="search" size={18} color={Colors.gray[400]} />
       <TextInput
         className="ml-2 flex-1 text-base text-stone-900 dark:text-stone-100"

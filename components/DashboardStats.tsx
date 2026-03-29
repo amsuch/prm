@@ -48,7 +48,7 @@ function StatCard({
 export function DashboardStats({ stats, isLoading }: DashboardStatsProps) {
   if (isLoading) {
     return (
-      <View className="flex-row gap-3">
+      <View className="flex-row gap-4">
         <View className="flex-1 rounded-xl bg-white dark:bg-stone-900 dark:border dark:border-stone-800 p-4 shadow-sm">
           <View className="h-8 w-16 rounded bg-stone-100 dark:bg-stone-800" />
           <View className="mt-2 h-3 w-20 rounded bg-stone-100 dark:bg-stone-800" />
@@ -66,7 +66,7 @@ export function DashboardStats({ stats, isLoading }: DashboardStatsProps) {
   }
 
   return (
-    <View className="flex-row gap-3">
+    <View className="flex-row gap-4">
       <StatCard
         value={stats.totalContacts}
         label="Total Contacts"

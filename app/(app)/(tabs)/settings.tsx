@@ -38,7 +38,7 @@ const TAG_COLORS = [
 
 function SectionHeader({ title }: { title: string }) {
   return (
-    <Text className="mb-2 mt-6 px-4 text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
+    <Text className="mb-3 mt-8 px-4 text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
       {title}
     </Text>
   );

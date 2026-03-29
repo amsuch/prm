@@ -347,13 +347,13 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
         keyboardShouldPersistTaps="handled"
       >
         {/* Basic Info Section */}
-        <View className="mx-4 mt-4 rounded-xl bg-white dark:bg-stone-900 p-4 shadow-sm">
-          <Text className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
+        <View className="mx-4 mt-5 rounded-xl bg-white dark:bg-stone-900 p-5 shadow-sm">
+          <Text className="mb-4 text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
             Basic Information
           </Text>
 
           {/* First Name */}
-          <View className="mb-3">
+          <View className="mb-4">
             <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">
               First Name <Text className="text-red-500 dark:text-red-400">*</Text>
             </Text>
@@ -375,7 +375,7 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
           </View>
 
           {/* Last Name */}
-          <View className="mb-3">
+          <View className="mb-4">
             <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">Last Name</Text>
             <TextInput
               className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100"
@@ -388,7 +388,7 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
           </View>
 
           {/* Company with autocomplete */}
-          <View className="mb-3" style={{ zIndex: 10 }}>
+          <View className="mb-4" style={{ zIndex: 10 }}>
             <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">Company</Text>
             <TextInput
               className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100"
@@ -443,7 +443,7 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
           </View>
 
           {/* Job Title */}
-          <View className="mb-3">
+          <View className="mb-4">
             <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">Job Title</Text>
             <TextInput
               className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100"
@@ -456,7 +456,7 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
           </View>
 
           {/* Department */}
-          <View className="mb-3">
+          <View className="mb-4">
             <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">Department</Text>
             <TextInput
               className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100"
@@ -469,7 +469,7 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
           </View>
 
           {/* Birthday */}
-          <View className="mb-3">
+          <View className="mb-4">
             <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">Birthday</Text>
             <TextInput
               className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100"
@@ -498,8 +498,8 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
         </View>
 
         {/* Emails Section */}
-        <View className="mx-4 mt-3 rounded-xl bg-white dark:bg-stone-900 p-4 shadow-sm">
-          <View className="mb-3 flex-row items-center justify-between">
+        <View className="mx-4 mt-5 rounded-xl bg-white dark:bg-stone-900 p-5 shadow-sm">
+          <View className="mb-4 flex-row items-center justify-between">
             <Text className="text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
               Email Addresses
             </Text>
@@ -572,8 +572,8 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
         </View>
 
         {/* Phones Section */}
-        <View className="mx-4 mt-3 rounded-xl bg-white dark:bg-stone-900 p-4 shadow-sm">
-          <View className="mb-3 flex-row items-center justify-between">
+        <View className="mx-4 mt-5 rounded-xl bg-white dark:bg-stone-900 p-5 shadow-sm">
+          <View className="mb-4 flex-row items-center justify-between">
             <Text className="text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
               Phone Numbers
             </Text>
@@ -644,8 +644,8 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
         </View>
 
         {/* URLs Section */}
-        <View className="mx-4 mt-3 rounded-xl bg-white dark:bg-stone-900 p-4 shadow-sm">
-          <View className="mb-3 flex-row items-center justify-between">
+        <View className="mx-4 mt-5 rounded-xl bg-white dark:bg-stone-900 p-5 shadow-sm">
+          <View className="mb-4 flex-row items-center justify-between">
             <Text className="text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
               URLs
             </Text>
@@ -718,8 +718,8 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
         </View>
 
         {/* Tags Section */}
-        <View className="mx-4 mt-3 rounded-xl bg-white dark:bg-stone-900 p-4 shadow-sm">
-          <Text className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
+        <View className="mx-4 mt-5 rounded-xl bg-white dark:bg-stone-900 p-5 shadow-sm">
+          <Text className="mb-4 text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
             Tags
           </Text>
           <TagSelector
@@ -732,8 +732,8 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
 
         {/* Custom Fields Section */}
         {definitions.length > 0 && (
-          <View className="mx-4 mt-3 rounded-xl bg-white dark:bg-stone-900 p-4 shadow-sm">
-            <Text className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
+          <View className="mx-4 mt-5 rounded-xl bg-white dark:bg-stone-900 p-5 shadow-sm">
+            <Text className="mb-4 text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
               Custom Fields
             </Text>
             {definitions.map((def) => (

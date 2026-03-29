@@ -48,7 +48,7 @@ function InteractionRow({ interaction }: { interaction: RecentInteraction }) {
       onPress={() =>
         router.push(`/(app)/contact/${interaction.contact_id}` as const)
       }
-      className="flex-row items-center px-4 py-3 active:bg-stone-50 dark:active:bg-stone-800"
+      className="flex-row items-center px-4 py-3.5 active:bg-stone-50 dark:active:bg-stone-800"
     >
       {/* Avatar */}
       <Avatar

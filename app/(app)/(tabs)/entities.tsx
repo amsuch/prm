@@ -104,7 +104,7 @@ export default function EntitiesScreen() {
               <EntityCard entity={item} />
             </Animated.View>
           )}
-          contentContainerStyle={{ paddingTop: 4, paddingBottom: 96 }}
+          contentContainerStyle={{ paddingTop: 12, paddingBottom: 96 }}
           showsVerticalScrollIndicator={false}
           onRefresh={refresh}
           refreshing={false}

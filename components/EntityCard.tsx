@@ -36,7 +36,7 @@ export function EntityCard({ entity }: EntityCardProps) {
     <AnimatedPressable
       scaleDown={0.98}
       onPress={() => router.push(`/entity/${entity.id}` as never)}
-      className="mx-4 mb-2 flex-row items-center rounded-xl bg-white dark:bg-stone-900 dark:border dark:border-stone-800 p-3 shadow-sm active:bg-stone-50 dark:active:bg-stone-800"
+      className="mx-4 mb-3 flex-row items-center rounded-xl bg-white dark:bg-stone-900 dark:border dark:border-stone-800 p-4 shadow-sm active:bg-stone-50 dark:active:bg-stone-800"
     >
       {/* Avatar */}
       <View

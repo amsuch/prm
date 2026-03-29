@@ -31,7 +31,7 @@ export function FilterChips({ activeFilter, onFilterChange, tags }: FilterChipsP
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      className="mb-2 px-4"
+      className="mb-3 px-4"
       contentContainerStyle={{ gap: 8 }}
     >
       {chips.map((chip) => {
@@ -40,7 +40,7 @@ export function FilterChips({ activeFilter, onFilterChange, tags }: FilterChipsP
           <Pressable
             key={chip.id}
             onPress={() => onFilterChange(chip.id)}
-            className={`rounded-full px-4 py-1.5 ${
+            className={`rounded-full px-4 py-2 ${
               isActive ? "bg-indigo-600" : "bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700"
             }`}
           >

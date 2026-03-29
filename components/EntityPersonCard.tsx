@@ -40,7 +40,7 @@ export function EntityPersonCard({
   };
 
   return (
-    <View className="mb-2 flex-row items-center rounded-xl bg-white dark:bg-stone-900 dark:border dark:border-stone-800 p-3 shadow-sm">
+    <View className="mb-3 flex-row items-center rounded-xl bg-white dark:bg-stone-900 dark:border dark:border-stone-800 p-4 shadow-sm">
       {/* Avatar */}
       <Avatar
         firstName={person.first_name}

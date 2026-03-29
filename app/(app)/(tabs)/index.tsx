@@ -30,7 +30,7 @@ export default function HomeScreen() {
         <RefreshControl refreshing={false} onRefresh={refetch} tintColor={Colors.brand[600]} />
       }
     >
-      <View className="px-4 pt-5 pb-24">
+      <View className="px-4 pt-6 pb-24">
         {/* Greeting */}
         <Animated.View entering={FadeIn.duration(300)}>
           <Text className="text-3xl font-bold text-stone-900 dark:text-stone-100">Hi, {name}</Text>
@@ -75,7 +75,7 @@ export default function HomeScreen() {
 
         {/* Stats */}
         <Animated.View entering={FadeInUp.delay(200).duration(400).springify()}>
-          <Text className="mb-1 mt-8 text-lg font-semibold tracking-tight text-stone-900 dark:text-stone-100">
+          <Text className="mb-3 mt-10 text-lg font-semibold tracking-tight text-stone-900 dark:text-stone-100">
             Overview
           </Text>
           <DashboardStats stats={stats} isLoading={isLoading} />
@@ -101,7 +101,7 @@ export default function HomeScreen() {
 
         {/* Recent Activity */}
         <Animated.View entering={FadeInUp.delay(300).duration(400).springify()}>
-          <Text className="mb-1 mt-8 text-lg font-semibold tracking-tight text-stone-900 dark:text-stone-100">
+          <Text className="mb-3 mt-10 text-lg font-semibold tracking-tight text-stone-900 dark:text-stone-100">
             Recent Activity
           </Text>
           <RecentActivity
@@ -113,7 +113,7 @@ export default function HomeScreen() {
         {/* Upcoming Birthdays */}
         {upcomingBirthdays.length > 0 && (
           <Animated.View entering={FadeInUp.delay(400).duration(400).springify()}>
-            <Text className="mb-1 mt-8 text-lg font-semibold tracking-tight text-stone-900 dark:text-stone-100">
+            <Text className="mb-3 mt-10 text-lg font-semibold tracking-tight text-stone-900 dark:text-stone-100">
               Upcoming Birthdays
             </Text>
             <View className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-stone-900 dark:border dark:border-stone-800">

@@ -23,7 +23,7 @@ export function ContactCard({ contact }: ContactCardProps) {
     <AnimatedPressable
       scaleDown={0.98}
       onPress={() => router.push(`/contact/${contact.id}`)}
-      className="mx-4 mb-2 flex-row items-center rounded-xl bg-white dark:bg-stone-900 dark:border dark:border-stone-800 p-3 shadow-sm active:bg-stone-50 dark:active:bg-stone-800"
+      className="mx-4 mb-3 flex-row items-center rounded-xl bg-white dark:bg-stone-900 dark:border dark:border-stone-800 p-4 shadow-sm active:bg-stone-50 dark:active:bg-stone-800"
       style={Shadows.sm}
     >
       {/* Avatar */}
@@ -35,7 +35,7 @@ export function ContactCard({ contact }: ContactCardProps) {
       />
 
       {/* Info */}
-      <View className="ml-3 flex-1">
+      <View className="ml-3.5 flex-1">
         <Text className="text-base font-semibold text-stone-900 dark:text-stone-100" numberOfLines={1}>
           {fullName}
         </Text>

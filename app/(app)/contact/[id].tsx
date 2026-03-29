@@ -105,7 +105,7 @@ export default function ContactDetailScreen() {
         <ContactHeader contact={contact} onPhotoUpdated={refetch} />
 
         {/* Stats Bar */}
-        <View className="mx-4 mt-3 flex-row rounded-xl bg-white p-3 shadow-sm dark:border dark:border-stone-800 dark:bg-stone-900">
+        <View className="mx-4 mt-3 flex-row rounded-xl bg-white p-4 shadow-sm dark:border dark:border-stone-800 dark:bg-stone-900">
           <View className="flex-1 items-center border-r border-stone-100 dark:border-stone-800">
             <Text className="text-xs text-stone-400 dark:text-stone-500">Last Contacted</Text>
             <Text className="mt-0.5 text-sm font-semibold text-stone-700 dark:text-stone-300">
@@ -142,7 +142,7 @@ export default function ContactDetailScreen() {
                   <Pressable
                     key={email.id}
                     onPress={() => Linking.openURL(`mailto:${email.email}`)}
-                    className="mb-1.5 flex-row items-center rounded-lg bg-stone-50 p-2.5 active:bg-stone-100 dark:bg-stone-800 dark:active:bg-stone-700"
+                    className="mb-1.5 flex-row items-center rounded-lg bg-stone-50 p-3 active:bg-stone-100 dark:bg-stone-800 dark:active:bg-stone-700"
                   >
                     <Ionicons name="mail-outline" size={16} color={Colors.brand[600]} />
                     <View className="ml-2 flex-1">
@@ -165,7 +165,7 @@ export default function ContactDetailScreen() {
                   <Pressable
                     key={phone.id}
                     onPress={() => Linking.openURL(`tel:${phone.phone}`)}
-                    className="mb-1.5 flex-row items-center rounded-lg bg-stone-50 p-2.5 active:bg-stone-100 dark:bg-stone-800 dark:active:bg-stone-700"
+                    className="mb-1.5 flex-row items-center rounded-lg bg-stone-50 p-3 active:bg-stone-100 dark:bg-stone-800 dark:active:bg-stone-700"
                   >
                     <Ionicons name="call-outline" size={16} color="#16a34a" />
                     <View className="ml-2 flex-1">
@@ -188,7 +188,7 @@ export default function ContactDetailScreen() {
                   <Pressable
                     key={url.id}
                     onPress={() => Linking.openURL(url.url)}
-                    className="mb-1.5 flex-row items-center rounded-lg bg-stone-50 p-2.5 active:bg-stone-100 dark:bg-stone-800 dark:active:bg-stone-700"
+                    className="mb-1.5 flex-row items-center rounded-lg bg-stone-50 p-3 active:bg-stone-100 dark:bg-stone-800 dark:active:bg-stone-700"
                   >
                     <Ionicons name="link-outline" size={16} color="#7c3aed" />
                     <View className="ml-2 flex-1">
@@ -366,7 +366,7 @@ function SectionHeader({
   return (
     <Pressable
       onPress={() => onToggle(sectionId)}
-      className="mx-4 mt-4 mb-2 flex-row items-center justify-between"
+      className="mx-4 mt-5 mb-3 flex-row items-center justify-between"
     >
       <Text className="text-sm font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
         {title}
