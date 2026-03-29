@@ -5,6 +5,8 @@
  * This may fail due to CORS on web -- handled gracefully by returning null.
  */
 
+const TAG = "[PhotoSearch:LinkedIn]";
+
 /**
  * Check whether a URL is a LinkedIn profile URL.
  */
@@ -27,24 +29,32 @@ export function isLinkedInUrl(url: string): boolean {
 export async function fetchLinkedInPhoto(
   linkedinUrl: string,
 ): Promise<string | null> {
+  console.log(TAG, "fetchLinkedInPhoto called with:", linkedinUrl);
+
   if (!isLinkedInUrl(linkedinUrl)) {
+    console.log(TAG, "URL is not a LinkedIn profile URL, returning null");
     return null;
   }
 
   try {
+    console.log(TAG, "Fetching LinkedIn page...");
     const response = await fetch(linkedinUrl, {
       headers: {
         // Use a standard user-agent to avoid being blocked
         "User-Agent":
-          "Mozilla/5.0 (compatible; PersonalCRM/1.0)",
+          "Mozilla/5.0 (compatible; PRM/1.0)",
       },
     });
 
+    console.log(TAG, "Response status:", response.status, response.statusText);
+
     if (!response.ok) {
+      console.log(TAG, "Response not OK, returning null");
       return null;
     }
 
     const html = await response.text();
+    console.log(TAG, "HTML length:", html.length, "characters");
 
     // Extract og:image content from the HTML
     // Match: <meta property="og:image" content="URL" />
@@ -54,14 +64,17 @@ export async function fetchLinkedInPhoto(
 
     if (ogImageMatch?.[1]) {
       const imageUrl = ogImageMatch[1];
+      console.log(TAG, "Found og:image (property first):", imageUrl);
       // Validate it looks like a real image URL (not a placeholder)
       if (
         imageUrl.startsWith("http") &&
         !imageUrl.includes("ghost-person") &&
         !imageUrl.includes("default-avatar")
       ) {
+        console.log(TAG, "Image URL is valid, returning:", imageUrl);
         return imageUrl;
       }
+      console.log(TAG, "Image URL appears to be a placeholder, skipping");
     }
 
     // Try alternate meta tag format: content before property
@@ -71,18 +84,23 @@ export async function fetchLinkedInPhoto(
 
     if (altMatch?.[1]) {
       const imageUrl = altMatch[1];
+      console.log(TAG, "Found og:image (content first):", imageUrl);
       if (
         imageUrl.startsWith("http") &&
         !imageUrl.includes("ghost-person") &&
         !imageUrl.includes("default-avatar")
       ) {
+        console.log(TAG, "Image URL is valid, returning:", imageUrl);
         return imageUrl;
       }
+      console.log(TAG, "Image URL appears to be a placeholder, skipping");
     }
 
+    console.log(TAG, "No valid og:image found in HTML, returning null");
     return null;
-  } catch {
+  } catch (err) {
     // CORS or network error -- expected on web
+    console.log(TAG, "Error fetching LinkedIn page:", err);
     return null;
   }
 }

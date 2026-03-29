@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "@/lib/auth/ctx";
 import type { Tables } from "@/types/database";
+import type { SearchFilters } from "@/lib/search";
+import { DEFAULT_FILTERS } from "@/lib/search";
 
 export type ContactWithDetails = Tables<"contacts"> & {
   contact_emails: Tables<"contact_emails">[];
@@ -14,11 +16,7 @@ export type FilterOption = "all" | "stale_30d" | "recent_7d" | string; // string
 
 const PAGE_SIZE = 20;
 
-export function useContacts(
-  searchQuery: string = "",
-  sortBy: SortOption = "name_asc",
-  filterBy: FilterOption = "all",
-) {
+export function useContacts(filters: SearchFilters = DEFAULT_FILTERS) {
   const { session } = useSession();
   const [contacts, setContacts] = useState<ContactWithDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -57,16 +55,16 @@ export function useContacts(
         const to = from + PAGE_SIZE - 1;
 
         // If there's a search query, use the RPC
-        if (searchQuery.trim()) {
+        if (filters.query.trim()) {
           const { data, error: rpcError } = await supabase.rpc("search_contacts", {
-            search_query: searchQuery.trim(),
+            search_query: filters.query.trim(),
             p_user_id: userId,
           });
 
           if (rpcError) throw rpcError;
 
           // Map RPC results to ContactWithDetails shape (no related tables in RPC)
-          const mappedContacts: ContactWithDetails[] = (data ?? []).map((row) => ({
+          let mappedContacts: ContactWithDetails[] = (data ?? []).map((row) => ({
             id: row.id,
             user_id: userId,
             first_name: row.first_name,
@@ -111,6 +109,91 @@ export function useContacts(
             contact_tags: [],
           }));
 
+          // Apply client-side filters for fields the RPC doesn't handle
+          if (filters.company.trim()) {
+            const companyLower = filters.company.trim().toLowerCase();
+            mappedContacts = mappedContacts.filter(
+              (c) => c.company?.toLowerCase().includes(companyLower),
+            );
+          }
+          if (filters.jobTitle.trim()) {
+            const titleLower = filters.jobTitle.trim().toLowerCase();
+            mappedContacts = mappedContacts.filter(
+              (c) => c.job_title?.toLowerCase().includes(titleLower),
+            );
+          }
+          if (filters.source !== "all") {
+            mappedContacts = mappedContacts.filter((c) => c.source === filters.source);
+          }
+          if (filters.hasEmail === true) {
+            mappedContacts = mappedContacts.filter((c) => c.contact_emails.length > 0);
+          } else if (filters.hasEmail === false) {
+            mappedContacts = mappedContacts.filter((c) => c.contact_emails.length === 0);
+          }
+          if (filters.hasPhone === true) {
+            mappedContacts = mappedContacts.filter((c) => c.contact_phones.length > 0);
+          } else if (filters.hasPhone === false) {
+            mappedContacts = mappedContacts.filter((c) => c.contact_phones.length === 0);
+          }
+          // hasNotes: RPC results don't include notes field, skip
+          if (filters.lastContactedRange !== "any") {
+            const now = new Date();
+            mappedContacts = mappedContacts.filter((c) => {
+              const lc = c.last_contacted_at ? new Date(c.last_contacted_at) : null;
+              switch (filters.lastContactedRange) {
+                case "7d": {
+                  if (!lc) return false;
+                  const d = new Date(now);
+                  d.setDate(d.getDate() - 7);
+                  return lc >= d;
+                }
+                case "30d": {
+                  if (!lc) return false;
+                  const d = new Date(now);
+                  d.setDate(d.getDate() - 30);
+                  return lc >= d;
+                }
+                case "90d": {
+                  if (!lc) return false;
+                  const d = new Date(now);
+                  d.setDate(d.getDate() - 90);
+                  return lc >= d;
+                }
+                case "over_90d": {
+                  if (!lc) return true;
+                  const d = new Date(now);
+                  d.setDate(d.getDate() - 90);
+                  return lc < d;
+                }
+                default:
+                  return true;
+              }
+            });
+          }
+
+          // Apply sort
+          if (filters.sortBy === "name_asc" || filters.sortBy === "relevance") {
+            // RPC already sorts by relevance; name_asc needs explicit sort
+            if (filters.sortBy === "name_asc") {
+              mappedContacts.sort((a, b) => {
+                const nameA = `${a.first_name} ${a.last_name ?? ""}`.toLowerCase();
+                const nameB = `${b.first_name} ${b.last_name ?? ""}`.toLowerCase();
+                return nameA.localeCompare(nameB);
+              });
+            }
+          } else if (filters.sortBy === "last_contacted") {
+            mappedContacts.sort((a, b) => {
+              if (!a.last_contacted_at && !b.last_contacted_at) return 0;
+              if (!a.last_contacted_at) return 1;
+              if (!b.last_contacted_at) return -1;
+              return new Date(b.last_contacted_at).getTime() - new Date(a.last_contacted_at).getTime();
+            });
+          } else if (filters.sortBy === "recently_added") {
+            mappedContacts.sort(
+              (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+            );
+          }
+
           setContacts(mappedContacts);
           setHasMore(false);
           setError(null);
@@ -132,27 +215,84 @@ export function useContacts(
           .eq("user_id", userId)
           .eq("is_archived", false);
 
-        // Apply filters
-        if (filterBy === "stale_30d") {
-          const thirtyDaysAgo = new Date();
-          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-          query = query.or(
-            `last_contacted_at.is.null,last_contacted_at.lt.${thirtyDaysAgo.toISOString()}`,
-          );
-        } else if (filterBy === "recent_7d") {
-          const sevenDaysAgo = new Date();
-          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-          query = query.gte("created_at", sevenDaysAgo.toISOString());
-        } else if (filterBy !== "all") {
-          // Tag filter - filterBy is the tag ID
-          // Fetch contact IDs with this tag first
+        // Apply company filter
+        if (filters.company.trim()) {
+          query = query.ilike("company", `%${filters.company.trim()}%`);
+        }
+
+        // Apply job title filter
+        if (filters.jobTitle.trim()) {
+          query = query.ilike("job_title", `%${filters.jobTitle.trim()}%`);
+        }
+
+        // Apply source filter
+        if (filters.source !== "all") {
+          query = query.eq("source", filters.source);
+        }
+
+        // Apply has email filter
+        if (filters.hasEmail === true) {
+          query = query.not("contact_emails", "is", null);
+        } else if (filters.hasEmail === false) {
+          query = query.is("contact_emails", null);
+        }
+
+        // Apply has phone filter
+        if (filters.hasPhone === true) {
+          query = query.not("contact_phones", "is", null);
+        } else if (filters.hasPhone === false) {
+          query = query.is("contact_phones", null);
+        }
+
+        // Apply has notes filter
+        if (filters.hasNotes === true) {
+          query = query.not("notes", "is", null).neq("notes", "");
+        } else if (filters.hasNotes === false) {
+          // PostgREST syntax: "notes.eq." matches empty string (value after final dot is empty)
+          query = query.or("notes.is.null,notes.eq.");
+        }
+
+        // Apply last contacted range
+        if (filters.lastContactedRange !== "any") {
+          const now = new Date();
+          switch (filters.lastContactedRange) {
+            case "7d": {
+              const d = new Date(now);
+              d.setDate(d.getDate() - 7);
+              query = query.gte("last_contacted_at", d.toISOString());
+              break;
+            }
+            case "30d": {
+              const d = new Date(now);
+              d.setDate(d.getDate() - 30);
+              query = query.gte("last_contacted_at", d.toISOString());
+              break;
+            }
+            case "90d": {
+              const d = new Date(now);
+              d.setDate(d.getDate() - 90);
+              query = query.gte("last_contacted_at", d.toISOString());
+              break;
+            }
+            case "over_90d": {
+              const d = new Date(now);
+              d.setDate(d.getDate() - 90);
+              query = query.or(
+                `last_contacted_at.is.null,last_contacted_at.lt.${d.toISOString()}`,
+              );
+              break;
+            }
+          }
+        }
+
+        // Apply tag filter
+        if (filters.tagIds.length > 0) {
           const { data: taggedContacts } = await supabase
             .from("contact_tags")
             .select("contact_id")
-            .eq("tag_id", filterBy);
+            .in("tag_id", filters.tagIds);
           const taggedIds = (taggedContacts ?? []).map((tc) => tc.contact_id);
           if (taggedIds.length === 0) {
-            // No contacts with this tag
             setContacts([]);
             setHasMore(false);
             setError(null);
@@ -163,21 +303,19 @@ export function useContacts(
         }
 
         // Apply sort
-        switch (sortBy) {
+        switch (filters.sortBy) {
           case "name_asc":
+          case "relevance":
             query = query.order("first_name", { ascending: true });
-            break;
-          case "name_desc":
-            query = query.order("first_name", { ascending: false });
-            break;
-          case "recent":
-            query = query.order("created_at", { ascending: false });
             break;
           case "last_contacted":
             query = query.order("last_contacted_at", {
               ascending: false,
               nullsFirst: false,
             });
+            break;
+          case "recently_added":
+            query = query.order("created_at", { ascending: false });
             break;
         }
 
@@ -205,7 +343,7 @@ export function useContacts(
         setIsLoadingMore(false);
       }
     },
-    [userId, searchQuery, sortBy, filterBy],
+    [userId, filters],
   );
 
   // Initial fetch and refetch on param changes

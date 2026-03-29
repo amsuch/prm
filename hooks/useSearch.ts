@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { useSession } from "@/lib/auth/ctx";
 import {
   searchContacts,
+  countActiveFilters,
   type SearchFilters,
   type SearchResultContact,
   type SearchSortOption,
@@ -75,14 +76,4 @@ export function useSearch() {
     clearFilters,
     setFilters,
   };
-}
-
-function countActiveFilters(filters: SearchFilters): number {
-  let count = 0;
-  if (filters.tagIds.length > 0) count++;
-  if (filters.company.trim()) count++;
-  if (filters.lastContactedRange !== "any") count++;
-  if (filters.source !== "all") count++;
-  if (filters.sortBy !== "relevance") count++;
-  return count;
 }

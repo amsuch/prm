@@ -197,7 +197,7 @@ export default function SignIn() {
               <Text className="text-xl font-bold text-white">P</Text>
             </View>
             <Text className="text-2xl font-bold text-stone-900">
-              Personal RM
+              PRM
             </Text>
             <Text className="mt-1 text-sm text-stone-500">
               Sign in or create an account

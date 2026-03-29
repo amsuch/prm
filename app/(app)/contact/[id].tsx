@@ -14,6 +14,7 @@ import { TagPills } from "@/components/TagPills";
 import { InteractionTimeline } from "@/components/InteractionTimeline";
 import { RelationshipsList } from "@/components/RelationshipsList";
 import { CustomFieldsView } from "@/components/CustomFieldsView";
+import { MarkdownText } from "@/components/MarkdownText";
 import { AddRelationshipModal } from "@/components/AddRelationshipModal";
 import { LogInteractionModal } from "@/components/LogInteractionModal";
 import { useContact } from "@/hooks/useContact";
@@ -271,20 +272,26 @@ export default function ContactDetailScreen() {
         )}
 
         {/* Notes Section */}
-        {contact.notes && (
-          <>
-            <SectionHeader
-              title="Notes"
-              sectionId="notes"
-              isCollapsed={collapsedSections.has("notes")}
-              onToggle={toggleSection}
-            />
-            {!collapsedSections.has("notes") && (
-              <View className="mx-4 rounded-xl bg-white p-4 shadow-sm">
-                <Text className="text-sm leading-5 text-stone-700">{contact.notes}</Text>
-              </View>
+        <SectionHeader
+          title="Notes"
+          sectionId="notes"
+          isCollapsed={collapsedSections.has("notes")}
+          onToggle={toggleSection}
+        />
+        {!collapsedSections.has("notes") && (
+          <View className="mx-4 rounded-xl bg-white p-4 shadow-sm">
+            {contact.notes ? (
+              <MarkdownText>{contact.notes}</MarkdownText>
+            ) : (
+              <Pressable
+                onPress={() => router.push(`/contact/${id}/edit`)}
+                className="flex-row items-center justify-center py-4"
+              >
+                <Ionicons name="document-text-outline" size={18} color={Colors.gray[400]} />
+                <Text className="ml-2 text-sm text-stone-400">Add notes...</Text>
+              </Pressable>
             )}
-          </>
+          </View>
         )}
 
         {/* Source Info */}

@@ -4,9 +4,13 @@ export type SearchFilters = {
   query: string;
   tagIds: string[];
   company: string;
+  jobTitle: string;
   lastContactedRange: LastContactedRange;
   source: SourceFilter;
   sortBy: SearchSortOption;
+  hasEmail: boolean | null;
+  hasPhone: boolean | null;
+  hasNotes: boolean | null;
 };
 
 export type LastContactedRange =
@@ -32,9 +36,13 @@ export const DEFAULT_FILTERS: SearchFilters = {
   query: "",
   tagIds: [],
   company: "",
+  jobTitle: "",
   lastContactedRange: "any",
   source: "all",
   sortBy: "relevance",
+  hasEmail: null,
+  hasPhone: null,
+  hasNotes: null,
 };
 
 export type SearchResultContact = {
@@ -80,9 +88,36 @@ export function buildFilterQuery(
     query = query.ilike("company", `%${filters.company.trim()}%`);
   }
 
+  // Job title filter
+  if (filters.jobTitle?.trim()) {
+    query = query.ilike("job_title", `%${filters.jobTitle.trim()}%`);
+  }
+
   // Source filter
   if (filters.source !== "all") {
     query = query.eq("source", filters.source);
+  }
+
+  // Has email filter (uses inner join: rows with no emails are excluded)
+  if (filters.hasEmail === true) {
+    query = query.not("contact_emails", "is", null);
+  } else if (filters.hasEmail === false) {
+    query = query.is("contact_emails", null);
+  }
+
+  // Has phone filter
+  if (filters.hasPhone === true) {
+    query = query.not("contact_phones", "is", null);
+  } else if (filters.hasPhone === false) {
+    query = query.is("contact_phones", null);
+  }
+
+  // Has notes filter
+  if (filters.hasNotes === true) {
+    query = query.not("notes", "is", null).neq("notes", "");
+  } else if (filters.hasNotes === false) {
+    // PostgREST syntax: "notes.eq." matches empty string (value after final dot is empty)
+    query = query.or("notes.is.null,notes.eq.");
   }
 
   // Last contacted range
@@ -203,8 +238,12 @@ export async function searchContacts(
     const query = buildFilterQuery(userId, {
       tagIds: filters.tagIds,
       company: filters.company,
+      jobTitle: filters.jobTitle,
       lastContactedRange: filters.lastContactedRange,
       source: filters.source,
+      hasEmail: filters.hasEmail,
+      hasPhone: filters.hasPhone,
+      hasNotes: filters.hasNotes,
     });
 
     // Apply sort
@@ -286,10 +325,35 @@ function applyClientSideFilters(
     );
   }
 
+  // Job title filter
+  if (filters.jobTitle?.trim()) {
+    const titleLower = filters.jobTitle.trim().toLowerCase();
+    filtered = filtered.filter(
+      (c) => c.job_title?.toLowerCase().includes(titleLower),
+    );
+  }
+
   // Source filter
   if (filters.source !== "all") {
     filtered = filtered.filter((c) => c.source === filters.source);
   }
+
+  // Has email filter
+  if (filters.hasEmail === true) {
+    filtered = filtered.filter((c) => c.email != null && c.email !== "");
+  } else if (filters.hasEmail === false) {
+    filtered = filtered.filter((c) => c.email == null || c.email === "");
+  }
+
+  // Has phone filter
+  if (filters.hasPhone === true) {
+    filtered = filtered.filter((c) => c.phone != null && c.phone !== "");
+  } else if (filters.hasPhone === false) {
+    filtered = filtered.filter((c) => c.phone == null || c.phone === "");
+  }
+
+  // Has notes filter (RPC results don't include notes, skip in client-side filtering)
+  // Note: hasNotes is only applied server-side via buildFilterQuery
 
   // Last contacted range
   if (filters.lastContactedRange !== "any") {
@@ -331,6 +395,23 @@ function applyClientSideFilters(
   }
 
   return filtered;
+}
+
+/**
+ * Count how many filters are actively applied (non-default values).
+ * Excludes query and sortBy since those aren't "filters" in the UI sense.
+ */
+export function countActiveFilters(filters: SearchFilters): number {
+  let count = 0;
+  if (filters.tagIds.length > 0) count++;
+  if (filters.company.trim()) count++;
+  if (filters.jobTitle.trim()) count++;
+  if (filters.lastContactedRange !== "any") count++;
+  if (filters.source !== "all") count++;
+  if (filters.hasEmail !== null) count++;
+  if (filters.hasPhone !== null) count++;
+  if (filters.hasNotes !== null) count++;
+  return count;
 }
 
 function sortResults(

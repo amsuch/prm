@@ -65,12 +65,25 @@ export function useEntityCategories() {
 
   const updateCategory = useCallback(
     async (id: string, data: { name?: string; icon?: string; color?: string }) => {
-      const { error: updateError } = await supabase
+      console.log("[useEntityCategories] updateCategory called", { id, data });
+
+      const { data: rows, error: updateError } = await supabase
         .from("entity_categories")
         .update(data as never)
-        .eq("id", id);
+        .eq("id", id)
+        .select();
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error("[useEntityCategories] update error:", updateError);
+        throw updateError;
+      }
+
+      if (!rows || rows.length === 0) {
+        console.warn("[useEntityCategories] update affected 0 rows — RLS may have blocked it");
+        throw new Error("Update failed — no rows affected. You may not have permission to edit this category.");
+      }
+
+      console.log("[useEntityCategories] update succeeded:", rows);
       await fetchCategories();
     },
     [fetchCategories],
@@ -78,12 +91,25 @@ export function useEntityCategories() {
 
   const deleteCategory = useCallback(
     async (id: string) => {
-      const { error: deleteError } = await supabase
+      console.log("[useEntityCategories] deleteCategory called", { id });
+
+      const { data: rows, error: deleteError } = await supabase
         .from("entity_categories")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .select();
 
-      if (deleteError) throw deleteError;
+      if (deleteError) {
+        console.error("[useEntityCategories] delete error:", deleteError);
+        throw deleteError;
+      }
+
+      if (!rows || rows.length === 0) {
+        console.warn("[useEntityCategories] delete affected 0 rows — RLS may have blocked it");
+        throw new Error("Delete failed — system categories cannot be deleted.");
+      }
+
+      console.log("[useEntityCategories] delete succeeded");
       await fetchCategories();
     },
     [fetchCategories],

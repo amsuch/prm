@@ -186,14 +186,19 @@ function CategoryRow({
           className="ml-2 h-2.5 w-2.5 rounded-full"
           style={{ backgroundColor: category.color }}
         />
+        {category.is_system && (
+          <Text className="ml-2 text-xs text-stone-400">System</Text>
+        )}
       </Pressable>
-      <Pressable
-        onPress={() => onDelete(category.id, category.name)}
-        className="ml-2 rounded-lg p-2 active:bg-red-50"
-        hitSlop={8}
-      >
-        <Ionicons name="trash-outline" size={16} color={Colors.error} />
-      </Pressable>
+      {!category.is_system && (
+        <Pressable
+          onPress={() => onDelete(category.id, category.name)}
+          className="ml-2 rounded-lg p-2 active:bg-red-50"
+          hitSlop={8}
+        >
+          <Ionicons name="trash-outline" size={16} color={Colors.error} />
+        </Pressable>
+      )}
     </View>
   );
 }

@@ -9,6 +9,7 @@ import { ToolProgressList, type ToolProgressItem } from "./chat/ToolProgress";
 import { AgentApprovalCard, PendingActionCard } from "./chat/ApprovalCard";
 import { SQLResultCard } from "./chat/SQLResult";
 import { ActionCard } from "./chat/ActionResult";
+import { MarkdownText, markdownStyles } from "./MarkdownText";
 
 type ChatBubbleProps = {
   role: "user" | "agent";
@@ -72,7 +73,7 @@ export function ChatBubble({
             {toolProgress && toolProgress.length > 0 && !pendingApproval && (
               <ToolProgressList progress={toolProgress} />
             )}
-            <Text className="text-base text-stone-900">{text}</Text>
+            <MarkdownText style={markdownStyles}>{text}</MarkdownText>
             {/* Pending approval card from the agent loop */}
             {pendingApproval && (
               <AgentApprovalCard

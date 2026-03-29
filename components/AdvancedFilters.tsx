@@ -47,6 +47,13 @@ const SORT_OPTIONS: { value: SearchSortOption; label: string }[] = [
   { value: "recently_added", label: "Recently Added" },
 ];
 
+type TriStateValue = boolean | null;
+const TRI_STATE_OPTIONS: { value: TriStateValue; label: string }[] = [
+  { value: null, label: "Any" },
+  { value: true, label: "Yes" },
+  { value: false, label: "No" },
+];
+
 export function AdvancedFilters({
   visible,
   onClose,
@@ -185,6 +192,159 @@ export function AdvancedFilters({
                   />
                 </Pressable>
               )}
+            </View>
+          </View>
+
+          {/* Job Title */}
+          <View className="mt-6 px-4">
+            <Text className="mb-2 text-sm font-semibold uppercase tracking-wider text-stone-500">
+              Job Title
+            </Text>
+            <View className="flex-row items-center rounded-lg border border-stone-200 bg-white px-3 py-2">
+              <Ionicons
+                name="briefcase-outline"
+                size={18}
+                color={Colors.gray[400]}
+              />
+              <TextInput
+                className="ml-2 flex-1 text-base text-stone-900"
+                placeholder="Filter by job title..."
+                placeholderTextColor={Colors.gray[400]}
+                value={localFilters.jobTitle}
+                onChangeText={(text) =>
+                  setLocalFilters((prev) => ({ ...prev, jobTitle: text }))
+                }
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              {localFilters.jobTitle.length > 0 && (
+                <Pressable
+                  onPress={() =>
+                    setLocalFilters((prev) => ({ ...prev, jobTitle: "" }))
+                  }
+                  hitSlop={8}
+                >
+                  <Ionicons
+                    name="close-circle"
+                    size={18}
+                    color={Colors.gray[400]}
+                  />
+                </Pressable>
+              )}
+            </View>
+          </View>
+
+          {/* Has Email */}
+          <View className="mt-6 px-4">
+            <Text className="mb-2 text-sm font-semibold uppercase tracking-wider text-stone-500">
+              Has Email
+            </Text>
+            <View className="flex-row gap-2">
+              {TRI_STATE_OPTIONS.map((option) => {
+                const isSelected = localFilters.hasEmail === option.value;
+                return (
+                  <Pressable
+                    key={String(option.value)}
+                    onPress={() =>
+                      setLocalFilters((prev) => ({
+                        ...prev,
+                        hasEmail: option.value,
+                      }))
+                    }
+                    className={`rounded-lg border px-4 py-2 ${
+                      isSelected
+                        ? "border-indigo-300 bg-indigo-100"
+                        : "border-stone-200 bg-stone-50"
+                    }`}
+                  >
+                    <Text
+                      className={`text-sm ${
+                        isSelected
+                          ? "font-medium text-indigo-700"
+                          : "text-stone-600"
+                      }`}
+                    >
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* Has Phone */}
+          <View className="mt-6 px-4">
+            <Text className="mb-2 text-sm font-semibold uppercase tracking-wider text-stone-500">
+              Has Phone
+            </Text>
+            <View className="flex-row gap-2">
+              {TRI_STATE_OPTIONS.map((option) => {
+                const isSelected = localFilters.hasPhone === option.value;
+                return (
+                  <Pressable
+                    key={String(option.value)}
+                    onPress={() =>
+                      setLocalFilters((prev) => ({
+                        ...prev,
+                        hasPhone: option.value,
+                      }))
+                    }
+                    className={`rounded-lg border px-4 py-2 ${
+                      isSelected
+                        ? "border-indigo-300 bg-indigo-100"
+                        : "border-stone-200 bg-stone-50"
+                    }`}
+                  >
+                    <Text
+                      className={`text-sm ${
+                        isSelected
+                          ? "font-medium text-indigo-700"
+                          : "text-stone-600"
+                      }`}
+                    >
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* Has Notes */}
+          <View className="mt-6 px-4">
+            <Text className="mb-2 text-sm font-semibold uppercase tracking-wider text-stone-500">
+              Has Notes
+            </Text>
+            <View className="flex-row gap-2">
+              {TRI_STATE_OPTIONS.map((option) => {
+                const isSelected = localFilters.hasNotes === option.value;
+                return (
+                  <Pressable
+                    key={String(option.value)}
+                    onPress={() =>
+                      setLocalFilters((prev) => ({
+                        ...prev,
+                        hasNotes: option.value,
+                      }))
+                    }
+                    className={`rounded-lg border px-4 py-2 ${
+                      isSelected
+                        ? "border-indigo-300 bg-indigo-100"
+                        : "border-stone-200 bg-stone-50"
+                    }`}
+                  >
+                    <Text
+                      className={`text-sm ${
+                        isSelected
+                          ? "font-medium text-indigo-700"
+                          : "text-stone-600"
+                      }`}
+                    >
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
           </View>
 

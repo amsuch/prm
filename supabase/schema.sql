@@ -1,5 +1,5 @@
 -- PRM-SC Database Schema
--- Personal Relationship Manager
+-- PRM (Personal Relationship Manager)
 
 -- Enable extensions
 CREATE EXTENSION IF NOT EXISTS pg_trgm;

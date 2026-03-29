@@ -3,7 +3,8 @@ import { View, Text, Pressable, Linking, Alert, ActivityIndicator } from "react-
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/colors";
 import { supabase } from "@/lib/supabase";
-import { fetchLinkedInPhoto, isLinkedInUrl } from "@/lib/linkedin";
+import { isLinkedInUrl } from "@/lib/linkedin";
+import { fetchContactPhoto } from "@/lib/photoSearch";
 import { Avatar } from "@/components/Avatar";
 import type { ContactFull } from "@/hooks/useContact";
 
@@ -23,24 +24,30 @@ export function ContactHeader({ contact, onPhotoUpdated }: ContactHeaderProps) {
 
   // Find LinkedIn URL from contact_urls
   const linkedInUrl = contact.contact_urls?.find((u) => isLinkedInUrl(u.url))?.url;
-  const hasLinkedIn = !!linkedInUrl;
   const hasAvatar = !!contact.avatar_url;
 
   const [isFetchingPhoto, setIsFetchingPhoto] = useState(false);
 
-  const handleFetchLinkedInPhoto = useCallback(async () => {
-    if (!linkedInUrl) return;
-
+  const handleFetchPhoto = useCallback(async () => {
     setIsFetchingPhoto(true);
+    console.log("[PhotoSearch] Button pressed for:", fullName);
     try {
-      const photoUrl = await fetchLinkedInPhoto(linkedInUrl);
+      const photoUrl = await fetchContactPhoto(
+        fullName,
+        contact.company,
+        linkedInUrl,
+      );
+
       if (!photoUrl) {
+        console.log("[PhotoSearch] All strategies failed for:", fullName);
         Alert.alert(
           "No Photo Found",
-          "Could not extract a photo from this LinkedIn profile. This may be due to privacy settings or network restrictions.",
+          "Could not find a photo. Check console for details.",
         );
         return;
       }
+
+      console.log("[PhotoSearch] Saving photo URL to contact:", photoUrl);
 
       // Save to contact record
       const { error } = await supabase
@@ -50,16 +57,18 @@ export function ContactHeader({ contact, onPhotoUpdated }: ContactHeaderProps) {
 
       if (error) throw error;
 
+      console.log("[PhotoSearch] Photo saved successfully");
       onPhotoUpdated?.();
     } catch (err) {
+      console.log("[PhotoSearch] Error saving photo:", err);
       Alert.alert(
         "Error",
-        err instanceof Error ? err.message : "Failed to fetch LinkedIn photo",
+        err instanceof Error ? err.message : "Failed to fetch photo",
       );
     } finally {
       setIsFetchingPhoto(false);
     }
-  }, [linkedInUrl, contact.id, onPhotoUpdated]);
+  }, [fullName, contact.company, contact.id, linkedInUrl, onPhotoUpdated]);
 
   const handleCall = () => {
     if (primaryPhone) {
@@ -97,30 +106,28 @@ export function ContactHeader({ contact, onPhotoUpdated }: ContactHeaderProps) {
         />
       </View>
 
-      {/* Fetch LinkedIn Photo button */}
-      {hasLinkedIn && !hasAvatar && (
-        <Pressable
-          onPress={handleFetchLinkedInPhoto}
-          disabled={isFetchingPhoto}
-          className="mb-2 flex-row items-center rounded-lg bg-indigo-50 px-3 py-1.5 active:bg-indigo-100"
-        >
-          {isFetchingPhoto ? (
-            <>
-              <ActivityIndicator size="small" color={Colors.brand[600]} />
-              <Text className="ml-1.5 text-xs font-medium text-indigo-600">
-                Fetching...
-              </Text>
-            </>
-          ) : (
-            <>
-              <Ionicons name="camera-outline" size={14} color={Colors.brand[600]} />
-              <Text className="ml-1 text-xs font-medium text-indigo-600">
-                Fetch Photo
-              </Text>
-            </>
-          )}
-        </Pressable>
-      )}
+      {/* Fetch / Update Photo button */}
+      <Pressable
+        onPress={handleFetchPhoto}
+        disabled={isFetchingPhoto}
+        className="mb-2 flex-row items-center rounded-lg bg-indigo-50 px-3 py-1.5 active:bg-indigo-100"
+      >
+        {isFetchingPhoto ? (
+          <>
+            <ActivityIndicator size="small" color={Colors.brand[600]} />
+            <Text className="ml-1.5 text-xs font-medium text-indigo-600">
+              Fetching...
+            </Text>
+          </>
+        ) : (
+          <>
+            <Ionicons name="camera-outline" size={14} color={Colors.brand[600]} />
+            <Text className="ml-1 text-xs font-medium text-indigo-600">
+              {hasAvatar ? "Update Photo" : "Fetch Photo"}
+            </Text>
+          </>
+        )}
+      </Pressable>
 
       {/* Name */}
       <Text className="text-xl font-bold text-stone-900">{fullName}</Text>
