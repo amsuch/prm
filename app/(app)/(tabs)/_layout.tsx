@@ -19,6 +19,10 @@ export default function TabLayout() {
         headerStyle: { backgroundColor: isDark ? Colors.gray[900] : Colors.white },
         headerTintColor: isDark ? Colors.gray[100] : Colors.gray[900],
         headerShadowVisible: false,
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: "600",
+        },
       }}
     >
       <Tabs.Screen
@@ -33,7 +37,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="contacts"
         options={{
-          title: "Contacts",
+          title: "People",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="people-outline" size={size} color={color} />
           ),
@@ -42,7 +46,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="entities"
         options={{
-          title: "Entities",
+          title: "Places",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="business-outline" size={size} color={color} />
           ),

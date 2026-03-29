@@ -878,124 +878,97 @@ export default function AskScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       >
-        {/* Header with session title, history, mode toggle, and filter */}
-        <View className="border-b border-stone-200 bg-white px-4 py-2 dark:border-stone-800 dark:bg-stone-900">
-          <View className="flex-row items-center justify-between">
-            <View className="mr-2 flex-1 flex-row items-center">
-              {/* History / menu button */}
-              <Pressable
-                onPress={openDrawer}
-                className="mr-2 rounded-lg p-1.5 active:bg-stone-100 dark:active:bg-stone-800"
-                hitSlop={4}
-              >
-                <Ionicons name="menu-outline" size={22} color={Colors.gray[700]} />
-              </Pressable>
+        {/* Header — two rows for breathing room on mobile */}
+        <View className="border-b border-stone-200 bg-white px-4 pb-2 pt-2 dark:border-stone-800 dark:bg-stone-900">
+          {/* Row 1: Menu + Title + New Chat */}
+          <View className="flex-row items-center">
+            <Pressable
+              onPress={openDrawer}
+              className="mr-2 rounded-lg p-1.5 active:bg-stone-100 dark:active:bg-stone-800"
+              hitSlop={4}
+            >
+              <Ionicons name="menu-outline" size={22} color={Colors.gray[700]} />
+            </Pressable>
 
-              {/* Session title */}
-              {editingTitle ? (
-                <TextInput
-                  className="flex-1 rounded-lg border border-indigo-300 bg-indigo-50 px-2 py-1 text-base font-bold text-stone-900 dark:border-indigo-700 dark:bg-indigo-950 dark:text-stone-100"
-                  value={titleDraft}
-                  onChangeText={setTitleDraft}
-                  onBlur={finishEditingTitle}
-                  onSubmitEditing={finishEditingTitle}
-                  autoFocus
-                  returnKeyType="done"
-                  selectTextOnFocus
-                />
-              ) : (
-                <Pressable onPress={startEditingTitle} className="flex-1">
-                  <Text
-                    className="text-lg font-bold text-stone-900 dark:text-stone-100"
-                    numberOfLines={1}
-                  >
-                    {activeSession?.title ?? "Ask your Network"}
-                  </Text>
-                </Pressable>
-              )}
-            </View>
-
-            <View className="flex-row items-center gap-2">
-              {/* New chat button */}
-              <Pressable
-                onPress={handleNewChat}
-                className="rounded-lg border border-stone-200 p-1.5 active:bg-stone-50 dark:border-stone-800 dark:active:bg-stone-800"
-                hitSlop={4}
-              >
-                <Ionicons name="create-outline" size={18} color={Colors.gray[600]} />
-              </Pressable>
-
-              {/* HITL / Auto toggle */}
-              <Pressable
-                onPress={() =>
-                  setAgentMode((m) => (m === "hitl" ? "auto" : "hitl"))
-                }
-                className={`flex-row items-center rounded-lg border px-2.5 py-1.5 ${
-                  agentMode === "hitl"
-                    ? "border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950"
-                    : "border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-950"
-                }`}
-              >
-                <Ionicons
-                  name={agentMode === "hitl" ? "shield-checkmark" : "flash"}
-                  size={14}
-                  color={agentMode === "hitl" ? "#d97706" : "#16a34a"}
-                />
+            {editingTitle ? (
+              <TextInput
+                className="flex-1 rounded-lg border border-indigo-300 bg-indigo-50 px-2 py-1 text-base font-bold text-stone-900 dark:border-indigo-700 dark:bg-indigo-950 dark:text-stone-100"
+                value={titleDraft}
+                onChangeText={setTitleDraft}
+                onBlur={finishEditingTitle}
+                onSubmitEditing={finishEditingTitle}
+                autoFocus
+                returnKeyType="done"
+                selectTextOnFocus
+              />
+            ) : (
+              <Pressable onPress={startEditingTitle} className="flex-1">
                 <Text
-                  className={`ml-1 text-xs font-semibold ${
-                    agentMode === "hitl" ? "text-amber-700 dark:text-amber-300" : "text-green-700 dark:text-green-300"
-                  }`}
+                  className="text-lg font-bold text-stone-900 dark:text-stone-100"
+                  numberOfLines={1}
                 >
-                  {agentMode === "hitl" ? "HITL" : "Auto"}
+                  {activeSession?.title ?? "Ask your Network"}
                 </Text>
               </Pressable>
+            )}
 
-              {/* Filter button */}
-              <Pressable
-                onPress={() => setShowFilters(true)}
-                className="flex-row items-center rounded-lg border border-stone-200 px-3 py-1.5 active:bg-stone-50 dark:border-stone-800 dark:active:bg-stone-800"
-              >
-                <Ionicons
-                  name="filter-outline"
-                  size={16}
-                  color={
-                    activeFilterCount > 0
-                      ? Colors.brand[600]
-                      : Colors.gray[500]
-                  }
-                />
-                {activeFilterCount > 0 && (
-                  <View className="ml-1 h-4 w-4 items-center justify-center rounded-full bg-indigo-600">
-                    <Text className="text-[10px] font-bold text-white">
-                      {activeFilterCount}
-                    </Text>
-                  </View>
-                )}
-              </Pressable>
-            </View>
+            <Pressable
+              onPress={handleNewChat}
+              className="ml-2 rounded-lg border border-stone-200 p-1.5 active:bg-stone-50 dark:border-stone-800 dark:active:bg-stone-800"
+              hitSlop={4}
+            >
+              <Ionicons name="create-outline" size={18} color={Colors.gray[600]} />
+            </Pressable>
           </View>
-        </View>
 
-        {/* Mode description bar */}
-        <View
-          className={`flex-row items-center px-4 py-1.5 ${
-            agentMode === "hitl" ? "bg-amber-50 dark:bg-amber-950" : "bg-green-50 dark:bg-green-950"
-          }`}
-        >
-          <Ionicons
-            name="information-circle-outline"
-            size={13}
-            color={agentMode === "hitl" ? "#92400e" : "#166534"}
-          />
-          <Text
-            className={`ml-1 text-[11px] ${
-              agentMode === "hitl" ? "text-amber-800 dark:text-amber-300" : "text-green-800 dark:text-green-300"
-            }`}
-          >
-            {agentMode === "hitl"
-              ? "Actions require your approval before executing"
-              : "Actions execute immediately without confirmation"}
-          </Text>
+          {/* Row 2: Mode toggle + Filter — below title with some spacing */}
+          <View className="mt-2 flex-row items-center gap-2">
+            <Pressable
+              onPress={() =>
+                setAgentMode((m) => (m === "hitl" ? "auto" : "hitl"))
+              }
+              className={`flex-row items-center rounded-lg border px-2.5 py-1 ${
+                agentMode === "hitl"
+                  ? "border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950"
+                  : "border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-950"
+              }`}
+            >
+              <Ionicons
+                name={agentMode === "hitl" ? "shield-checkmark" : "flash"}
+                size={14}
+                color={agentMode === "hitl" ? "#d97706" : "#16a34a"}
+              />
+              <Text
+                className={`ml-1 text-xs font-semibold ${
+                  agentMode === "hitl" ? "text-amber-700 dark:text-amber-300" : "text-green-700 dark:text-green-300"
+                }`}
+              >
+                {agentMode === "hitl" ? "Review" : "Auto"}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => setShowFilters(true)}
+              className="flex-row items-center rounded-lg border border-stone-200 px-2.5 py-1 active:bg-stone-50 dark:border-stone-800 dark:active:bg-stone-800"
+            >
+              <Ionicons
+                name="filter-outline"
+                size={14}
+                color={
+                  activeFilterCount > 0
+                    ? Colors.brand[600]
+                    : Colors.gray[500]
+                }
+              />
+              {activeFilterCount > 0 && (
+                <View className="ml-1 h-4 w-4 items-center justify-center rounded-full bg-indigo-600">
+                  <Text className="text-[10px] font-bold text-white">
+                    {activeFilterCount}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+          </View>
         </View>
 
         {/* Chat area */}

@@ -219,40 +219,38 @@ export default function ContactsScreen() {
         </Pressable>
       </View>
 
-      {/* Filter Row */}
-      <View className="flex-row items-center justify-between px-4">
-        <View className="flex-1">
-          <FilterChips
-            activeFilter={activeChipFilter}
-            onFilterChange={handleQuickFilter}
-            tags={tags}
-          />
-        </View>
-        <View className="flex-row items-center gap-2">
-          <Pressable
-            onPress={() => router.push("/(app)/(tabs)/import")}
-            className="flex-row items-center rounded-full bg-white px-3.5 py-2 shadow-sm active:bg-stone-50 dark:bg-stone-900 dark:border dark:border-stone-800 dark:active:bg-stone-800"
-          >
-            <Ionicons name="download-outline" size={14} color={Colors.brand[600]} />
-            <Text className="ml-1 text-xs font-medium text-indigo-600 dark:text-indigo-400">Import</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => router.push("/(app)/bulk-link")}
-            className="flex-row items-center rounded-full bg-white px-3.5 py-2 shadow-sm active:bg-stone-50 dark:bg-stone-900 dark:border dark:border-stone-800 dark:active:bg-stone-800"
-          >
-            <Ionicons name="link" size={14} color={Colors.brand[600]} />
-            <Text className="ml-1 text-xs font-medium text-indigo-600 dark:text-indigo-400">Link</Text>
-          </Pressable>
-          <Pressable
-            onPress={cycleSortOption}
-            className="flex-row items-center rounded-full bg-white px-3.5 py-2 shadow-sm active:bg-stone-50 dark:bg-stone-900 dark:border dark:border-stone-800 dark:active:bg-stone-800"
-          >
-            <Ionicons name="swap-vertical" size={14} color={Colors.gray[500]} />
-            <Text className="ml-1 text-xs font-medium text-stone-500 dark:text-stone-400">
-              {sortLabel[filters.sortBy] ?? "A-Z"}
-            </Text>
-          </Pressable>
-        </View>
+      {/* Filter Chips */}
+      <FilterChips
+        activeFilter={activeChipFilter}
+        onFilterChange={handleQuickFilter}
+        tags={tags}
+      />
+
+      {/* Action Row — icon-only buttons to save space */}
+      <View className="flex-row items-center justify-end gap-2 px-4 pb-2">
+        <Pressable
+          onPress={cycleSortOption}
+          className="flex-row items-center rounded-full bg-white px-3 py-1.5 shadow-sm active:bg-stone-50 dark:bg-stone-900 dark:border dark:border-stone-800 dark:active:bg-stone-800"
+        >
+          <Ionicons name="swap-vertical" size={14} color={Colors.gray[500]} />
+          <Text className="ml-1 text-xs font-medium text-stone-500 dark:text-stone-400">
+            {sortLabel[filters.sortBy] ?? "A-Z"}
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => router.push("/(app)/(tabs)/import")}
+          className="rounded-full bg-white p-2 shadow-sm active:bg-stone-50 dark:bg-stone-900 dark:border dark:border-stone-800 dark:active:bg-stone-800"
+          hitSlop={4}
+        >
+          <Ionicons name="download-outline" size={16} color={Colors.brand[600]} />
+        </Pressable>
+        <Pressable
+          onPress={() => router.push("/(app)/bulk-link")}
+          className="rounded-full bg-white p-2 shadow-sm active:bg-stone-50 dark:bg-stone-900 dark:border dark:border-stone-800 dark:active:bg-stone-800"
+          hitSlop={4}
+        >
+          <Ionicons name="link" size={16} color={Colors.brand[600]} />
+        </Pressable>
       </View>
 
       {/* Loading State */}
