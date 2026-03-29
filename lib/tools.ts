@@ -13,6 +13,7 @@ import {
   addPersonToEntity,
   promotePersonToContact,
 } from "@/lib/entities";
+import { validateSQL, sanitizePostgrestValue } from "@/lib/sanitize";
 import type { Tables } from "@/types/database";
 
 // ---------------------------------------------------------------------------
@@ -515,11 +516,12 @@ export function getToolDefinitions(): ToolDefinition[] {
         const searchQuery = input.query as string | undefined;
 
         if (category) {
-          query = query.ilike("category", `%${category}%`);
+          query = query.ilike("category", `%${sanitizePostgrestValue(category)}%`);
         }
         if (searchQuery) {
+          const q = sanitizePostgrestValue(searchQuery);
           query = query.or(
-            `name.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%`,
+            `name.ilike.%${q}%,category.ilike.%${q}%`,
           );
         }
 
@@ -556,13 +558,8 @@ export function getToolDefinitions(): ToolDefinition[] {
       async execute(input, userId) {
         const sql = input.sql as string;
 
-        // Validate it's a SELECT query
-        const upper = sql.trim().toUpperCase();
-        if (!upper.startsWith("SELECT") && !upper.startsWith("WITH")) {
-          throw new Error(
-            "Only SELECT queries are allowed. Do not use INSERT, UPDATE, DELETE, or DDL statements.",
-          );
-        }
+        // Validate SQL is safe (read-only, no DML/DDL, no stacked queries)
+        validateSQL(sql);
 
         const rows = await executeSQLQuery(sql, userId);
         return {
@@ -821,7 +818,7 @@ export function getToolDefinitions(): ToolDefinition[] {
           .eq("is_archived", false);
 
         if (company) {
-          contactQuery = contactQuery.ilike("company", `%${company}%`);
+          contactQuery = contactQuery.ilike("company", `%${sanitizePostgrestValue(company)}%`);
         }
         if (source) {
           contactQuery = contactQuery.ilike("source", source);

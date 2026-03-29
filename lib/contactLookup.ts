@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { sanitizePostgrestValue } from "@/lib/sanitize";
 
 export type ContactResult = {
   id: string;
@@ -19,7 +20,7 @@ export async function findContactsByName(
     .select("id, first_name, last_name, company, job_title, avatar_url")
     .eq("user_id", userId)
     .eq("is_archived", false)
-    .or(`first_name.ilike.%${name}%,last_name.ilike.%${name}%`)
+    .or(`first_name.ilike.%${sanitizePostgrestValue(name)}%,last_name.ilike.%${sanitizePostgrestValue(name)}%`)
     .limit(limit);
 
   if (error) throw error;

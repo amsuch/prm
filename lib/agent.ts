@@ -6,12 +6,9 @@
 import { supabase } from "@/lib/supabase";
 import type { ParsedQuery } from "@/lib/queryParser";
 import { formatRelativeTime } from "@/lib/utils";
+import { sanitizePostgrestValue } from "@/lib/sanitize";
 import type { Tables } from "@/types/database";
-import {
-  createEntity,
-  addPersonToEntity,
-  promotePersonToContact,
-} from "@/lib/entities";
+import { promotePersonToContact } from "@/lib/entities";
 import { callLLM, type LLMConfig } from "@/lib/llm";
 import { askWithSQL } from "@/lib/sqlAgent";
 import { findContactsByName, formatContactName } from "@/lib/contactLookup";
@@ -365,7 +362,7 @@ async function handleTagLookup(
     .from("tags")
     .select("id, name")
     .eq("user_id", userId)
-    .ilike("name", `%${tagName}%`)
+    .ilike("name", `%${sanitizePostgrestValue(tagName)}%`)
     .limit(1);
 
   if (tagError) throw tagError;
@@ -768,7 +765,7 @@ async function handleBulkUpdate(
       .from("tags")
       .select("id")
       .eq("user_id", userId)
-      .ilike("name", `%${filter.tag}%`)
+      .ilike("name", `%${sanitizePostgrestValue(filter.tag)}%`)
       .limit(1);
 
     if (tagError) throw tagError;
@@ -799,10 +796,10 @@ async function handleBulkUpdate(
       .eq("is_archived", false);
 
     if (filter.company) {
-      query = query.ilike("company", `%${filter.company}%`);
+      query = query.ilike("company", `%${sanitizePostgrestValue(filter.company)}%`);
     }
     if (filter.source) {
-      query = query.ilike("source", filter.source);
+      query = query.ilike("source", sanitizePostgrestValue(filter.source));
     }
 
     const { data, error } = await query;
@@ -1040,7 +1037,7 @@ async function handleUpdateContact(
     .select("id, first_name, last_name, company, job_title, avatar_url, custom_fields")
     .eq("user_id", userId)
     .eq("is_archived", false)
-    .or(`first_name.ilike.%${name}%,last_name.ilike.%${name}%`)
+    .or(`first_name.ilike.%${sanitizePostgrestValue(name)}%,last_name.ilike.%${sanitizePostgrestValue(name)}%`)
     .limit(1);
 
   if (findError) throw findError;
@@ -1097,13 +1094,12 @@ async function handleLinkContacts(
   relationshipName: string | undefined,
   userId: string,
 ): Promise<AgentResponse> {
-  // Find contact A
+  // Find contact A and B by name
   const contactsA = await findContactsByName(nameA, userId, 1);
   if (contactsA.length === 0) {
     return { type: "text", message: `Couldn't find a contact matching "${nameA}".` };
   }
 
-  // Find contact B
   const contactsB = await findContactsByName(nameB, userId, 1);
   if (contactsB.length === 0) {
     return { type: "text", message: `Couldn't find a contact matching "${nameB}".` };
@@ -1116,85 +1112,23 @@ async function handleLinkContacts(
     return { type: "text", message: "Can't link a contact to themselves." };
   }
 
-  // Find the relationship type — check both name and reverse_name for direction
-  type RelType = { id: string; name: string; reverse_name: string | null; is_symmetric: boolean };
-  let relTypeId: string | null = null;
-  let swapDirection = false;
+  // Delegate to the link_contacts tool for relationship type resolution and insert
+  const tool = getToolDefinitions().find((t) => t.name === "link_contacts");
+  const result = (await tool!.execute(
+    {
+      contact_a_id: a.id,
+      contact_b_id: b.id,
+      relationship: relationshipName,
+    },
+    userId,
+  )) as { success: boolean; message: string };
 
-  if (relationshipName) {
-    const rn = relationshipName.toLowerCase();
-
-    // Fetch all visible types to find the best match
-    const { data: allTypes } = await supabase
-      .from("relationship_types")
-      .select("id, name, reverse_name, is_symmetric")
-      .or(`user_id.eq.${userId},is_system.eq.true`);
-    const types = (allTypes as unknown as RelType[]) ?? [];
-
-    // Try exact match on name first
-    const nameMatch = types.find((t) => t.name.toLowerCase() === rn);
-    if (nameMatch) {
-      relTypeId = nameMatch.id;
-    } else {
-      // Try match on reverse_name — if matched, swap A and B
-      const reverseMatch = types.find(
-        (t) => t.reverse_name && t.reverse_name.toLowerCase() === rn,
-      );
-      if (reverseMatch) {
-        relTypeId = reverseMatch.id;
-        if (!reverseMatch.is_symmetric) {
-          swapDirection = true;
-        }
-      } else {
-        // Fuzzy match on name
-        const fuzzy = types.find((t) => t.name.toLowerCase().includes(rn) || rn.includes(t.name.toLowerCase()));
-        if (fuzzy) {
-          relTypeId = fuzzy.id;
-        }
-      }
-    }
+  if (!result.success) {
+    return { type: "text", message: result.message };
   }
 
-  // Default to "Friend" if no type specified or not found
-  if (!relTypeId) {
-    const { data: defaultType } = await supabase
-      .from("relationship_types")
-      .select("id")
-      .eq("is_system", true)
-      .eq("name", "Friend")
-      .limit(1);
-    const defaults = (defaultType as unknown as { id: string }[]) ?? [];
-    if (defaults.length > 0) {
-      relTypeId = defaults[0].id;
-    } else {
-      return { type: "error", message: "No relationship types available." };
-    }
-  }
-
-  // For asymmetric relationships: A is the "name" side, B is the "reverse_name" side
-  // e.g., "John is Jane's parent" → John=A(Parent), Jane=B(Child)
-  // If the user said the reverse_name, swap so the direction is correct
-  const contactA = swapDirection ? b : a;
-  const contactB = swapDirection ? a : b;
-
-  // Create the relationship
-  const { error: insertErr } = await supabase
-    .from("contact_relationships")
-    .insert({
-      contact_a_id: contactA.id,
-      contact_b_id: contactB.id,
-      relationship_type_id: relTypeId,
-    } as never);
-
-  if (insertErr) {
-    if (insertErr.message?.includes("duplicate") || insertErr.message?.includes("unique")) {
-      return { type: "text", message: `${[a.first_name, a.last_name].filter(Boolean).join(" ")} and ${[b.first_name, b.last_name].filter(Boolean).join(" ")} are already linked.` };
-    }
-    throw insertErr;
-  }
-
-  const nameAFull = [a.first_name, a.last_name].filter(Boolean).join(" ");
-  const nameBFull = [b.first_name, b.last_name].filter(Boolean).join(" ");
+  const nameAFull = formatContactName(a.first_name, a.last_name);
+  const nameBFull = formatContactName(b.first_name, b.last_name);
 
   return {
     type: "action",
@@ -1308,7 +1242,7 @@ async function handleAddEntityPerson(
     .select("id, name")
     .eq("user_id", userId)
     .eq("is_archived", false)
-    .ilike("name", `%${entityName}%`)
+    .ilike("name", `%${sanitizePostgrestValue(entityName)}%`)
     .limit(1);
 
   if (entityError) throw entityError;
@@ -1354,7 +1288,7 @@ async function handlePromotePerson(
     .select("*")
     .eq("user_id", userId)
     .eq("is_archived", false)
-    .ilike("name", `%${entityName}%`)
+    .ilike("name", `%${sanitizePostgrestValue(entityName)}%`)
     .limit(1);
 
   if (entityError) throw entityError;
@@ -1375,7 +1309,7 @@ async function handlePromotePerson(
     .select("*")
     .eq("entity_id", entity.id)
     .or(
-      `first_name.ilike.%${personName}%,last_name.ilike.%${personName}%`,
+      `first_name.ilike.%${sanitizePostgrestValue(personName)}%,last_name.ilike.%${sanitizePostgrestValue(personName)}%`,
     )
     .limit(1);
 
@@ -1443,11 +1377,11 @@ async function getAffectedCount(
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
       .eq("is_archived", false);
-    if (filter.company) query = query.ilike("company", `%${filter.company}%`);
-    if (filter.source) query = query.eq("source", filter.source);
+    if (filter.company) query = query.ilike("company", `%${sanitizePostgrestValue(filter.company)}%`);
+    if (filter.source) query = query.eq("source", sanitizePostgrestValue(filter.source));
     if ("tag" in filter && filter.tag) {
       const { data: tagData } = await supabase
-        .from("tags").select("id").eq("user_id", userId).ilike("name", `%${filter.tag}%`).limit(1);
+        .from("tags").select("id").eq("user_id", userId).ilike("name", `%${sanitizePostgrestValue(filter.tag)}%`).limit(1);
       const tags = (tagData as unknown as { id: string }[]) ?? [];
       if (tags[0]) {
         const { count } = await supabase
@@ -1471,7 +1405,7 @@ async function getAffectedCount(
       cutoff.setDate(cutoff.getDate() - parsed.filter.days);
       query = query.or(`last_contacted_at.is.null,last_contacted_at.lt.${cutoff.toISOString()}`);
     }
-    if (parsed.filter.company) query = query.ilike("company", `%${parsed.filter.company}%`);
+    if (parsed.filter.company) query = query.ilike("company", `%${sanitizePostgrestValue(parsed.filter.company)}%`);
     const { count } = await query;
     return count ?? 0;
   }
@@ -1495,14 +1429,7 @@ async function getAffectedContacts(
       }];
 
     case "update_contact": {
-      const { data } = await supabase
-        .from("contacts")
-        .select("id, first_name, last_name, company, job_title, avatar_url")
-        .eq("user_id", userId)
-        .eq("is_archived", false)
-        .or(`first_name.ilike.%${parsed.name}%,last_name.ilike.%${parsed.name}%`)
-        .limit(5);
-      return (data as unknown as AgentResultContact[]) ?? [];
+      return await findContactsByName(parsed.name, userId, 5);
     }
 
     case "bulk_tag":
@@ -1513,11 +1440,11 @@ async function getAffectedContacts(
         .select("id, first_name, last_name, company, job_title, avatar_url")
         .eq("user_id", userId)
         .eq("is_archived", false);
-      if (filter.company) query = query.ilike("company", `%${filter.company}%`);
-      if (filter.source) query = query.eq("source", filter.source);
+      if (filter.company) query = query.ilike("company", `%${sanitizePostgrestValue(filter.company)}%`);
+      if (filter.source) query = query.eq("source", sanitizePostgrestValue(filter.source));
       if ("tag" in filter && filter.tag) {
         const { data: tagData } = await supabase
-          .from("tags").select("id").eq("user_id", userId).ilike("name", `%${filter.tag}%`).limit(1);
+          .from("tags").select("id").eq("user_id", userId).ilike("name", `%${sanitizePostgrestValue(filter.tag as string)}%`).limit(1);
         const tags = (tagData as unknown as { id: string }[]) ?? [];
         if (tags[0]) {
           const { data: ctData } = await supabase
@@ -1542,36 +1469,18 @@ async function getAffectedContacts(
         cutoff.setDate(cutoff.getDate() - parsed.filter.days);
         query = query.or(`last_contacted_at.is.null,last_contacted_at.lt.${cutoff.toISOString()}`);
       }
-      if (parsed.filter.company) query = query.ilike("company", `%${parsed.filter.company}%`);
+      if (parsed.filter.company) query = query.ilike("company", `%${sanitizePostgrestValue(parsed.filter.company)}%`);
       const { data } = await query.order("first_name").limit(20);
       return (data as unknown as AgentResultContact[]) ?? [];
     }
 
     case "enrich_contact": {
-      const { data } = await supabase
-        .from("contacts")
-        .select("id, first_name, last_name, company, job_title, avatar_url")
-        .eq("user_id", userId)
-        .or(`first_name.ilike.%${parsed.name}%,last_name.ilike.%${parsed.name}%`)
-        .limit(1);
-      return (data as unknown as AgentResultContact[]) ?? [];
+      return await findContactsByName(parsed.name, userId, 1);
     }
 
     case "link_contacts": {
-      const { data: dataA } = await supabase
-        .from("contacts")
-        .select("id, first_name, last_name, company, job_title, avatar_url")
-        .eq("user_id", userId).eq("is_archived", false)
-        .or(`first_name.ilike.%${parsed.nameA}%,last_name.ilike.%${parsed.nameA}%`)
-        .limit(1);
-      const { data: dataB } = await supabase
-        .from("contacts")
-        .select("id, first_name, last_name, company, job_title, avatar_url")
-        .eq("user_id", userId).eq("is_archived", false)
-        .or(`first_name.ilike.%${parsed.nameB}%,last_name.ilike.%${parsed.nameB}%`)
-        .limit(1);
-      const a = (dataA as unknown as AgentResultContact[]) ?? [];
-      const b = (dataB as unknown as AgentResultContact[]) ?? [];
+      const a = await findContactsByName(parsed.nameA, userId, 1);
+      const b = await findContactsByName(parsed.nameB, userId, 1);
       return [...a, ...b];
     }
 

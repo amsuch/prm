@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { sanitizePostgrestValue } from "@/lib/sanitize";
 import type { Tables, InsertTables } from "@/types/database";
 
 export type RelationshipType = Tables<"relationship_types">;
@@ -114,8 +115,9 @@ export async function searchContactsForRelationship(params: {
     .limit(20);
 
   if (query.trim()) {
+    const q = sanitizePostgrestValue(query);
     dbQuery = dbQuery.or(
-      `first_name.ilike.%${query}%,last_name.ilike.%${query}%,company.ilike.%${query}%`,
+      `first_name.ilike.%${q}%,last_name.ilike.%${q}%,company.ilike.%${q}%`,
     );
   }
 

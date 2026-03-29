@@ -63,6 +63,19 @@ export function useEntityCategories() {
     [userId, fetchCategories],
   );
 
+  const updateCategory = useCallback(
+    async (id: string, data: { name?: string; icon?: string; color?: string }) => {
+      const { error: updateError } = await supabase
+        .from("entity_categories")
+        .update(data as never)
+        .eq("id", id);
+
+      if (updateError) throw updateError;
+      await fetchCategories();
+    },
+    [fetchCategories],
+  );
+
   const deleteCategory = useCallback(
     async (id: string) => {
       const { error: deleteError } = await supabase
@@ -81,6 +94,7 @@ export function useEntityCategories() {
     isLoading,
     error,
     createCategory,
+    updateCategory,
     deleteCategory,
     refetch: fetchCategories,
   };

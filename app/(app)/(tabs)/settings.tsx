@@ -157,6 +157,142 @@ function ProfileCard() {
   );
 }
 
+function TagRow({
+  tag,
+  onDelete,
+  onUpdate,
+}: {
+  tag: { id: string; name: string; color: string | null };
+  onDelete: (id: string, name: string) => void;
+  onUpdate: (id: string, data: { name: string; color: string }) => Promise<void>;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(tag.name);
+  const [editColor, setEditColor] = useState(tag.color ?? "#6b7280");
+  const [isSaving, setIsSaving] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+
+  const handleSave = useCallback(async () => {
+    if (!editName.trim()) return;
+    setIsSaving(true);
+    try {
+      await onUpdate(tag.id, { name: editName.trim(), color: editColor });
+      setIsEditing(false);
+      setShowColorPicker(false);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to update tag";
+      if (Platform.OS === "web") {
+        window.alert(message);
+      } else {
+        Alert.alert("Error", message);
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  }, [tag.id, editName, editColor, onUpdate]);
+
+  const handleCancel = useCallback(() => {
+    setEditName(tag.name);
+    setEditColor(tag.color ?? "#6b7280");
+    setIsEditing(false);
+    setShowColorPicker(false);
+  }, [tag.name, tag.color]);
+
+  if (isEditing) {
+    return (
+      <View className="px-4 py-3">
+        <TextInput
+          value={editName}
+          onChangeText={setEditName}
+          placeholder="Tag name"
+          className="mb-3 rounded-xl border border-stone-200 bg-stone-50 px-4 py-2.5 text-sm text-stone-900"
+          placeholderTextColor={Colors.gray[400]}
+          autoFocus
+          onSubmitEditing={handleSave}
+        />
+
+        {/* Color picker */}
+        <Text className="mb-1.5 text-xs font-medium text-stone-500">Color</Text>
+        <View className="mb-3 flex-row flex-wrap gap-2">
+          {TAG_COLORS.map((color) => (
+            <Pressable
+              key={color}
+              onPress={() => setEditColor(color)}
+              className={`h-8 w-8 items-center justify-center rounded-full ${
+                editColor === color ? "border-2 border-stone-400" : ""
+              }`}
+              style={{ backgroundColor: color }}
+            >
+              {editColor === color && (
+                <Ionicons name="checkmark" size={14} color="white" />
+              )}
+            </Pressable>
+          ))}
+        </View>
+
+        <View className="flex-row gap-2">
+          <Pressable
+            onPress={handleCancel}
+            className="flex-1 items-center rounded-lg border border-stone-200 py-2.5 active:bg-stone-50"
+          >
+            <Text className="text-sm font-medium text-stone-600">Cancel</Text>
+          </Pressable>
+          <Pressable
+            onPress={handleSave}
+            disabled={isSaving || !editName.trim()}
+            className={`flex-1 items-center rounded-lg py-2.5 ${
+              isSaving || !editName.trim()
+                ? "bg-indigo-300"
+                : "bg-indigo-600 active:bg-indigo-700"
+            }`}
+          >
+            {isSaving ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <Text className="text-sm font-medium text-white">Save</Text>
+            )}
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View className="flex-row items-center justify-between px-4 py-3">
+      <View className="flex-1 flex-row items-center">
+        <Pressable
+          onPress={() => {
+            setShowColorPicker(true);
+            setIsEditing(true);
+          }}
+          hitSlop={8}
+        >
+          <View
+            className="h-3 w-3 rounded-full"
+            style={{ backgroundColor: tag.color ?? "#6b7280" }}
+          />
+        </Pressable>
+        <Pressable
+          onPress={() => setIsEditing(true)}
+          className="ml-2.5 flex-1 active:opacity-70"
+        >
+          <Text className="text-sm font-medium text-stone-900">
+            {tag.name}
+          </Text>
+        </Pressable>
+      </View>
+      <Pressable
+        onPress={() => onDelete(tag.id, tag.name)}
+        className="rounded-lg p-2 active:bg-red-50"
+        hitSlop={8}
+      >
+        <Ionicons name="trash-outline" size={16} color={Colors.error} />
+      </Pressable>
+    </View>
+  );
+}
+
 function TagManager() {
   const { session } = useSession();
   const { tags, refetch } = useTags();
@@ -242,6 +378,19 @@ function TagManager() {
     [refetch],
   );
 
+  const handleUpdateTag = useCallback(
+    async (tagId: string, data: { name: string; color: string }) => {
+      const { error: updateError } = await supabase
+        .from("tags")
+        .update({ name: data.name, color: data.color } as never)
+        .eq("id", tagId);
+
+      if (updateError) throw updateError;
+      await refetch();
+    },
+    [refetch],
+  );
+
   return (
     <View>
       {tags.length === 0 && !isAdding && (
@@ -254,24 +403,7 @@ function TagManager() {
       {tags.map((tag, index) => (
         <View key={tag.id}>
           {index > 0 && <View className="ml-4 h-px bg-stone-100" />}
-          <View className="flex-row items-center justify-between px-4 py-3">
-            <View className="flex-row items-center">
-              <View
-                className="h-3 w-3 rounded-full"
-                style={{ backgroundColor: tag.color ?? "#6b7280" }}
-              />
-              <Text className="ml-2.5 text-sm font-medium text-stone-900">
-                {tag.name}
-              </Text>
-            </View>
-            <Pressable
-              onPress={() => handleDeleteTag(tag.id, tag.name)}
-              className="rounded-lg p-2 active:bg-red-50"
-              hitSlop={8}
-            >
-              <Ionicons name="trash-outline" size={16} color={Colors.error} />
-            </Pressable>
-          </View>
+          <TagRow tag={tag} onDelete={handleDeleteTag} onUpdate={handleUpdateTag} />
         </View>
       ))}
 

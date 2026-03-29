@@ -21,15 +21,27 @@ export type LLMResponse = {
   usage?: { input_tokens: number; output_tokens: number };
 };
 
+/**
+ * Sanitize database context before injecting into LLM prompts.
+ * Strips sequences that could manipulate LLM behavior if present in contact data.
+ */
+function sanitizeContext(context: string): string {
+  return context
+    .replace(/\b(ignore|forget|disregard)\s+(all\s+)?(previous|prior|above|earlier)\s+(instructions?|prompts?|rules?|context)\b/gi, "")
+    .replace(/\b(you\s+are\s+now|act\s+as|pretend\s+(to\s+be|you\s+are))\b/gi, "")
+    .replace(/\b(system|assistant)\s*:/gi, "$1 -");
+}
+
 export async function callLLM(
   config: LLMConfig,
   messages: LLMMessage[],
   context?: string,
 ): Promise<LLMResponse> {
+  const safeContext = context ? sanitizeContext(context) : undefined;
   if (config.provider === "anthropic") {
-    return callAnthropic(config, messages, context);
+    return callAnthropic(config, messages, safeContext);
   }
-  return callOpenAI(config, messages, context);
+  return callOpenAI(config, messages, safeContext);
 }
 
 async function callOpenAI(

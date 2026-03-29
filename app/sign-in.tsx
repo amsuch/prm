@@ -29,7 +29,7 @@ export default function SignIn() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session) {
-          router.replace("/(app)/(tabs)");
+          router.replace("/");
         }
       },
     );
@@ -280,7 +280,7 @@ export default function SignIn() {
                       password: "password123",
                     });
                     if (devErr) throw devErr;
-                    router.replace("/(app)/(tabs)");
+                    router.replace("/");
                   } catch (e: unknown) {
                     setError(e instanceof Error ? e.message : "Failed");
                   } finally {

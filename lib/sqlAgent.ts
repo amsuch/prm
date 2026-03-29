@@ -5,6 +5,7 @@
 
 import { supabase } from "@/lib/supabase";
 import { callLLM, type LLMConfig } from "@/lib/llm";
+import { validateSQL, sanitizeForLLM } from "@/lib/sanitize";
 
 export type SQLResult = {
   sql: string;
@@ -154,9 +155,11 @@ export async function generateSQL(
   question: string,
   llmConfig: LLMConfig,
 ): Promise<string> {
+  const sanitizedQuestion = sanitizeForLLM(question);
+
   const response = await callLLM(
     { ...llmConfig, systemPrompt: SCHEMA_PROMPT },
-    [{ role: "user", content: question }],
+    [{ role: "user", content: sanitizedQuestion }],
   );
 
   // Extract SQL from response — strip any markdown fences
@@ -164,10 +167,8 @@ export async function generateSQL(
   sql = sql.replace(/^```(?:sql)?\n?/i, "").replace(/\n?```$/i, "");
   sql = sql.trim();
 
-  // Basic validation
-  if (!sql.toUpperCase().startsWith("SELECT") && !sql.toUpperCase().startsWith("WITH")) {
-    throw new Error("LLM did not generate a valid SELECT query.");
-  }
+  // Validate SQL is safe (read-only, no DML/DDL)
+  validateSQL(sql);
 
   return sql;
 }
@@ -186,7 +187,7 @@ export async function executeSQLQuery(
   });
 
   if (error) {
-    throw new Error(error.message ?? "Query execution failed");
+    throw new Error("Query execution failed");
   }
 
   return (data as Record<string, unknown>[]) ?? [];

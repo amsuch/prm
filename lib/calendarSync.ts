@@ -65,8 +65,9 @@ export async function fetchCalendarEvents(
 
     if (!response.ok) {
       const errorBody = await response.text();
+      console.error(`Google Calendar API error (${response.status}): ${errorBody}`);
       throw new Error(
-        `Google Calendar API error (${response.status}): ${errorBody}`,
+        `Google Calendar API error (${response.status})`,
       );
     }
 
@@ -173,10 +174,11 @@ export async function syncCalendar(
     storedSyncToken,
   );
 
-  // 4. Get all contact emails for matching
+  // 4. Get contact emails for matching (scoped to user's contacts)
   const { data: contactEmailRows } = await supabase
     .from("contact_emails")
-    .select("email, contact_id");
+    .select("email, contact_id, contacts!inner(user_id)")
+    .eq("contacts.user_id", userId);
 
   type ContactEmailRow = { email: string; contact_id: string };
   const typedContactEmails = (contactEmailRows ?? []) as unknown as ContactEmailRow[];
@@ -350,20 +352,22 @@ export async function getCalendarSuggestions(
   return (data ?? []) as unknown as Suggestion[];
 }
 
-export async function dismissSuggestion(id: string): Promise<void> {
+export async function dismissSuggestion(id: string, userId: string): Promise<void> {
   const { error } = await supabase
     .from("calendar_suggestions")
     .update({ status: "dismissed" } as never)
-    .eq("id", id);
+    .eq("id", id)
+    .eq("user_id", userId);
 
   if (error) throw error;
 }
 
-export async function restoreSuggestion(id: string): Promise<void> {
+export async function restoreSuggestion(id: string, userId: string): Promise<void> {
   const { error } = await supabase
     .from("calendar_suggestions")
     .update({ status: "pending" } as never)
-    .eq("id", id);
+    .eq("id", id)
+    .eq("user_id", userId);
 
   if (error) throw error;
 }
@@ -372,11 +376,12 @@ export async function createContactFromSuggestion(
   suggestionId: string,
   userId: string,
 ): Promise<string> {
-  // Fetch the suggestion
+  // Fetch the suggestion — filter by user_id to prevent cross-user access
   const { data: suggestion, error: fetchError } = await supabase
     .from("calendar_suggestions")
     .select("*")
     .eq("id", suggestionId)
+    .eq("user_id", userId)
     .single();
 
   if (fetchError || !suggestion) {

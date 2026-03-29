@@ -37,7 +37,7 @@ export default function CalendarSuggestionsScreen() {
     async (suggestion: Suggestion) => {
       setProcessingId(suggestion.id);
       try {
-        await dismissSuggestion(suggestion.id);
+        await dismissSuggestion(suggestion.id, userId!);
         await refetch();
       } catch (err) {
         const message =
@@ -58,7 +58,7 @@ export default function CalendarSuggestionsScreen() {
     async (suggestion: Suggestion) => {
       setProcessingId(suggestion.id);
       try {
-        await restoreSuggestion(suggestion.id);
+        await restoreSuggestion(suggestion.id, userId!);
         await refetch();
       } catch (err) {
         const message =

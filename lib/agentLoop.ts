@@ -42,6 +42,14 @@ export type AgentEvent =
 
 const MAX_ITERATIONS = 10;
 
+// Tools that ALWAYS require approval, even in Auto mode.
+// These perform bulk/destructive operations that are hard to reverse.
+const ALWAYS_REQUIRE_APPROVAL = new Set([
+  "archive_contacts",
+  "bulk_tag_contacts",
+  "bulk_update_contacts",
+]);
+
 const DEFAULT_SYSTEM_PROMPT = `You are a personal relationship manager assistant with access to tools that query and modify the user's contact database.
 
 ALWAYS use tools to look up data — never guess or make up contacts, interactions, or relationships.
@@ -159,8 +167,10 @@ export async function* runAgentLoop(
         continue;
       }
 
-      // Check if tool requires approval
-      if (tool.requiresApproval && !autoApprove) {
+      // Check if tool requires approval.
+      // Bulk/destructive tools always require approval, even in Auto mode.
+      const forceApproval = ALWAYS_REQUIRE_APPROVAL.has(tc.name);
+      if (tool.requiresApproval && (!autoApprove || forceApproval)) {
         const description = getToolDescription(tc);
         yield {
           type: "approval_needed",

@@ -37,7 +37,7 @@ BEGIN
   );
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
@@ -284,7 +284,7 @@ BEGIN
     AND (last_contacted_at IS NULL OR last_contacted_at < NEW.occurred_at);
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 DROP TRIGGER IF EXISTS trg_interaction_update_contact ON interactions;
 CREATE TRIGGER trg_interaction_update_contact
@@ -391,10 +391,11 @@ BEGIN
   ORDER BY rank DESC
   LIMIT 50;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- ============================================================
 -- HELPER: Get relationships for a contact (both directions)
+-- Requires the contact to belong to the calling user.
 -- ============================================================
 CREATE OR REPLACE FUNCTION get_contact_relationships(p_contact_id UUID)
 RETURNS TABLE (
@@ -409,6 +410,13 @@ RETURNS TABLE (
   notes TEXT
 ) AS $$
 BEGIN
+  -- Verify the contact belongs to the calling user
+  IF NOT EXISTS (
+    SELECT 1 FROM contacts WHERE id = p_contact_id AND user_id = auth.uid()
+  ) THEN
+    RAISE EXCEPTION 'Contact not found or access denied';
+  END IF;
+
   RETURN QUERY
   -- Relationships where this contact is A
   SELECT
@@ -444,4 +452,4 @@ BEGIN
   JOIN relationship_types rt ON rt.id = cr.relationship_type_id
   WHERE cr.contact_b_id = p_contact_id;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;

@@ -36,13 +36,144 @@ const ICON_OPTIONS: { name: string; label: string }[] = [
 function CategoryRow({
   category,
   onDelete,
+  onUpdate,
 }: {
   category: EntityCategory;
   onDelete: (id: string, name: string) => void;
+  onUpdate: (id: string, data: { name: string; icon: string; color: string }) => Promise<void>;
 }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(category.name);
+  const [editIcon, setEditIcon] = useState(category.icon);
+  const [editColor, setEditColor] = useState(category.color);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  const handleSave = useCallback(async () => {
+    if (!editName.trim()) return;
+    setIsSaving(true);
+    setEditError(null);
+    try {
+      await onUpdate(category.id, {
+        name: editName.trim(),
+        icon: editIcon,
+        color: editColor,
+      });
+      setIsEditing(false);
+    } catch (err) {
+      setEditError(
+        err instanceof Error ? err.message : "Failed to update category",
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  }, [category.id, editName, editIcon, editColor, onUpdate]);
+
+  const handleCancel = useCallback(() => {
+    setEditName(category.name);
+    setEditIcon(category.icon);
+    setEditColor(category.color);
+    setEditError(null);
+    setIsEditing(false);
+  }, [category.name, category.icon, category.color]);
+
+  if (isEditing) {
+    return (
+      <View className="px-4 py-3">
+        {/* Name input */}
+        <TextInput
+          value={editName}
+          onChangeText={setEditName}
+          placeholder="Category name"
+          className="mb-3 rounded-xl border border-stone-200 bg-stone-50 px-4 py-2.5 text-sm text-stone-900"
+          placeholderTextColor={Colors.gray[400]}
+          autoFocus
+        />
+
+        {/* Icon picker */}
+        <Text className="mb-1.5 text-xs font-medium text-stone-500">Icon</Text>
+        <View className="mb-3 flex-row flex-wrap gap-2">
+          {ICON_OPTIONS.map((icon) => (
+            <Pressable
+              key={icon.name}
+              onPress={() => setEditIcon(icon.name)}
+              className={`items-center justify-center rounded-lg p-2 ${
+                editIcon === icon.name
+                  ? "bg-indigo-100 border border-indigo-300"
+                  : "bg-stone-50 border border-stone-200"
+              }`}
+              style={{ width: 40, height: 40 }}
+            >
+              <Ionicons
+                name={icon.name as keyof typeof Ionicons.glyphMap}
+                size={18}
+                color={
+                  editIcon === icon.name
+                    ? Colors.brand[600]
+                    : Colors.gray[500]
+                }
+              />
+            </Pressable>
+          ))}
+        </View>
+
+        {/* Color picker */}
+        <Text className="mb-1.5 text-xs font-medium text-stone-500">Color</Text>
+        <View className="mb-3 flex-row flex-wrap gap-2">
+          {AvatarColors.map((color) => (
+            <Pressable
+              key={color}
+              onPress={() => setEditColor(color)}
+              className={`h-8 w-8 items-center justify-center rounded-full ${
+                editColor === color ? "border-2 border-stone-400" : ""
+              }`}
+              style={{ backgroundColor: color }}
+            >
+              {editColor === color && (
+                <Ionicons name="checkmark" size={14} color="white" />
+              )}
+            </Pressable>
+          ))}
+        </View>
+
+        {editError && (
+          <Text className="mb-2 text-xs text-red-500">{editError}</Text>
+        )}
+
+        {/* Save / Cancel buttons */}
+        <View className="flex-row gap-2">
+          <Pressable
+            onPress={handleCancel}
+            className="flex-1 items-center rounded-lg border border-stone-200 py-2.5 active:bg-stone-50"
+          >
+            <Text className="text-sm font-medium text-stone-600">Cancel</Text>
+          </Pressable>
+          <Pressable
+            onPress={handleSave}
+            disabled={isSaving || !editName.trim()}
+            className={`flex-1 items-center rounded-lg py-2.5 ${
+              isSaving || !editName.trim()
+                ? "bg-indigo-300"
+                : "bg-indigo-600 active:bg-indigo-700"
+            }`}
+          >
+            {isSaving ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <Text className="text-sm font-medium text-white">Save</Text>
+            )}
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View className="flex-row items-center justify-between px-4 py-3">
-      <View className="flex-1 flex-row items-center">
+      <Pressable
+        onPress={() => setIsEditing(true)}
+        className="flex-1 flex-row items-center active:opacity-70"
+      >
         <Ionicons
           name={category.icon as keyof typeof Ionicons.glyphMap}
           size={18}
@@ -55,27 +186,20 @@ function CategoryRow({
           className="ml-2 h-2.5 w-2.5 rounded-full"
           style={{ backgroundColor: category.color }}
         />
-        {category.is_system && (
-          <View className="ml-2 rounded-md bg-stone-100 px-1.5 py-0.5">
-            <Text className="text-xs text-stone-400">system</Text>
-          </View>
-        )}
-      </View>
-      {!category.is_system && (
-        <Pressable
-          onPress={() => onDelete(category.id, category.name)}
-          className="ml-2 rounded-lg p-2 active:bg-red-50"
-          hitSlop={8}
-        >
-          <Ionicons name="trash-outline" size={16} color={Colors.error} />
-        </Pressable>
-      )}
+      </Pressable>
+      <Pressable
+        onPress={() => onDelete(category.id, category.name)}
+        className="ml-2 rounded-lg p-2 active:bg-red-50"
+        hitSlop={8}
+      >
+        <Ionicons name="trash-outline" size={16} color={Colors.error} />
+      </Pressable>
     </View>
   );
 }
 
 export function EntityCategoryManager() {
-  const { categories, isLoading, createCategory, deleteCategory } =
+  const { categories, isLoading, createCategory, updateCategory, deleteCategory } =
     useEntityCategories();
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState("");
@@ -171,7 +295,7 @@ export function EntityCategoryManager() {
       {categories.map((cat, index) => (
         <View key={cat.id}>
           {index > 0 && <View className="ml-4 h-px bg-stone-100" />}
-          <CategoryRow category={cat} onDelete={handleDelete} />
+          <CategoryRow category={cat} onDelete={handleDelete} onUpdate={updateCategory} />
         </View>
       ))}
 
