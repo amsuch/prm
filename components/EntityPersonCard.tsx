@@ -64,7 +64,7 @@ export function EntityPersonCard({
             className="flex-row items-center rounded-full bg-green-50 dark:bg-green-950 px-3 py-1.5 active:bg-green-100"
           >
             <Ionicons name="person" size={14} color="#16a34a" />
-            <Text className="ml-1 text-xs font-medium text-green-700">
+            <Text className="ml-1 text-xs font-medium text-green-700 dark:text-green-300">
               View Contact
             </Text>
           </Pressable>
@@ -76,7 +76,7 @@ export function EntityPersonCard({
             style={{ opacity: isPromoting ? 0.5 : 1 }}
           >
             <Ionicons name="arrow-up-circle" size={14} color={Colors.brand[600]} />
-            <Text className="ml-1 text-xs font-medium text-indigo-700">
+            <Text className="ml-1 text-xs font-medium text-indigo-700 dark:text-indigo-300">
               {isPromoting ? "Promoting..." : "Promote"}
             </Text>
           </Pressable>

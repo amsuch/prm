@@ -168,7 +168,7 @@ export function AddRelationshipModal({
         <View className="ml-3 flex-1">
           <Text
             className={`text-sm font-medium ${
-              isSelected ? "text-indigo-700" : "text-stone-900 dark:text-stone-100"
+              isSelected ? "text-indigo-700 dark:text-indigo-300" : "text-stone-900 dark:text-stone-100"
             }`}
             numberOfLines={1}
           >
@@ -240,7 +240,7 @@ export function AddRelationshipModal({
           {selectedContact && (
             <View className="mx-4 mt-2 flex-row items-center rounded-xl bg-indigo-50 dark:bg-indigo-950 px-3 py-2">
               <Ionicons name="person" size={16} color={Colors.brand[600]} />
-              <Text className="ml-2 flex-1 text-sm font-medium text-indigo-700">
+              <Text className="ml-2 flex-1 text-sm font-medium text-indigo-700 dark:text-indigo-300">
                 {[selectedContact.first_name, selectedContact.last_name]
                   .filter(Boolean)
                   .join(" ")}
@@ -335,8 +335,8 @@ export function AddRelationshipModal({
 
           {/* Selected type description for asymmetric */}
           {selectedType && !selectedType.is_symmetric && selectedType.reverse_name && (
-            <View className="mx-4 mt-2 rounded-lg bg-amber-50 px-3 py-2">
-              <Text className="text-xs text-amber-700">
+            <View className="mx-4 mt-2 rounded-lg bg-amber-50 dark:bg-amber-950 px-3 py-2">
+              <Text className="text-xs text-amber-700 dark:text-amber-300">
                 This contact will be shown as "{selectedType.name}" and the other
                 contact as "{selectedType.reverse_name}"
               </Text>

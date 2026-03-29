@@ -33,7 +33,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   family: "#e11d48",
   professional: "#2563eb",
   social: "#16a34a",
-  other: "#6b7280",
+  other: Colors.gray[500],
 };
 
 export default function BulkLinkScreen() {
@@ -218,7 +218,7 @@ export default function BulkLinkScreen() {
         {/* Search */}
         <View className="border-b border-stone-200 bg-white px-4 py-3 dark:border-stone-800 dark:bg-stone-900">
           <View className="flex-row items-center rounded-xl border border-stone-200 bg-stone-50 px-3 dark:border-stone-700 dark:bg-stone-800">
-            <Ionicons name="search" size={18} color="#9ca3af" />
+            <Ionicons name="search" size={18} color={Colors.gray[400]} />
             <TextInput
               className="ml-2 flex-1 py-2.5 text-sm text-stone-900 dark:text-stone-100"
               placeholder="Search contacts..."
@@ -229,7 +229,7 @@ export default function BulkLinkScreen() {
             />
             {searchText.length > 0 && (
               <Pressable onPress={() => setSearchText("")}>
-                <Ionicons name="close-circle" size={18} color="#9ca3af" />
+                <Ionicons name="close-circle" size={18} color={Colors.gray[400]} />
               </Pressable>
             )}
           </View>
@@ -241,7 +241,7 @@ export default function BulkLinkScreen() {
             </Text>
             <View className="flex-row gap-2">
               <Pressable onPress={handleSelectAll}>
-                <Text className="text-xs font-medium text-indigo-600">Select All</Text>
+                <Text className="text-xs font-medium text-indigo-600 dark:text-indigo-400">Select All</Text>
               </Pressable>
               <Text className="text-xs text-stone-300 dark:text-stone-600">|</Text>
               <Pressable onPress={handleDeselectAll}>
@@ -464,7 +464,7 @@ export default function BulkLinkScreen() {
                     <View className="bg-stone-50 px-4 py-1.5 dark:bg-stone-800">
                       <Text
                         className="text-xs font-semibold capitalize"
-                        style={{ color: CATEGORY_COLORS[category] ?? "#6b7280" }}
+                        style={{ color: CATEGORY_COLORS[category] ?? Colors.gray[500] }}
                       >
                         {category}
                       </Text>

@@ -18,7 +18,7 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
   school: { bg: "#fce7f3", text: "#9d174d" },
   church: { bg: "#e0e7ff", text: "#3730a3" },
   store: { bg: "#ffedd5", text: "#9a3412" },
-  default: { bg: "#f3f4f6", text: "#374151" },
+  default: { bg: Colors.gray[100], text: Colors.gray[700] },
 };
 
 function getCategoryColor(category: string | null): { bg: string; text: string } {

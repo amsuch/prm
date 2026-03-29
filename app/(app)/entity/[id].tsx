@@ -31,7 +31,7 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
   school: { bg: "#fce7f3", text: "#9d174d" },
   church: { bg: "#e0e7ff", text: "#3730a3" },
   store: { bg: "#ffedd5", text: "#9a3412" },
-  default: { bg: "#f3f4f6", text: "#374151" },
+  default: { bg: Colors.gray[100], text: Colors.gray[700] },
 };
 
 function getCategoryColor(category: string | null): { bg: string; text: string } {
@@ -166,7 +166,7 @@ export default function EntityDetailScreen() {
         <View className="mx-4 mt-4 rounded-xl bg-white p-4 shadow-sm dark:border dark:border-stone-800 dark:bg-stone-900">
           <View className="flex-row items-start justify-between">
             <View className="flex-1">
-              <Text className="text-xl font-bold text-stone-900 dark:text-stone-100">
+              <Text className="text-2xl font-bold text-stone-900 dark:text-stone-100">
                 {entity.name}
               </Text>
               {entity.category && (
@@ -248,7 +248,7 @@ export default function EntityDetailScreen() {
         {/* Notes */}
         {entity.notes && (
           <View className="mx-4 mt-3 rounded-xl bg-white p-4 shadow-sm dark:border dark:border-stone-800 dark:bg-stone-900">
-            <Text className="mb-1 text-sm font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
+            <Text className="mb-1 text-sm font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
               Notes
             </Text>
             <Text className="text-sm leading-5 text-stone-700 dark:text-stone-300">
@@ -259,7 +259,7 @@ export default function EntityDetailScreen() {
 
         {/* People Section */}
         <View className="mx-4 mt-4 mb-2 flex-row items-center justify-between">
-          <Text className="text-sm font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
+          <Text className="text-sm font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
             People ({people.length})
           </Text>
           <Pressable
@@ -284,7 +284,7 @@ export default function EntityDetailScreen() {
               className="mt-3 flex-row items-center rounded-lg bg-indigo-50 px-4 py-2 active:bg-indigo-100 dark:bg-indigo-950"
             >
               <Ionicons name="add" size={16} color={Colors.brand[600]} />
-              <Text className="ml-1 text-sm font-medium text-indigo-700">
+              <Text className="ml-1 text-sm font-medium text-indigo-700 dark:text-indigo-300">
                 Add the first person
               </Text>
             </Pressable>

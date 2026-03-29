@@ -158,7 +158,7 @@ export default function NewEntityScreen() {
             </Pressable>
           </View>
           {mapsError && (
-            <Text className="mt-1.5 text-xs text-red-500">{mapsError}</Text>
+            <Text className="mt-1.5 text-xs text-red-500 dark:text-red-400">{mapsError}</Text>
           )}
         </View>
 

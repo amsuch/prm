@@ -115,14 +115,14 @@ export function ContactHeader({ contact, onPhotoUpdated }: ContactHeaderProps) {
         {isFetchingPhoto ? (
           <>
             <ActivityIndicator size="small" color={Colors.brand[600]} />
-            <Text className="ml-1.5 text-xs font-medium text-indigo-600">
+            <Text className="ml-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400">
               Fetching...
             </Text>
           </>
         ) : (
           <>
             <Ionicons name="camera-outline" size={14} color={Colors.brand[600]} />
-            <Text className="ml-1 text-xs font-medium text-indigo-600">
+            <Text className="ml-1 text-xs font-medium text-indigo-600 dark:text-indigo-400">
               {hasAvatar ? "Update Photo" : "Fetch Photo"}
             </Text>
           </>
@@ -148,7 +148,7 @@ export function ContactHeader({ contact, onPhotoUpdated }: ContactHeaderProps) {
           className="items-center rounded-xl bg-green-50 dark:bg-green-950 px-4 py-2 active:bg-green-100"
         >
           <Ionicons name="call" size={20} color="#16a34a" />
-          <Text className="mt-1 text-xs font-medium text-green-700">Call</Text>
+          <Text className="mt-1 text-xs font-medium text-green-700 dark:text-green-300">Call</Text>
         </Pressable>
 
         <Pressable
@@ -156,7 +156,7 @@ export function ContactHeader({ contact, onPhotoUpdated }: ContactHeaderProps) {
           className="items-center rounded-xl bg-indigo-50 dark:bg-indigo-950 px-4 py-2 active:bg-indigo-100"
         >
           <Ionicons name="mail" size={20} color={Colors.brand[600]} />
-          <Text className="mt-1 text-xs font-medium text-indigo-700">Email</Text>
+          <Text className="mt-1 text-xs font-medium text-indigo-700 dark:text-indigo-300">Email</Text>
         </Pressable>
 
         <Pressable
@@ -164,7 +164,7 @@ export function ContactHeader({ contact, onPhotoUpdated }: ContactHeaderProps) {
           className="items-center rounded-xl bg-purple-50 dark:bg-purple-950 px-4 py-2 active:bg-purple-100"
         >
           <Ionicons name="chatbubble" size={20} color="#7c3aed" />
-          <Text className="mt-1 text-xs font-medium text-purple-700">Message</Text>
+          <Text className="mt-1 text-xs font-medium text-purple-700 dark:text-purple-300">Message</Text>
         </Pressable>
       </View>
     </View>

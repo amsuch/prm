@@ -355,7 +355,7 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
           {/* First Name */}
           <View className="mb-3">
             <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">
-              First Name <Text className="text-red-500">*</Text>
+              First Name <Text className="text-red-500 dark:text-red-400">*</Text>
             </Text>
             <TextInput
               className={`rounded-lg border bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100 ${
@@ -368,7 +368,7 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
               autoCapitalize="words"
             />
             {getFieldError("first_name") && (
-              <Text className="mt-1 text-xs text-red-500">
+              <Text className="mt-1 text-xs text-red-500 dark:text-red-400">
                 {getFieldError("first_name")}
               </Text>
             )}
@@ -508,7 +508,7 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
               className="flex-row items-center rounded-lg bg-indigo-50 dark:bg-indigo-950 px-2.5 py-1"
             >
               <Ionicons name="add" size={14} color={Colors.brand[600]} />
-              <Text className="ml-0.5 text-xs font-medium text-indigo-700">Add</Text>
+              <Text className="ml-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-300">Add</Text>
             </Pressable>
           </View>
 
@@ -530,8 +530,8 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
                       <Text
                         className={`text-xs capitalize ${
                           entry.label === label
-                            ? "font-semibold text-indigo-600"
-                            : "text-stone-400"
+                            ? "font-semibold text-indigo-600 dark:text-indigo-400"
+                            : "text-stone-400 dark:text-stone-500"
                         }`}
                       >
                         {label}
@@ -550,7 +550,7 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
                 )}
               </View>
               <TextInput
-                className={`mt-1 rounded-lg border bg-white px-3 py-2.5 text-sm text-stone-900 ${
+                className={`mt-1 rounded-lg border bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100 ${
                   getFieldError(`email_${index}`)
                     ? "border-red-400"
                     : "border-stone-200"
@@ -563,7 +563,7 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
                 autoCapitalize="none"
               />
               {getFieldError(`email_${index}`) && (
-                <Text className="mt-1 text-xs text-red-500">
+                <Text className="mt-1 text-xs text-red-500 dark:text-red-400">
                   {getFieldError(`email_${index}`)}
                 </Text>
               )}
@@ -582,7 +582,7 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
               className="flex-row items-center rounded-lg bg-indigo-50 dark:bg-indigo-950 px-2.5 py-1"
             >
               <Ionicons name="add" size={14} color={Colors.brand[600]} />
-              <Text className="ml-0.5 text-xs font-medium text-indigo-700">Add</Text>
+              <Text className="ml-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-300">Add</Text>
             </Pressable>
           </View>
 
@@ -603,8 +603,8 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
                       <Text
                         className={`text-xs capitalize ${
                           entry.label === label
-                            ? "font-semibold text-indigo-600"
-                            : "text-stone-400"
+                            ? "font-semibold text-indigo-600 dark:text-indigo-400"
+                            : "text-stone-400 dark:text-stone-500"
                         }`}
                       >
                         {label}
@@ -623,7 +623,7 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
                 )}
               </View>
               <TextInput
-                className={`mt-1 rounded-lg border bg-white px-3 py-2.5 text-sm text-stone-900 ${
+                className={`mt-1 rounded-lg border bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100 ${
                   getFieldError(`phone_${index}`)
                     ? "border-red-400"
                     : "border-stone-200"
@@ -635,7 +635,7 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
                 keyboardType="phone-pad"
               />
               {getFieldError(`phone_${index}`) && (
-                <Text className="mt-1 text-xs text-red-500">
+                <Text className="mt-1 text-xs text-red-500 dark:text-red-400">
                   {getFieldError(`phone_${index}`)}
                 </Text>
               )}
@@ -654,7 +654,7 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
               className="flex-row items-center rounded-lg bg-indigo-50 dark:bg-indigo-950 px-2.5 py-1"
             >
               <Ionicons name="add" size={14} color={Colors.brand[600]} />
-              <Text className="ml-0.5 text-xs font-medium text-indigo-700">Add</Text>
+              <Text className="ml-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-300">Add</Text>
             </Pressable>
           </View>
 
@@ -681,8 +681,8 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
                       <Text
                         className={`text-xs capitalize ${
                           entry.label === label
-                            ? "font-semibold text-indigo-600"
-                            : "text-stone-400"
+                            ? "font-semibold text-indigo-600 dark:text-indigo-400"
+                            : "text-stone-400 dark:text-stone-500"
                         }`}
                       >
                         {label}
@@ -696,7 +696,7 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
                 </Pressable>
               </View>
               <TextInput
-                className={`mt-1 rounded-lg border bg-white px-3 py-2.5 text-sm text-stone-900 ${
+                className={`mt-1 rounded-lg border bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100 ${
                   getFieldError(`url_${index}`)
                     ? "border-red-400"
                     : "border-stone-200"
@@ -709,7 +709,7 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
                 autoCapitalize="none"
               />
               {getFieldError(`url_${index}`) && (
-                <Text className="mt-1 text-xs text-red-500">
+                <Text className="mt-1 text-xs text-red-500 dark:text-red-400">
                   {getFieldError(`url_${index}`)}
                 </Text>
               )}

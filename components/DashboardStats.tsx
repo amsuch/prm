@@ -70,7 +70,7 @@ export function DashboardStats({ stats, isLoading }: DashboardStatsProps) {
       <StatCard
         value={stats.totalContacts}
         label="Total Contacts"
-        colorClass="text-indigo-600"
+        colorClass="text-indigo-600 dark:text-indigo-400"
         textColor="text-stone-500 dark:text-stone-400"
         icon="people"
         iconColor="#2563eb"
@@ -79,7 +79,7 @@ export function DashboardStats({ stats, isLoading }: DashboardStatsProps) {
       <StatCard
         value={stats.contactedThisWeek}
         label="This Week"
-        colorClass="text-green-600"
+        colorClass="text-green-600 dark:text-green-400"
         textColor="text-stone-500 dark:text-stone-400"
         icon="chatbubble"
         iconColor="#16a34a"
@@ -88,7 +88,7 @@ export function DashboardStats({ stats, isLoading }: DashboardStatsProps) {
       <StatCard
         value={stats.staleContacts}
         label="Stale"
-        colorClass="text-amber-600"
+        colorClass="text-amber-600 dark:text-amber-400"
         textColor="text-stone-500 dark:text-stone-400"
         icon="alert-circle"
         iconColor="#d97706"

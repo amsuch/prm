@@ -191,7 +191,7 @@ function ProfileCard() {
               onPress={() => setIsEditing(true)}
               className="mt-3 rounded-lg border border-stone-200 px-4 py-1.5 active:bg-stone-50 dark:border-stone-800 dark:active:bg-stone-800"
             >
-              <Text className="text-sm font-medium text-indigo-600">
+              <Text className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
                 Edit Name
               </Text>
             </Pressable>
@@ -213,7 +213,7 @@ function TagRow({
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(tag.name);
-  const [editColor, setEditColor] = useState(tag.color ?? "#6b7280");
+  const [editColor, setEditColor] = useState(tag.color ?? Colors.gray[500]);
   const [isSaving, setIsSaving] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
 
@@ -239,7 +239,7 @@ function TagRow({
 
   const handleCancel = useCallback(() => {
     setEditName(tag.name);
-    setEditColor(tag.color ?? "#6b7280");
+    setEditColor(tag.color ?? Colors.gray[500]);
     setIsEditing(false);
     setShowColorPicker(false);
   }, [tag.name, tag.color]);
@@ -315,7 +315,7 @@ function TagRow({
         >
           <View
             className="h-3 w-3 rounded-full"
-            style={{ backgroundColor: tag.color ?? "#6b7280" }}
+            style={{ backgroundColor: tag.color ?? Colors.gray[500] }}
           />
         </Pressable>
         <Pressable
@@ -890,7 +890,7 @@ function CalendarManager() {
         >
           <View className="flex-row items-center">
             <Ionicons name="people-outline" size={16} color="#b45309" />
-            <Text className="ml-2 text-xs font-medium text-amber-800">
+            <Text className="ml-2 text-xs font-medium text-amber-800 dark:text-amber-300">
               {pendingSuggestionsCount} pending suggestion
               {pendingSuggestionsCount !== 1 ? "s" : ""} to review
             </Text>
@@ -1146,7 +1146,7 @@ function AIKeyManager() {
               onPress={() => { setSystemPrompt(DEFAULT_SYSTEM_PROMPT); setSaved(false); }}
               className="self-start"
             >
-              <Text className="text-xs text-indigo-600">Reset to default</Text>
+              <Text className="text-xs text-indigo-600 dark:text-indigo-400">Reset to default</Text>
             </Pressable>
           )}
         </View>
@@ -1189,7 +1189,7 @@ function AIKeyManager() {
       {saved && (
         <View className="mt-2 flex-row items-center">
           <Ionicons name="checkmark-circle" size={14} color={Colors.success} />
-          <Text className="ml-1 text-xs text-green-600">
+          <Text className="ml-1 text-xs text-green-600 dark:text-green-400">
             Saved — using {AI_MODELS[provider].find((m) => m.id === model)?.label ?? model}
           </Text>
         </View>

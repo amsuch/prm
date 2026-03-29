@@ -943,7 +943,7 @@ export default function AskScreen() {
                 />
                 <Text
                   className={`ml-1 text-xs font-semibold ${
-                    agentMode === "hitl" ? "text-amber-700" : "text-green-700"
+                    agentMode === "hitl" ? "text-amber-700 dark:text-amber-300" : "text-green-700 dark:text-green-300"
                   }`}
                 >
                   {agentMode === "hitl" ? "HITL" : "Auto"}
@@ -989,7 +989,7 @@ export default function AskScreen() {
           />
           <Text
             className={`ml-1 text-[11px] ${
-              agentMode === "hitl" ? "text-amber-800" : "text-green-800"
+              agentMode === "hitl" ? "text-amber-800 dark:text-amber-300" : "text-green-800 dark:text-green-300"
             }`}
           >
             {agentMode === "hitl"

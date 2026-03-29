@@ -112,12 +112,12 @@ export default function CalendarSuggestionsScreen() {
         <View className="flex-row items-start justify-between">
           <View className="flex-1">
             {suggestion.display_name && (
-              <Text className="text-sm font-semibold text-stone-900">
+              <Text className="text-sm font-semibold text-stone-900 dark:text-stone-100">
                 {suggestion.display_name}
               </Text>
             )}
             <Text
-              className={`text-sm ${suggestion.display_name ? "text-stone-500" : "font-semibold text-stone-900"}`}
+              className={`text-sm ${suggestion.display_name ? "text-stone-500 dark:text-stone-400" : "font-semibold text-stone-900 dark:text-stone-100"}`}
               numberOfLines={1}
             >
               {suggestion.email}
@@ -150,7 +150,7 @@ export default function CalendarSuggestionsScreen() {
               onPress={() => handleRestore(suggestion)}
               className="ml-2 rounded-lg border border-stone-200 px-3 py-1.5 active:bg-stone-50"
             >
-              <Text className="text-xs font-medium text-stone-600">Restore</Text>
+              <Text className="text-xs font-medium text-stone-600 dark:text-stone-400">Restore</Text>
             </Pressable>
           ) : (
             <View className="ml-2 flex-row gap-2">
@@ -188,10 +188,10 @@ export default function CalendarSuggestionsScreen() {
   return (
     <ScrollView className="flex-1 bg-stone-50">
       <View className="px-4 pt-5 pb-24">
-        <Text className="text-2xl font-bold text-stone-900">
+        <Text className="text-2xl font-bold text-stone-900 dark:text-stone-100">
           Calendar Suggestions
         </Text>
-        <Text className="mt-1 text-stone-500">
+        <Text className="mt-1 text-stone-500 dark:text-stone-400">
           Unmatched attendees from your calendar events
         </Text>
 
@@ -212,7 +212,7 @@ export default function CalendarSuggestionsScreen() {
               size={40}
               color={Colors.success}
             />
-            <Text className="mt-2 text-base font-semibold text-stone-900">
+            <Text className="mt-2 text-base font-semibold text-stone-900 dark:text-stone-100">
               All caught up!
             </Text>
             <Text className="mt-1 text-sm text-stone-500">
@@ -240,7 +240,7 @@ export default function CalendarSuggestionsScreen() {
                   />
                   <View className="ml-2 flex-1">
                     {s.display_name && (
-                      <Text className="text-sm font-medium text-stone-900">
+                      <Text className="text-sm font-medium text-stone-900 dark:text-stone-100">
                         {s.display_name}
                       </Text>
                     )}
@@ -255,7 +255,7 @@ export default function CalendarSuggestionsScreen() {
                       }
                       className="rounded-lg border border-stone-200 px-3 py-1.5 active:bg-stone-50"
                     >
-                      <Text className="text-xs font-medium text-indigo-600">
+                      <Text className="text-xs font-medium text-indigo-600 dark:text-indigo-400">
                         View
                       </Text>
                     </Pressable>

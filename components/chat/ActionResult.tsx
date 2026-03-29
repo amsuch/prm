@@ -23,71 +23,71 @@ export function ActionCard({
   > = {
     add: {
       icon: "checkmark-circle",
-      bgClass: "bg-green-50",
-      borderClass: "border-green-200",
+      bgClass: "bg-green-50 dark:bg-green-950",
+      borderClass: "border-green-200 dark:border-green-800",
       iconColor: "#10b981",
       label: "Contact Created",
     },
     bulk_tag: {
       icon: "pricetag",
-      bgClass: "bg-indigo-50",
-      borderClass: "border-indigo-200",
+      bgClass: "bg-indigo-50 dark:bg-indigo-950",
+      borderClass: "border-indigo-200 dark:border-indigo-800",
       iconColor: "#3b82f6",
       label: "Contacts Tagged",
     },
     bulk_update: {
       icon: "create",
-      bgClass: "bg-indigo-50",
-      borderClass: "border-indigo-200",
+      bgClass: "bg-indigo-50 dark:bg-indigo-950",
+      borderClass: "border-indigo-200 dark:border-indigo-800",
       iconColor: "#3b82f6",
       label: "Contacts Updated",
     },
     archive: {
       icon: "archive",
-      bgClass: "bg-amber-50",
-      borderClass: "border-amber-200",
+      bgClass: "bg-amber-50 dark:bg-amber-950",
+      borderClass: "border-amber-200 dark:border-amber-800",
       iconColor: "#f59e0b",
       label: "Contacts Archived",
     },
     enrich: {
       icon: "search",
-      bgClass: "bg-purple-50",
-      borderClass: "border-purple-200",
+      bgClass: "bg-purple-50 dark:bg-purple-950",
+      borderClass: "border-purple-200 dark:border-purple-800",
       iconColor: "#8b5cf6",
       label: "Contact Enrichment",
     },
     update: {
       icon: "create",
-      bgClass: "bg-indigo-50",
-      borderClass: "border-indigo-200",
+      bgClass: "bg-indigo-50 dark:bg-indigo-950",
+      borderClass: "border-indigo-200 dark:border-indigo-800",
       iconColor: "#3b82f6",
       label: "Contact Updated",
     },
     link: {
       icon: "link",
-      bgClass: "bg-cyan-50",
-      borderClass: "border-cyan-200",
+      bgClass: "bg-cyan-50 dark:bg-cyan-950",
+      borderClass: "border-cyan-200 dark:border-cyan-800",
       iconColor: "#0891b2",
       label: "Contacts Linked",
     },
     create_entity: {
       icon: "business",
-      bgClass: "bg-green-50",
-      borderClass: "border-green-200",
+      bgClass: "bg-green-50 dark:bg-green-950",
+      borderClass: "border-green-200 dark:border-green-800",
       iconColor: "#10b981",
       label: "Entity Created",
     },
     add_entity_person: {
       icon: "person-add",
-      bgClass: "bg-indigo-50",
-      borderClass: "border-indigo-200",
+      bgClass: "bg-indigo-50 dark:bg-indigo-950",
+      borderClass: "border-indigo-200 dark:border-indigo-800",
       iconColor: "#3b82f6",
       label: "Person Added",
     },
     promote_person: {
       icon: "arrow-up-circle",
-      bgClass: "bg-purple-50",
-      borderClass: "border-purple-200",
+      bgClass: "bg-purple-50 dark:bg-purple-950",
+      borderClass: "border-purple-200 dark:border-purple-800",
       iconColor: "#8b5cf6",
       label: "Person Promoted",
     },
@@ -112,13 +112,13 @@ export function ActionCard({
             size={18}
             color={config.iconColor}
           />
-          <Text className="ml-2 text-xs font-semibold uppercase text-stone-500">
+          <Text className="ml-2 text-xs font-semibold uppercase text-stone-500 dark:text-stone-400">
             {config.label}
           </Text>
         </View>
         <Pressable
           onPress={() => router.push(`/contact/${contact.id}`)}
-          className="flex-row items-center rounded-lg bg-white p-2.5 active:bg-stone-50"
+          className="flex-row items-center rounded-lg bg-white dark:bg-stone-800 p-2.5 active:bg-stone-50 dark:active:bg-stone-700"
         >
           <Avatar
             firstName={contact.first_name}
@@ -128,13 +128,13 @@ export function ActionCard({
           />
           <View className="ml-2.5 flex-1">
             <Text
-              className="text-sm font-semibold text-stone-900"
+              className="text-sm font-semibold text-stone-900 dark:text-stone-100"
               numberOfLines={1}
             >
               {fullName}
             </Text>
             {subtitle ? (
-              <Text className="text-xs text-stone-500" numberOfLines={1}>
+              <Text className="text-xs text-stone-500 dark:text-stone-400" numberOfLines={1}>
                 {subtitle}
               </Text>
             ) : null}
@@ -164,11 +164,11 @@ export function ActionCard({
           />
         </View>
         <View className="ml-3 flex-1">
-          <Text className="text-xs font-semibold uppercase text-stone-500">
+          <Text className="text-xs font-semibold uppercase text-stone-500 dark:text-stone-400">
             {config.label}
           </Text>
           {count !== undefined && (
-            <Text className="text-2xl font-bold text-stone-900">
+            <Text className="text-2xl font-bold text-stone-900 dark:text-stone-100">
               {count}
             </Text>
           )}

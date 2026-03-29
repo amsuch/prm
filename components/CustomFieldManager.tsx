@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Colors } from "@/constants/colors";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "@/lib/auth/ctx";
 import { useCustomFieldDefinitions } from "@/hooks/useCustomFieldDefinitions";
@@ -37,18 +38,18 @@ const FIELD_TYPE_LABELS: Record<FieldType, string> = {
 };
 
 const FIELD_TYPE_COLORS: Record<FieldType, { bg: string; text: string }> = {
-  text: { bg: "bg-indigo-100", text: "text-indigo-700" },
-  number: { bg: "bg-purple-100", text: "text-purple-700" },
-  date: { bg: "bg-green-100", text: "text-green-700" },
-  boolean: { bg: "bg-amber-100", text: "text-amber-700" },
-  select: { bg: "bg-cyan-100", text: "text-cyan-700" },
-  multi_select: { bg: "bg-pink-100", text: "text-pink-700" },
-  url: { bg: "bg-indigo-100", text: "text-indigo-700" },
+  text: { bg: "bg-indigo-100 dark:bg-indigo-900", text: "text-indigo-700 dark:text-indigo-300" },
+  number: { bg: "bg-purple-100 dark:bg-purple-900", text: "text-purple-700 dark:text-purple-300" },
+  date: { bg: "bg-green-100 dark:bg-green-900", text: "text-green-700 dark:text-green-300" },
+  boolean: { bg: "bg-amber-100 dark:bg-amber-900", text: "text-amber-700 dark:text-amber-300" },
+  select: { bg: "bg-cyan-100 dark:bg-cyan-900", text: "text-cyan-700 dark:text-cyan-300" },
+  multi_select: { bg: "bg-pink-100 dark:bg-pink-900", text: "text-pink-700 dark:text-pink-300" },
+  url: { bg: "bg-indigo-100 dark:bg-indigo-900", text: "text-indigo-700 dark:text-indigo-300" },
 };
 
 function FieldTypeBadge({ type }: { type: string }) {
   const fieldType = type as FieldType;
-  const colors = FIELD_TYPE_COLORS[fieldType] ?? { bg: "bg-stone-100", text: "text-stone-700" };
+  const colors = FIELD_TYPE_COLORS[fieldType] ?? { bg: "bg-stone-100 dark:bg-stone-800", text: "text-stone-700 dark:text-stone-300" };
   const label = FIELD_TYPE_LABELS[fieldType] ?? type;
 
   return (
@@ -207,7 +208,7 @@ export function CustomFieldManager() {
       {/* Existing fields */}
       {definitions.length === 0 && !isAdding && (
         <View className="items-center py-6">
-          <Ionicons name="list-outline" size={28} color="#d1d5db" />
+          <Ionicons name="list-outline" size={28} color={Colors.gray[300]} />
           <Text className="mt-1 text-sm text-stone-400 dark:text-stone-500">
             No custom fields defined
           </Text>
@@ -279,7 +280,7 @@ export function CustomFieldManager() {
           )}
 
           {saveError && (
-            <Text className="mb-2 text-xs text-red-500">{saveError}</Text>
+            <Text className="mb-2 text-xs text-red-500 dark:text-red-400">{saveError}</Text>
           )}
 
           {/* Action buttons */}
@@ -320,7 +321,7 @@ export function CustomFieldManager() {
             className="flex-row items-center justify-center rounded-lg border border-dashed border-stone-300 dark:border-stone-600 py-2.5 active:bg-stone-50 dark:active:bg-stone-800"
           >
             <Ionicons name="add" size={18} color="#2563eb" />
-            <Text className="ml-1 text-sm font-medium text-indigo-600">
+            <Text className="ml-1 text-sm font-medium text-indigo-600 dark:text-indigo-400">
               Add Field
             </Text>
           </Pressable>

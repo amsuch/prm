@@ -161,7 +161,7 @@ export default function ContactsScreen() {
               onPress={handleClearFilters}
               className="mt-4 rounded-lg border border-stone-200 bg-white px-5 py-2 active:bg-stone-50 dark:border-stone-800 dark:bg-stone-900 dark:active:bg-stone-800"
             >
-              <Text className="text-sm font-medium text-indigo-600">Clear Filters</Text>
+              <Text className="text-sm font-medium text-indigo-600 dark:text-indigo-400">Clear Filters</Text>
             </Pressable>
           )}
         </View>
@@ -173,10 +173,10 @@ export default function ContactsScreen() {
         <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-indigo-50 dark:bg-indigo-950">
           <Ionicons name="people-outline" size={32} color={Colors.brand[600]} />
         </View>
-        <Text className="text-center text-lg font-semibold text-stone-800 dark:text-stone-200">
+        <Text className="text-center text-xl font-bold text-stone-800 dark:text-stone-200">
           No contacts yet
         </Text>
-        <Text className="mt-2 text-center text-sm text-stone-400 dark:text-stone-500">
+        <Text className="mt-2 text-center text-sm leading-relaxed text-stone-400 dark:text-stone-500">
           Add your first contact or import from LinkedIn / your device
         </Text>
         <View className="mt-5 flex-row gap-3">

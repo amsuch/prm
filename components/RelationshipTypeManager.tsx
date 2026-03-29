@@ -10,16 +10,17 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Colors } from "@/constants/colors";
 import { useRelationshipTypes, type RelationshipType } from "@/hooks/useRelationshipTypes";
 
 const CATEGORIES = ["Family", "Professional", "Social", "Other"] as const;
 type Category = (typeof CATEGORIES)[number];
 
 const CATEGORY_COLORS: Record<Category, { bg: string; text: string }> = {
-  Family: { bg: "bg-pink-100", text: "text-pink-700" },
-  Professional: { bg: "bg-indigo-100", text: "text-indigo-700" },
-  Social: { bg: "bg-green-100", text: "text-green-700" },
-  Other: { bg: "bg-stone-100", text: "text-stone-700" },
+  Family: { bg: "bg-pink-100 dark:bg-pink-900", text: "text-pink-700 dark:text-pink-300" },
+  Professional: { bg: "bg-indigo-100 dark:bg-indigo-900", text: "text-indigo-700 dark:text-indigo-300" },
+  Social: { bg: "bg-green-100 dark:bg-green-900", text: "text-green-700 dark:text-green-300" },
+  Other: { bg: "bg-stone-100 dark:bg-stone-800", text: "text-stone-700 dark:text-stone-300" },
 };
 
 function CategoryBadge({ category }: { category: string }) {
@@ -56,8 +57,8 @@ function TypeRow({
             <CategoryBadge category={type.category} />
           </View>
           {type.is_symmetric && (
-            <View className="ml-1.5 rounded-md bg-amber-50 px-1.5 py-0.5">
-              <Text className="text-xs text-amber-600">symmetric</Text>
+            <View className="ml-1.5 rounded-md bg-amber-50 dark:bg-amber-950 px-1.5 py-0.5">
+              <Text className="text-xs text-amber-600 dark:text-amber-400">symmetric</Text>
             </View>
           )}
         </View>
@@ -198,7 +199,7 @@ export function RelationshipTypeManager() {
     <View>
       {types.length === 0 && !isAdding && (
         <View className="items-center py-6">
-          <Ionicons name="people-outline" size={28} color="#d1d5db" />
+          <Ionicons name="people-outline" size={28} color={Colors.gray[300]} />
           <Text className="mt-1 text-sm text-stone-400 dark:text-stone-500">
             No relationship types defined
           </Text>
@@ -293,13 +294,13 @@ export function RelationshipTypeManager() {
             <Switch
               value={isSymmetric}
               onValueChange={handleSymmetricToggle}
-              trackColor={{ false: "#d1d5db", true: "#93c5fd" }}
+              trackColor={{ false: Colors.gray[300], true: Colors.brand[300] }}
               thumbColor={isSymmetric ? "#2563eb" : "#f4f4f5"}
             />
           </View>
 
           {saveError && (
-            <Text className="mb-2 text-xs text-red-500">{saveError}</Text>
+            <Text className="mb-2 text-xs text-red-500 dark:text-red-400">{saveError}</Text>
           )}
 
           {/* Action buttons */}
@@ -341,7 +342,7 @@ export function RelationshipTypeManager() {
             className="flex-row items-center justify-center rounded-lg border border-dashed border-stone-300 dark:border-stone-600 py-2.5 active:bg-stone-50 dark:active:bg-stone-800"
           >
             <Ionicons name="add" size={18} color="#2563eb" />
-            <Text className="ml-1 text-sm font-medium text-indigo-600">
+            <Text className="ml-1 text-sm font-medium text-indigo-600 dark:text-indigo-400">
               Add Type
             </Text>
           </Pressable>

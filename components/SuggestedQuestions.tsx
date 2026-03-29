@@ -38,7 +38,7 @@ export function SuggestedQuestions({ onSelect }: SuggestedQuestionsProps) {
           onPress={() => onSelect(question)}
           className="rounded-full border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950 px-4 py-2 active:bg-indigo-100"
         >
-          <Text className="text-sm font-medium text-indigo-700">
+          <Text className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
             {question}
           </Text>
         </Pressable>

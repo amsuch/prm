@@ -29,32 +29,32 @@ export function InteractionCard({
         : "";
 
   return (
-    <View className="mt-3 rounded-xl border border-stone-100 bg-stone-50 p-3">
+    <View className="mt-3 rounded-xl border border-stone-100 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 p-3">
       <View className="flex-row items-center">
         <Ionicons
           name={iconName as keyof typeof Ionicons.glyphMap}
           size={18}
           color={Colors.brand[600]}
         />
-        <Text className="ml-2 text-sm font-semibold capitalize text-stone-900">
+        <Text className="ml-2 text-sm font-semibold capitalize text-stone-900 dark:text-stone-100">
           {interaction.type}
         </Text>
         {directionLabel ? (
-          <Text className="ml-2 text-xs text-stone-400">
+          <Text className="ml-2 text-xs text-stone-400 dark:text-stone-500">
             ({directionLabel})
           </Text>
         ) : null}
-        <Text className="ml-auto text-xs text-stone-400">
+        <Text className="ml-auto text-xs text-stone-400 dark:text-stone-500">
           {formatDate(interaction.occurred_at)}
         </Text>
       </View>
       {interaction.title ? (
-        <Text className="mt-1.5 text-sm font-medium text-stone-800">
+        <Text className="mt-1.5 text-sm font-medium text-stone-800 dark:text-stone-200">
           {interaction.title}
         </Text>
       ) : null}
       {interaction.body ? (
-        <Text className="mt-1 text-sm text-stone-600" numberOfLines={3}>
+        <Text className="mt-1 text-sm text-stone-600 dark:text-stone-400" numberOfLines={3}>
           {interaction.body}
         </Text>
       ) : null}

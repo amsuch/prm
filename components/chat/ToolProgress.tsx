@@ -1,5 +1,6 @@
 import { View, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Colors } from "@/constants/colors";
 
 export type ToolProgressItem = {
   name: string;
@@ -47,10 +48,10 @@ export function ToolProgressList({
               : "ellipsis-horizontal-circle";
         const statusColor =
           tp.status === "done"
-            ? "#10b981"
+            ? Colors.success
             : tp.status === "error"
-              ? "#ef4444"
-              : "#9ca3af";
+              ? Colors.error
+              : Colors.gray[400];
 
         // Extract a summary from arguments for context
         let detail = "";
@@ -75,10 +76,10 @@ export function ToolProgressList({
             <Ionicons
               name={toolInfo.icon as keyof typeof Ionicons.glyphMap}
               size={13}
-              color="#6b7280"
+              color={Colors.gray[500]}
               style={{ marginLeft: 4 }}
             />
-            <Text className="ml-1.5 text-xs text-stone-500" numberOfLines={1}>
+            <Text className="ml-1.5 text-xs text-stone-500 dark:text-stone-400" numberOfLines={1}>
               {toolInfo.label}
               {detail}
               {tp.status === "running" ? "..." : ""}

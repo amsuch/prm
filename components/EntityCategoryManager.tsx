@@ -137,7 +137,7 @@ function CategoryRow({
         </View>
 
         {editError && (
-          <Text className="mb-2 text-xs text-red-500">{editError}</Text>
+          <Text className="mb-2 text-xs text-red-500 dark:text-red-400">{editError}</Text>
         )}
 
         {/* Save / Cancel buttons */}
@@ -368,7 +368,7 @@ export function EntityCategoryManager() {
           </View>
 
           {saveError && (
-            <Text className="mb-2 text-xs text-red-500">{saveError}</Text>
+            <Text className="mb-2 text-xs text-red-500 dark:text-red-400">{saveError}</Text>
           )}
 
           {/* Action buttons */}
@@ -409,7 +409,7 @@ export function EntityCategoryManager() {
             className="flex-row items-center justify-center rounded-lg border border-dashed border-stone-300 dark:border-stone-600 py-2.5 active:bg-stone-50 dark:active:bg-stone-800"
           >
             <Ionicons name="add" size={18} color={Colors.brand[600]} />
-            <Text className="ml-1 text-sm font-medium text-indigo-600">
+            <Text className="ml-1 text-sm font-medium text-indigo-600 dark:text-indigo-400">
               Add Category
             </Text>
           </Pressable>

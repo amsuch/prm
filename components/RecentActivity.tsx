@@ -1,6 +1,7 @@
 import { View, Text, Pressable } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { Colors } from "@/constants/colors";
 import { formatRelativeTime } from "@/lib/utils";
 import { Avatar } from "@/components/Avatar";
 import type { RecentInteraction } from "@/hooks/useDashboard";
@@ -27,9 +28,9 @@ const INTERACTION_COLORS: Record<string, string> = {
   meeting: "#059669",
   text: "#0891b2",
   social: "#e11d48",
-  note: "#6b7280",
+  note: Colors.gray[500],
   gift: "#d97706",
-  other: "#6b7280",
+  other: Colors.gray[500],
 };
 
 function InteractionRow({ interaction }: { interaction: RecentInteraction }) {
@@ -99,7 +100,7 @@ export function RecentActivity({ interactions, isLoading }: RecentActivityProps)
   if (interactions.length === 0) {
     return (
       <View className="items-center rounded-xl bg-white py-12 shadow-sm">
-        <Ionicons name="time-outline" size={40} color="#d1d5db" />
+        <Ionicons name="time-outline" size={40} color={Colors.gray[300]} />
         <Text className="mt-2 text-stone-400 dark:text-stone-500">No activity yet</Text>
         <Text className="mt-1 text-sm text-stone-400 dark:text-stone-500">
           Log interactions to see them here

@@ -195,11 +195,11 @@ export default function DeviceContactsScreen() {
                       size={20}
                       color="#d97706"
                     />
-                    <Text className="flex-1 text-sm font-medium text-amber-800">
+                    <Text className="flex-1 text-sm font-medium text-amber-800 dark:text-amber-300">
                       Permission Denied
                     </Text>
                   </View>
-                  <Text className="mt-2 text-xs leading-4 text-amber-700">
+                  <Text className="mt-2 text-xs leading-4 text-amber-700 dark:text-amber-300">
                     Contact access was denied. Please enable it in your device
                     settings to use this feature.
                   </Text>
@@ -220,7 +220,7 @@ export default function DeviceContactsScreen() {
                   onPress={handleRequestPermission}
                 >
                   <Ionicons name="refresh-outline" size={20} color="#2563eb" />
-                  <Text className="text-base font-semibold text-indigo-600">
+                  <Text className="text-base font-semibold text-indigo-600 dark:text-indigo-400">
                     Try Again
                   </Text>
                 </Pressable>
@@ -343,7 +343,7 @@ export default function DeviceContactsScreen() {
               onPress={handleReset}
             >
               <Ionicons name="refresh-outline" size={20} color="#2563eb" />
-              <Text className="text-base font-semibold text-indigo-600">
+              <Text className="text-base font-semibold text-indigo-600 dark:text-indigo-400">
                 Import More Contacts
               </Text>
             </Pressable>

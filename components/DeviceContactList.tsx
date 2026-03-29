@@ -7,6 +7,7 @@ import {
   TextInput,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Colors } from "@/constants/colors";
 import type { DeviceContact } from "@/lib/contacts";
 import { getInitials } from "@/lib/utils";
 
@@ -112,7 +113,7 @@ export function DeviceContactList({
       {/* Search + controls */}
       <View className="border-b border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 px-4 py-3">
         <View className="mb-3 flex-row items-center rounded-lg border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 px-3">
-          <Ionicons name="search-outline" size={18} color="#9ca3af" />
+          <Ionicons name="search-outline" size={18} color={Colors.gray[400]} />
           <TextInput
             className="ml-2 flex-1 py-2.5 text-sm text-stone-900 dark:text-stone-100"
             placeholder="Search contacts..."
@@ -124,7 +125,7 @@ export function DeviceContactList({
           />
           {search.length > 0 && (
             <Pressable onPress={() => setSearch("")}>
-              <Ionicons name="close-circle" size={18} color="#9ca3af" />
+              <Ionicons name="close-circle" size={18} color={Colors.gray[400]} />
             </Pressable>
           )}
         </View>
@@ -138,7 +139,7 @@ export function DeviceContactList({
             className="rounded-md px-3 py-1.5 active:bg-stone-100 dark:active:bg-stone-800"
             onPress={allSelected ? onDeselectAll : onSelectAll}
           >
-            <Text className="text-xs font-semibold text-indigo-600">
+            <Text className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
               {allSelected ? "Deselect All" : "Select All"}
             </Text>
           </Pressable>
@@ -154,7 +155,7 @@ export function DeviceContactList({
         contentContainerStyle={filteredContacts.length === 0 ? { flex: 1 } : undefined}
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center py-12">
-            <Ionicons name="search-outline" size={40} color="#d1d5db" />
+            <Ionicons name="search-outline" size={40} color={Colors.gray[300]} />
             <Text className="mt-3 text-sm text-stone-400 dark:text-stone-500">
               {search
                 ? "No contacts match your search"

@@ -368,7 +368,7 @@ function SectionHeader({
       onPress={() => onToggle(sectionId)}
       className="mx-4 mt-4 mb-2 flex-row items-center justify-between"
     >
-      <Text className="text-sm font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
+      <Text className="text-sm font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
         {title}
       </Text>
       <Ionicons

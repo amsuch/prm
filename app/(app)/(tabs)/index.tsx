@@ -33,8 +33,8 @@ export default function HomeScreen() {
       <View className="px-4 pt-5 pb-24">
         {/* Greeting */}
         <Animated.View entering={FadeIn.duration(300)}>
-          <Text className="text-2xl font-bold text-stone-900 dark:text-stone-100">Hi, {name}</Text>
-          <Text className="mt-1 text-stone-500 dark:text-stone-400">
+          <Text className="text-3xl font-bold text-stone-900 dark:text-stone-100">Hi, {name}</Text>
+          <Text className="mt-1 text-base text-stone-500 dark:text-stone-400">
             Your relationship dashboard
           </Text>
         </Animated.View>
@@ -75,7 +75,7 @@ export default function HomeScreen() {
 
         {/* Stats */}
         <Animated.View entering={FadeInUp.delay(200).duration(400).springify()}>
-          <Text className="mb-3 mt-8 text-lg font-semibold text-stone-900 dark:text-stone-100">
+          <Text className="mb-1 mt-8 text-lg font-semibold tracking-tight text-stone-900 dark:text-stone-100">
             Overview
           </Text>
           <DashboardStats stats={stats} isLoading={isLoading} />
@@ -90,7 +90,7 @@ export default function HomeScreen() {
               className="mt-6 flex-row items-center rounded-xl bg-amber-50 px-4 py-3.5 shadow-sm active:bg-amber-100 dark:bg-amber-950 dark:border dark:border-stone-800 dark:active:bg-amber-900"
             >
               <Ionicons name="calendar-outline" size={20} color="#b45309" />
-              <Text className="ml-2.5 flex-1 text-sm font-medium text-amber-800">
+              <Text className="ml-2.5 flex-1 text-sm font-medium text-amber-800 dark:text-amber-300">
                 {pendingSuggestionsCount} calendar suggestion
                 {pendingSuggestionsCount !== 1 ? "s" : ""} to review
               </Text>
@@ -101,7 +101,7 @@ export default function HomeScreen() {
 
         {/* Recent Activity */}
         <Animated.View entering={FadeInUp.delay(300).duration(400).springify()}>
-          <Text className="mb-3 mt-8 text-lg font-semibold text-stone-900 dark:text-stone-100">
+          <Text className="mb-1 mt-8 text-lg font-semibold tracking-tight text-stone-900 dark:text-stone-100">
             Recent Activity
           </Text>
           <RecentActivity
@@ -113,7 +113,7 @@ export default function HomeScreen() {
         {/* Upcoming Birthdays */}
         {upcomingBirthdays.length > 0 && (
           <Animated.View entering={FadeInUp.delay(400).duration(400).springify()}>
-            <Text className="mb-3 mt-8 text-lg font-semibold text-stone-900 dark:text-stone-100">
+            <Text className="mb-1 mt-8 text-lg font-semibold tracking-tight text-stone-900 dark:text-stone-100">
               Upcoming Birthdays
             </Text>
             <View className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-stone-900 dark:border dark:border-stone-800">

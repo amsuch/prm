@@ -265,7 +265,7 @@ export default function SignIn() {
             <View className="mb-3 h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600">
               <Text className="text-xl font-bold text-white">P</Text>
             </View>
-            <Text className="text-2xl font-bold text-stone-900 dark:text-stone-100">
+            <Text className="text-3xl font-bold tracking-tight text-stone-900 dark:text-stone-100">
               PRM
             </Text>
             <Text className="mt-1 text-sm text-stone-500 dark:text-stone-400">

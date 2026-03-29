@@ -8,6 +8,7 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Colors } from "@/constants/colors";
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system";
 import { router } from "expo-router";
@@ -255,7 +256,7 @@ export default function CSVImportScreen() {
               className="rounded-md p-2 active:bg-stone-100 dark:active:bg-stone-700"
               onPress={handleReset}
             >
-              <Ionicons name="close-circle-outline" size={22} color="#9ca3af" />
+              <Ionicons name="close-circle-outline" size={22} color={Colors.gray[400]} />
             </Pressable>
           </View>
 
@@ -328,7 +329,7 @@ export default function CSVImportScreen() {
                 onPress={handleReset}
               >
                 <Ionicons name="cloud-upload-outline" size={20} color="#2563eb" />
-                <Text className="text-base font-semibold text-indigo-600">
+                <Text className="text-base font-semibold text-indigo-600 dark:text-indigo-400">
                   Import Another File
                 </Text>
               </Pressable>
@@ -442,7 +443,7 @@ function StepIndicator({
                 ) : (
                   <Text
                     className={`text-xs font-bold ${
-                      isActive ? "text-indigo-600" : "text-stone-400 dark:text-stone-500"
+                      isActive ? "text-indigo-600 dark:text-indigo-400" : "text-stone-400 dark:text-stone-500"
                     }`}
                   >
                     {idx + 1}
@@ -459,7 +460,7 @@ function StepIndicator({
             </View>
             <Text
               className={`mt-1 text-center text-xs ${
-                isActive ? "font-semibold text-indigo-600" : "text-stone-400 dark:text-stone-500"
+                isActive ? "font-semibold text-indigo-600 dark:text-indigo-400" : "text-stone-400 dark:text-stone-500"
               }`}
               numberOfLines={1}
             >

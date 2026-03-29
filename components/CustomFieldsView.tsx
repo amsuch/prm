@@ -95,7 +95,7 @@ export function CustomFieldsView({
                 <Pressable
                   onPress={() => Linking.openURL(display)}
                 >
-                  <Text className="mt-0.5 text-sm text-indigo-600 underline">
+                  <Text className="mt-0.5 text-sm text-indigo-600 dark:text-indigo-400 underline">
                     {display}
                   </Text>
                 </Pressable>

@@ -40,7 +40,7 @@ export function ContactCard({ contact }: ContactCardProps) {
           {fullName}
         </Text>
         {subtitle ? (
-          <Text className="mt-0.5 text-sm text-stone-500 dark:text-stone-400" numberOfLines={1}>
+          <Text className="mt-0.5 text-xs text-stone-500 dark:text-stone-400" numberOfLines={1}>
             {subtitle}
           </Text>
         ) : null}
@@ -51,7 +51,7 @@ export function ContactCard({ contact }: ContactCardProps) {
                 key={tag.id}
                 className="rounded-full bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5"
               >
-                <Text className="text-xs font-medium text-indigo-700">
+                <Text className="text-xs font-medium text-indigo-700 dark:text-indigo-300">
                   {tag.name}
                 </Text>
               </View>

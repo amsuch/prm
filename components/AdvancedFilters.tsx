@@ -108,7 +108,7 @@ export function AdvancedFilters({
             Filters
           </Text>
           <Pressable onPress={handleClear} hitSlop={8}>
-            <Text className="text-sm font-medium text-indigo-600">
+            <Text className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
               Clear All
             </Text>
           </Pressable>
@@ -144,7 +144,7 @@ export function AdvancedFilters({
                     >
                       <Text
                         className={`text-sm font-medium ${
-                          isSelected ? "text-indigo-700" : "text-stone-700 dark:text-stone-300"
+                          isSelected ? "text-indigo-700 dark:text-indigo-300" : "text-stone-700 dark:text-stone-300"
                         }`}
                       >
                         {tag.name}
@@ -260,7 +260,7 @@ export function AdvancedFilters({
                     <Text
                       className={`text-sm ${
                         isSelected
-                          ? "font-medium text-indigo-700"
+                          ? "font-medium text-indigo-700 dark:text-indigo-300"
                           : "text-stone-600 dark:text-stone-400"
                       }`}
                     >
@@ -298,7 +298,7 @@ export function AdvancedFilters({
                     <Text
                       className={`text-sm ${
                         isSelected
-                          ? "font-medium text-indigo-700"
+                          ? "font-medium text-indigo-700 dark:text-indigo-300"
                           : "text-stone-600 dark:text-stone-400"
                       }`}
                     >
@@ -336,7 +336,7 @@ export function AdvancedFilters({
                     <Text
                       className={`text-sm ${
                         isSelected
-                          ? "font-medium text-indigo-700"
+                          ? "font-medium text-indigo-700 dark:text-indigo-300"
                           : "text-stone-600 dark:text-stone-400"
                       }`}
                     >
@@ -368,13 +368,13 @@ export function AdvancedFilters({
                     }
                     className={`rounded-full border px-3 py-1.5 ${
                       isSelected
-                        ? "border-indigo-500 bg-indigo-50"
-                        : "border-stone-200 bg-white"
+                        ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950"
+                        : "border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900"
                     }`}
                   >
                     <Text
                       className={`text-sm font-medium ${
-                        isSelected ? "text-indigo-700" : "text-stone-700 dark:text-stone-300"
+                        isSelected ? "text-indigo-700 dark:text-indigo-300" : "text-stone-700 dark:text-stone-300"
                       }`}
                     >
                       {option.label}
@@ -404,13 +404,13 @@ export function AdvancedFilters({
                     }
                     className={`rounded-full border px-3 py-1.5 ${
                       isSelected
-                        ? "border-indigo-500 bg-indigo-50"
-                        : "border-stone-200 bg-white"
+                        ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950"
+                        : "border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900"
                     }`}
                   >
                     <Text
                       className={`text-sm font-medium ${
-                        isSelected ? "text-indigo-700" : "text-stone-700 dark:text-stone-300"
+                        isSelected ? "text-indigo-700 dark:text-indigo-300" : "text-stone-700 dark:text-stone-300"
                       }`}
                     >
                       {option.label}
@@ -440,13 +440,13 @@ export function AdvancedFilters({
                     }
                     className={`rounded-full border px-3 py-1.5 ${
                       isSelected
-                        ? "border-indigo-500 bg-indigo-50"
-                        : "border-stone-200 bg-white"
+                        ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950"
+                        : "border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900"
                     }`}
                   >
                     <Text
                       className={`text-sm font-medium ${
-                        isSelected ? "text-indigo-700" : "text-stone-700 dark:text-stone-300"
+                        isSelected ? "text-indigo-700 dark:text-indigo-300" : "text-stone-700 dark:text-stone-300"
                       }`}
                     >
                       {option.label}

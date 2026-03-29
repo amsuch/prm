@@ -64,12 +64,12 @@ export function ColumnMapper({
                     <Text className="text-sm font-medium text-stone-900 dark:text-stone-100">
                       {label}
                       {key === "first_name" && (
-                        <Text className="text-red-500"> *</Text>
+                        <Text className="text-red-500 dark:text-red-400"> *</Text>
                       )}
                     </Text>
                     {isMapped && (
-                      <View className="rounded-full bg-green-100 px-2 py-0.5">
-                        <Text className="text-xs font-medium text-green-700">
+                      <View className="rounded-full bg-green-100 dark:bg-green-900 px-2 py-0.5">
+                        <Text className="text-xs font-medium text-green-700 dark:text-green-300">
                           Mapped
                         </Text>
                       </View>
@@ -83,7 +83,7 @@ export function ColumnMapper({
                 <View className="ml-3 min-w-24 items-end">
                   <Text
                     className={`text-sm ${
-                      isMapped ? "font-medium text-indigo-600" : "text-stone-400 dark:text-stone-500"
+                      isMapped ? "font-medium text-indigo-600 dark:text-indigo-400" : "text-stone-400 dark:text-stone-500"
                     }`}
                     numberOfLines={1}
                   >
@@ -127,7 +127,7 @@ export function ColumnMapper({
                         <Text
                           className={`text-sm ${
                             isSelected
-                              ? "font-semibold text-indigo-600"
+                              ? "font-semibold text-indigo-600 dark:text-indigo-400"
                               : "text-stone-700 dark:text-stone-300"
                           }`}
                         >

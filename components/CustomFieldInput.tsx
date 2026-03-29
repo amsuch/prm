@@ -179,7 +179,7 @@ export function CustomFieldInput({
     <View className="mb-4">
       <Text className="mb-1.5 text-sm font-medium text-stone-700 dark:text-stone-300">
         {name}
-        {is_required && <Text className="text-red-500"> *</Text>}
+        {is_required && <Text className="text-red-500 dark:text-red-400"> *</Text>}
       </Text>
       {renderInput()}
     </View>

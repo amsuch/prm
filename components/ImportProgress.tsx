@@ -38,7 +38,7 @@ export function ImportProgress({ progress, label }: ImportProgressProps) {
             {progress.current} of {progress.total} processed
           </Text>
         </View>
-        <Text className="text-lg font-bold text-indigo-600">{percentage}%</Text>
+        <Text className="text-lg font-bold text-indigo-600 dark:text-indigo-400">{percentage}%</Text>
       </View>
 
       {/* Progress bar */}
@@ -53,34 +53,34 @@ export function ImportProgress({ progress, label }: ImportProgressProps) {
 
       {/* Stats */}
       <View className="flex-row gap-4">
-        <View className="flex-1 items-center rounded-lg bg-green-50 py-2.5">
-          <Text className="text-lg font-bold text-green-700">
+        <View className="flex-1 items-center rounded-lg bg-green-50 dark:bg-green-950 py-2.5">
+          <Text className="text-lg font-bold text-green-700 dark:text-green-300">
             {progress.imported}
           </Text>
-          <Text className="text-xs text-green-600">Imported</Text>
+          <Text className="text-xs text-green-600 dark:text-green-400">Imported</Text>
         </View>
-        <View className="flex-1 items-center rounded-lg bg-amber-50 py-2.5">
-          <Text className="text-lg font-bold text-amber-700">
+        <View className="flex-1 items-center rounded-lg bg-amber-50 dark:bg-amber-950 py-2.5">
+          <Text className="text-lg font-bold text-amber-700 dark:text-amber-300">
             {progress.skipped}
           </Text>
-          <Text className="text-xs text-amber-600">Skipped</Text>
+          <Text className="text-xs text-amber-600 dark:text-amber-400">Skipped</Text>
         </View>
-        <View className="flex-1 items-center rounded-lg bg-red-50 py-2.5">
-          <Text className="text-lg font-bold text-red-700">
+        <View className="flex-1 items-center rounded-lg bg-red-50 dark:bg-red-950 py-2.5">
+          <Text className="text-lg font-bold text-red-700 dark:text-red-300">
             {progress.errors.length}
           </Text>
-          <Text className="text-xs text-red-600">Errors</Text>
+          <Text className="text-xs text-red-600 dark:text-red-400">Errors</Text>
         </View>
       </View>
 
       {/* Errors list */}
       {progress.errors.length > 0 && (
-        <View className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3">
-          <Text className="mb-1 text-xs font-semibold text-red-700">
+        <View className="mt-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 p-3">
+          <Text className="mb-1 text-xs font-semibold text-red-700 dark:text-red-300">
             Errors:
           </Text>
           {progress.errors.slice(0, 5).map((error, idx) => (
-            <Text key={idx} className="text-xs text-red-600">
+            <Text key={idx} className="text-xs text-red-600 dark:text-red-400">
               {error}
             </Text>
           ))}
