@@ -1,12 +1,13 @@
 /**
- * LLM client for calling OpenAI and Anthropic APIs directly via fetch.
- * Runs client-side in React Native — no server SDK needed.
+ * LLM client — calls the `llm-proxy` Supabase Edge Function.
+ * The API key is stored server-side in Vault; the client never sees it.
  */
+
+import { supabase } from "@/lib/supabase";
 
 export type LLMConfig = {
   provider: "openai" | "anthropic";
   model: string;
-  apiKey: string;
   systemPrompt: string;
 };
 
@@ -38,116 +39,68 @@ export async function callLLM(
   context?: string,
 ): Promise<LLMResponse> {
   const safeContext = context ? sanitizeContext(context) : undefined;
-  if (config.provider === "anthropic") {
-    return callAnthropic(config, messages, safeContext);
-  }
-  return callOpenAI(config, messages, safeContext);
-}
-
-async function callOpenAI(
-  config: LLMConfig,
-  messages: LLMMessage[],
-  context?: string,
-): Promise<LLMResponse> {
-  const systemContent = context
-    ? `${config.systemPrompt}\n\n## Current Contact Data Context\n${context}`
+  const systemContent = safeContext
+    ? `${config.systemPrompt}\n\n## Current Contact Data Context\n${safeContext}`
     : config.systemPrompt;
 
-  const apiMessages = [
-    { role: "system" as const, content: systemContent },
-    ...messages.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
-  ];
+  let apiMessages: unknown[];
+  let system: string | undefined;
 
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${config.apiKey}`,
-    },
-    body: JSON.stringify({
-      model: config.model,
-      messages: apiMessages,
-      max_completion_tokens: 1024,
-      temperature: 0.3,
-    }),
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    const msg = (err as { error?: { message?: string } })?.error?.message ?? `OpenAI API error: ${res.status}`;
-    throw new Error(msg);
+  if (config.provider === "openai") {
+    apiMessages = [
+      { role: "system", content: systemContent },
+      ...messages.map((m) => ({ role: m.role, content: m.content })),
+    ];
+  } else {
+    system = systemContent;
+    apiMessages = messages.map((m) => ({ role: m.role, content: m.content }));
   }
 
-  const data = await res.json();
-  const choice = data.choices?.[0];
-
-  return {
-    content: choice?.message?.content ?? "No response from model.",
-    model: data.model ?? config.model,
-    usage: data.usage
-      ? { input_tokens: data.usage.prompt_tokens, output_tokens: data.usage.completion_tokens }
-      : undefined,
-  };
-}
-
-async function callAnthropic(
-  config: LLMConfig,
-  messages: LLMMessage[],
-  context?: string,
-): Promise<LLMResponse> {
-  const systemContent = context
-    ? `${config.systemPrompt}\n\n## Current Contact Data Context\n${context}`
-    : config.systemPrompt;
-
-  const apiMessages = messages.map((m) => ({
-    role: m.role as "user" | "assistant",
-    content: m.content,
-  }));
-
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": config.apiKey,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true",
-    },
-    body: JSON.stringify({
+  const { data, error } = await supabase.functions.invoke("llm-proxy", {
+    body: {
+      provider: config.provider,
       model: config.model,
-      system: systemContent,
       messages: apiMessages,
+      system,
       max_tokens: 1024,
       temperature: 0.3,
-    }),
+    },
   });
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    const msg = (err as { error?: { message?: string } })?.error?.message ?? `Anthropic API error: ${res.status}`;
-    throw new Error(msg);
+  if (error) {
+    throw new Error(error.message ?? "LLM proxy error");
   }
 
-  const data = await res.json();
-  const textBlock = data.content?.find((b: { type: string }) => b.type === "text");
-
-  return {
-    content: textBlock?.text ?? "No response from model.",
-    model: data.model ?? config.model,
-    usage: data.usage
-      ? { input_tokens: data.usage.input_tokens, output_tokens: data.usage.output_tokens }
-      : undefined,
-  };
+  if (config.provider === "openai") {
+    const choice = data.choices?.[0];
+    return {
+      content: choice?.message?.content ?? "No response from model.",
+      model: data.model ?? config.model,
+      usage: data.usage
+        ? { input_tokens: data.usage.prompt_tokens, output_tokens: data.usage.completion_tokens }
+        : undefined,
+    };
+  } else {
+    const textBlock = data.content?.find((b: { type: string }) => b.type === "text");
+    return {
+      content: textBlock?.text ?? "No response from model.",
+      model: data.model ?? config.model,
+      usage: data.usage
+        ? { input_tokens: data.usage.input_tokens, output_tokens: data.usage.output_tokens }
+        : undefined,
+    };
+  }
 }
 
 /**
  * Extract LLM config from session user metadata.
- * Returns null if no API key is configured.
+ * Returns null if no provider or API key is configured.
  */
 export function getLLMConfigFromSession(session: {
   user?: { user_metadata?: Record<string, unknown> };
 } | null): LLMConfig | null {
   const meta = session?.user?.user_metadata;
-  if (!meta?.ai_api_key) return null;
+  if (!meta?.ai_provider && !meta?.ai_has_api_key) return null;
 
   const provider = (meta.ai_provider as string) === "openai" ? "openai" : "anthropic";
   const defaultModel = provider === "openai" ? "gpt-5.4-2026-03-05" : "claude-sonnet-4-6";
@@ -155,7 +108,6 @@ export function getLLMConfigFromSession(session: {
   return {
     provider,
     model: (meta.ai_model as string) || defaultModel,
-    apiKey: meta.ai_api_key as string,
     systemPrompt: (meta.ai_system_prompt as string) || DEFAULT_SYSTEM_PROMPT,
   };
 }
