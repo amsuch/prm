@@ -14,7 +14,6 @@ import {
 export type CalendarSyncData = {
   isConnected: boolean;
   lastSyncAt: string | null;
-  providerToken: string | null;
   isSyncing: boolean;
   syncResult: SyncResult | null;
   syncError: string | null;
@@ -66,13 +65,13 @@ export function useCalendarSync(): CalendarSyncData {
   }, [fetchState]);
 
   const sync = useCallback(async () => {
-    if (!userId || !syncState?.provider_token) return;
+    if (!userId || !syncState?.is_connected) return;
     setIsSyncing(true);
     setSyncError(null);
     setSyncResult(null);
 
     try {
-      const result = await syncCalendar(userId, syncState.provider_token);
+      const result = await syncCalendar(userId);
       setSyncResult(result);
       await fetchState();
     } catch (err) {
@@ -82,7 +81,7 @@ export function useCalendarSync(): CalendarSyncData {
     } finally {
       setIsSyncing(false);
     }
-  }, [userId, syncState?.provider_token, fetchState]);
+  }, [userId, syncState?.is_connected, fetchState]);
 
   const handleConnect = useCallback(
     async (providerToken: string, refreshToken?: string) => {
@@ -108,7 +107,6 @@ export function useCalendarSync(): CalendarSyncData {
   return {
     isConnected: syncState?.is_connected ?? false,
     lastSyncAt: syncState?.last_sync_at ?? null,
-    providerToken: syncState?.provider_token ?? null,
     isSyncing,
     syncResult,
     syncError,

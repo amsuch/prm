@@ -25,11 +25,7 @@ export type Suggestion = Tables<"calendar_suggestions">;
 // Google Calendar API
 // ---------------------------------------------------------------------------
 
-const CALENDAR_API_BASE =
-  "https://www.googleapis.com/calendar/v3/calendars/primary/events";
-
 export async function fetchCalendarEvents(
-  accessToken: string,
   timeMin: string,
   timeMax: string,
   syncToken?: string,
@@ -39,73 +35,35 @@ export async function fetchCalendarEvents(
   let nextSyncToken: string | null = null;
 
   do {
-    const params = new URLSearchParams();
-
+    const params: Record<string, string> = {};
     if (syncToken) {
-      // Incremental sync – only syncToken allowed (no timeMin/timeMax)
-      params.set("syncToken", syncToken);
+      params.syncToken = syncToken;
     } else {
-      params.set("timeMin", timeMin);
-      params.set("timeMax", timeMax);
-      params.set("singleEvents", "true");
-      params.set("orderBy", "startTime");
+      params.timeMin = timeMin;
+      params.timeMax = timeMax;
     }
+    if (pageToken) params.pageToken = pageToken;
 
-    params.set("maxResults", "250");
-
-    if (pageToken) {
-      params.set("pageToken", pageToken);
-    }
-
-    const url = `${CALENDAR_API_BASE}?${params.toString()}`;
-
-    const response = await fetch(url, {
-      headers: { Authorization: `Bearer ${accessToken}` },
+    const { data, error } = await supabase.functions.invoke("calendar-proxy", {
+      body: { action: "fetch_events", params },
     });
 
-    if (!response.ok) {
-      const errorBody = await response.text();
-      console.error(`Google Calendar API error (${response.status}): ${errorBody}`);
-      throw new Error(
-        `Google Calendar API error (${response.status})`,
-      );
-    }
-
-    const data = (await response.json()) as {
-      items?: {
-        id: string;
-        summary?: string;
-        start?: { dateTime?: string; date?: string };
-        end?: { dateTime?: string; date?: string };
-        attendees?: { email: string; displayName?: string; self?: boolean }[];
-        status?: string;
-      }[];
-      nextPageToken?: string;
-      nextSyncToken?: string;
-    };
+    if (error) throw new Error(error.message ?? "Calendar sync failed");
 
     const items = data.items ?? [];
-
     for (const item of items) {
-      // Skip cancelled events
       if (item.status === "cancelled") continue;
-
-      const startStr = item.start?.dateTime ?? item.start?.date ?? "";
-      const endStr = item.end?.dateTime ?? item.end?.date ?? "";
-
       allEvents.push({
         id: item.id,
-        summary: item.summary ?? "(No title)",
-        start: startStr,
-        end: endStr,
+        summary: item.summary ?? "(no title)",
+        start: item.start?.dateTime ?? item.start?.date ?? "",
+        end: item.end?.dateTime ?? item.end?.date ?? "",
         attendees: item.attendees ?? [],
       });
     }
 
     pageToken = data.nextPageToken;
-    if (data.nextSyncToken) {
-      nextSyncToken = data.nextSyncToken;
-    }
+    nextSyncToken = data.nextSyncToken ?? null;
   } while (pageToken);
 
   return { events: allEvents, nextSyncToken };
@@ -117,7 +75,6 @@ export async function fetchCalendarEvents(
 
 export async function syncCalendar(
   userId: string,
-  accessToken: string,
 ): Promise<SyncResult> {
   // 1. Get user's own emails from user_emails table
   const { data: userEmailRows } = await supabase
@@ -166,9 +123,8 @@ export async function syncCalendar(
     timeMin = thirtyDaysAgo.toISOString();
   }
 
-  // 3. Fetch events
+  // 3. Fetch events (tokens are read from Vault by the Edge Function)
   const { events, nextSyncToken } = await fetchCalendarEvents(
-    accessToken,
     timeMin,
     timeMax,
     storedSyncToken,
@@ -297,6 +253,20 @@ export async function connectCalendar(
   providerToken: string,
   refreshToken?: string,
 ): Promise<void> {
+  // Save tokens to Vault via Edge Function
+  const { error: tokenErr } = await supabase.functions.invoke("upsert-secret", {
+    body: { secret_name: "google_provider_token", secret_value: providerToken },
+  });
+  if (tokenErr) throw new Error(tokenErr.message ?? "Failed to save Google token");
+
+  if (refreshToken) {
+    const { error: refreshErr } = await supabase.functions.invoke("upsert-secret", {
+      body: { secret_name: "google_refresh_token", secret_value: refreshToken },
+    });
+    if (refreshErr) throw new Error(refreshErr.message ?? "Failed to save refresh token");
+  }
+
+  // Update connection state (without tokens — those are in Vault now)
   const { data: existing } = await supabase
     .from("calendar_sync_state")
     .select("user_id")
@@ -306,29 +276,30 @@ export async function connectCalendar(
   if (existing) {
     await supabase
       .from("calendar_sync_state")
-      .update({
-        is_connected: true,
-        provider_token: providerToken,
-        provider_refresh_token: refreshToken ?? null,
-      } as never)
+      .update({ is_connected: true } as never)
       .eq("user_id", userId);
   } else {
     await supabase.from("calendar_sync_state").insert({
       user_id: userId,
       is_connected: true,
-      provider_token: providerToken,
-      provider_refresh_token: refreshToken ?? null,
     } as never);
   }
 }
 
 export async function disconnectCalendar(userId: string): Promise<void> {
+  // Delete tokens from Vault
+  await supabase.functions.invoke("upsert-secret", {
+    body: { secret_name: "google_provider_token", secret_value: null },
+  });
+  await supabase.functions.invoke("upsert-secret", {
+    body: { secret_name: "google_refresh_token", secret_value: null },
+  });
+
+  // Update connection state
   await supabase
     .from("calendar_sync_state")
     .update({
       is_connected: false,
-      provider_token: null,
-      provider_refresh_token: null,
       sync_token: null,
     } as never)
     .eq("user_id", userId);
