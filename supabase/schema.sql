@@ -498,30 +498,20 @@ BEGIN
   WHERE user_id = p_user_id AND secret_name = p_secret_name;
 
   IF v_existing_vault_id IS NOT NULL THEN
-    -- Update existing vault secret
-    UPDATE vault.secrets
-    SET secret = p_secret_value,
-        updated_at = now()
-    WHERE id = v_existing_vault_id;
-
-    -- Update the user_secrets timestamp
-    UPDATE user_secrets
-    SET updated_at = now()
-    WHERE user_id = p_user_id AND secret_name = p_secret_name;
-  ELSE
-    -- Insert new vault secret
-    INSERT INTO vault.secrets (secret, name, description)
-    VALUES (
-      p_secret_value,
-      p_user_id || '/' || p_secret_name,
-      'User secret: ' || p_secret_name || ' for user ' || p_user_id
-    )
-    RETURNING id INTO v_vault_secret_id;
-
-    -- Map it in user_secrets
-    INSERT INTO user_secrets (user_id, secret_name, vault_secret_id)
-    VALUES (p_user_id, p_secret_name, v_vault_secret_id);
+    -- Delete old secret first (direct UPDATE on vault.secrets requires pgsodium)
+    DELETE FROM vault.secrets WHERE id = v_existing_vault_id;
+    DELETE FROM user_secrets WHERE user_id = p_user_id AND secret_name = p_secret_name;
   END IF;
+
+  -- Create new secret via vault.create_secret() (handles encryption)
+  SELECT vault.create_secret(
+    p_secret_value,
+    p_user_id || '/' || p_secret_name,
+    'User secret: ' || p_secret_name
+  ) INTO v_vault_secret_id;
+
+  INSERT INTO user_secrets (user_id, secret_name, vault_secret_id)
+  VALUES (p_user_id, p_secret_name, v_vault_secret_id);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 

@@ -7,7 +7,7 @@ const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 function getServiceClient() {
   return createClient(
     Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    Deno.env.get("SERVICE_ROLE_KEY")!,
   );
 }
 
