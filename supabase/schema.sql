@@ -391,7 +391,7 @@ BEGIN
   ORDER BY rank DESC
   LIMIT 50;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+$$ LANGUAGE plpgsql SECURITY INVOKER SET search_path = public;
 
 -- ============================================================
 -- HELPER: Get relationships for a contact (both directions)
@@ -451,5 +451,123 @@ BEGIN
   JOIN contacts c ON c.id = cr.contact_a_id
   JOIN relationship_types rt ON rt.id = cr.relationship_type_id
   WHERE cr.contact_b_id = p_contact_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+-- ============================================================
+-- VAULT EXTENSION
+-- ============================================================
+CREATE EXTENSION IF NOT EXISTS supabase_vault;
+
+-- ============================================================
+-- USER SECRETS (maps users to Vault secret IDs)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS user_secrets (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  secret_name TEXT NOT NULL,
+  vault_secret_id UUID NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+  UNIQUE(user_id, secret_name)
+);
+
+ALTER TABLE user_secrets ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users manage own secrets" ON user_secrets
+  FOR ALL USING (auth.uid() = user_id);
+
+CREATE INDEX user_secrets_user_idx ON user_secrets(user_id);
+
+-- ============================================================
+-- VAULT HELPER: Upsert a user secret
+-- ============================================================
+CREATE OR REPLACE FUNCTION upsert_user_secret(
+  p_user_id UUID,
+  p_secret_name TEXT,
+  p_secret_value TEXT
+)
+RETURNS VOID AS $$
+DECLARE
+  v_vault_secret_id UUID;
+  v_existing_vault_id UUID;
+BEGIN
+  -- Check if user already has this secret
+  SELECT vault_secret_id INTO v_existing_vault_id
+  FROM user_secrets
+  WHERE user_id = p_user_id AND secret_name = p_secret_name;
+
+  IF v_existing_vault_id IS NOT NULL THEN
+    -- Update existing vault secret
+    UPDATE vault.secrets
+    SET secret = p_secret_value,
+        updated_at = now()
+    WHERE id = v_existing_vault_id;
+
+    -- Update the user_secrets timestamp
+    UPDATE user_secrets
+    SET updated_at = now()
+    WHERE user_id = p_user_id AND secret_name = p_secret_name;
+  ELSE
+    -- Insert new vault secret
+    INSERT INTO vault.secrets (secret, name, description)
+    VALUES (
+      p_secret_value,
+      p_user_id || '/' || p_secret_name,
+      'User secret: ' || p_secret_name || ' for user ' || p_user_id
+    )
+    RETURNING id INTO v_vault_secret_id;
+
+    -- Map it in user_secrets
+    INSERT INTO user_secrets (user_id, secret_name, vault_secret_id)
+    VALUES (p_user_id, p_secret_name, v_vault_secret_id);
+  END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+-- ============================================================
+-- VAULT HELPER: Read a user secret (decrypted)
+-- ============================================================
+CREATE OR REPLACE FUNCTION read_user_secret(
+  p_user_id UUID,
+  p_secret_name TEXT
+)
+RETURNS TEXT AS $$
+DECLARE
+  v_decrypted_value TEXT;
+BEGIN
+  SELECT ds.decrypted_secret INTO v_decrypted_value
+  FROM user_secrets us
+  JOIN vault.decrypted_secrets ds ON ds.id = us.vault_secret_id
+  WHERE us.user_id = p_user_id AND us.secret_name = p_secret_name;
+
+  RETURN v_decrypted_value;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+-- ============================================================
+-- VAULT HELPER: Delete a user secret
+-- ============================================================
+CREATE OR REPLACE FUNCTION delete_user_secret(
+  p_user_id UUID,
+  p_secret_name TEXT
+)
+RETURNS VOID AS $$
+DECLARE
+  v_vault_secret_id UUID;
+BEGIN
+  -- Get the vault secret ID
+  SELECT vault_secret_id INTO v_vault_secret_id
+  FROM user_secrets
+  WHERE user_id = p_user_id AND secret_name = p_secret_name;
+
+  IF v_vault_secret_id IS NOT NULL THEN
+    -- Delete from vault
+    DELETE FROM vault.secrets WHERE id = v_vault_secret_id;
+
+    -- Delete from user_secrets
+    DELETE FROM user_secrets
+    WHERE user_id = p_user_id AND secret_name = p_secret_name;
+  END IF;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
