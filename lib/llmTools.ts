@@ -8,6 +8,7 @@
 import type { LLMConfig } from "@/lib/llm";
 import type { ToolDefinition } from "@/lib/tools";
 import { toolsToOpenAIFormat, toolsToAnthropicFormat } from "@/lib/tools";
+import { supabase } from "@/lib/supabase";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -63,30 +64,21 @@ async function callOpenAIWithTools(
   const openAIMessages = convertMessagesToOpenAI(messages);
   const openAITools = toolsToOpenAIFormat(tools);
 
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${config.apiKey}`,
-    },
-    body: JSON.stringify({
+  const { data, error } = await supabase.functions.invoke("llm-proxy", {
+    body: {
+      provider: "openai",
       model: config.model,
       messages: openAIMessages,
       tools: openAITools,
-      max_completion_tokens: 4096,
+      max_tokens: 4096,
       temperature: 0.3,
-    }),
+    },
   });
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    const msg =
-      (err as { error?: { message?: string } })?.error?.message ??
-      `OpenAI API error: ${res.status}`;
-    throw new Error(msg);
+  if (error) {
+    throw new Error(error.message ?? "LLM proxy error");
   }
 
-  const data = await res.json();
   const choice = data.choices?.[0];
   const message = choice?.message;
 
@@ -170,33 +162,21 @@ async function callAnthropicWithTools(
   const { systemPrompt, apiMessages } = convertMessagesToAnthropic(messages);
   const anthropicTools = toolsToAnthropicFormat(tools);
 
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": config.apiKey,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true",
-    },
-    body: JSON.stringify({
+  const { data, error } = await supabase.functions.invoke("llm-proxy", {
+    body: {
+      provider: "anthropic",
       model: config.model,
-      system: systemPrompt || config.systemPrompt,
       messages: apiMessages,
       tools: anthropicTools,
-      max_completion_tokens: 4096,
+      system: systemPrompt || config.systemPrompt,
+      max_tokens: 4096,
       temperature: 0.3,
-    }),
+    },
   });
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    const msg =
-      (err as { error?: { message?: string } })?.error?.message ??
-      `Anthropic API error: ${res.status}`;
-    throw new Error(msg);
+  if (error) {
+    throw new Error(error.message ?? "LLM proxy error");
   }
-
-  const data = await res.json();
 
   let content: string | null = null;
   const toolCalls: ToolCallResult[] = [];
