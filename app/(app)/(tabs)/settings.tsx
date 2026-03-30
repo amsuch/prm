@@ -946,27 +946,32 @@ function AIKeyManager() {
   const [model, setModel] = useState<string>(
     (session?.user?.user_metadata?.ai_model as string) || AI_MODELS.anthropic[0].id,
   );
-  const [apiKey, setApiKey] = useState(
-    (session?.user?.user_metadata?.ai_api_key as string) || "",
-  );
+  const [apiKey, setApiKey] = useState("");
   const [systemPrompt, setSystemPrompt] = useState(
     (session?.user?.user_metadata?.ai_system_prompt as string) || DEFAULT_SYSTEM_PROMPT,
   );
   const [showPrompt, setShowPrompt] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showKey, setShowKey] = useState(false);
-  const [saved, setSaved] = useState(!!session?.user?.user_metadata?.ai_api_key);
+  const [saved, setSaved] = useState(!!session?.user?.user_metadata?.ai_has_api_key);
 
   const handleSave = useCallback(async () => {
     if (!apiKey.trim()) return;
     setIsSaving(true);
     try {
+      // Save API key to Vault via Edge Function
+      const { error: secretError } = await supabase.functions.invoke("upsert-secret", {
+        body: { secret_name: "ai_api_key", secret_value: apiKey.trim() },
+      });
+      if (secretError) throw new Error(secretError.message ?? "Failed to save API key");
+
+      // Save non-secret config to user_metadata
       const { error } = await supabase.auth.updateUser({
         data: {
           ai_provider: provider,
           ai_model: model,
-          ai_api_key: apiKey.trim(),
           ai_system_prompt: systemPrompt.trim() || DEFAULT_SYSTEM_PROMPT,
+          ai_has_api_key: true,
         },
       });
       if (error) throw error;
