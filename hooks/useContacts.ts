@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "@/lib/auth/ctx";
+import { sanitizePostgrestValue } from "@/lib/sanitize";
 import type { Tables } from "@/types/database";
 import type { SearchFilters } from "@/lib/search";
 import { DEFAULT_FILTERS } from "@/lib/search";
@@ -217,12 +218,12 @@ export function useContacts(filters: SearchFilters = DEFAULT_FILTERS) {
 
         // Apply company filter
         if (filters.company.trim()) {
-          query = query.ilike("company", `%${filters.company.trim()}%`);
+          query = query.ilike("company", `%${sanitizePostgrestValue(filters.company.trim())}%`);
         }
 
         // Apply job title filter
         if (filters.jobTitle.trim()) {
-          query = query.ilike("job_title", `%${filters.jobTitle.trim()}%`);
+          query = query.ilike("job_title", `%${sanitizePostgrestValue(filters.jobTitle.trim())}%`);
         }
 
         // Apply source filter

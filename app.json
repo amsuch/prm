@@ -43,8 +43,7 @@
         "backgroundColor": "#1e40af"
       },
       "permissions": [
-        "android.permission.READ_CONTACTS",
-        "android.permission.WRITE_CONTACTS"
+        "android.permission.READ_CONTACTS"
       ]
     },
     "extra": {

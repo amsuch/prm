@@ -10,7 +10,7 @@
 // SQL Validation
 // ---------------------------------------------------------------------------
 
-const SQL_BLOCKLIST = /\b(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|TRUNCATE|GRANT|REVOKE|EXECUTE|COPY|DO|CALL|SET|RESET|DISCARD|LOCK|UNLISTEN|NOTIFY|LISTEN|LOAD|REINDEX|REFRESH|SECURITY|COMMENT)\b/i;
+const SQL_BLOCKLIST = /\b(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|TRUNCATE|GRANT|REVOKE|EXECUTE|COPY|DO|CALL|SET|RESET|DISCARD|LOCK|UNLISTEN|NOTIFY|LISTEN|LOAD|REINDEX|REFRESH|COMMENT|EXPLAIN|VACUUM|PREPARE|DEALLOCATE|BEGIN|COMMIT|ROLLBACK|SAVEPOINT|RAISE|IMPORT)\b/i;
 
 /**
  * Validate that a SQL string is a safe read-only query.
@@ -26,8 +26,8 @@ export function validateSQL(sql: string): void {
   }
 
   // Block stacked queries (semicolons not inside string literals)
-  // Simple heuristic: strip string literals then check for semicolons
-  const withoutStrings = trimmed.replace(/'[^']*'/g, "''");
+  // Strip string literals (handles PostgreSQL escaped quotes: 'it''s ok')
+  const withoutStrings = trimmed.replace(/'([^']|'')*'/g, "''");
   if (withoutStrings.includes(";")) {
     throw new Error("Multiple statements are not allowed.");
   }

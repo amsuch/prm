@@ -929,7 +929,7 @@ export function getToolDefinitions(): ToolDefinition[] {
             .from("tags")
             .select("id")
             .eq("user_id", userId)
-            .ilike("name", `%${tag}%`)
+            .ilike("name", `%${sanitizePostgrestValue(tag)}%`)
             .limit(1);
           const tags = (tagData as unknown as { id: string }[]) ?? [];
           if (tags.length === 0) {
@@ -964,7 +964,7 @@ export function getToolDefinitions(): ToolDefinition[] {
             .select("id")
             .eq("user_id", userId)
             .eq("is_archived", false)
-            .ilike("company", `%${company}%`);
+            .ilike("company", `%${sanitizePostgrestValue(company)}%`);
           if (error) throw new Error(error.message);
           contactIds = ((data as unknown as { id: string }[]) ?? []).map(
             (c) => c.id,
@@ -1067,7 +1067,7 @@ export function getToolDefinitions(): ToolDefinition[] {
           const { data: allTypes } = await supabase
             .from("relationship_types")
             .select("id, name, reverse_name, is_symmetric")
-            .or(`user_id.eq.${userId},is_system.eq.true`);
+            .or(`user_id.eq.${sanitizePostgrestValue(userId)},is_system.eq.true`);
           const types = (allTypes as unknown as RelType[]) ?? [];
 
           const nameMatch = types.find(

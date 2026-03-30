@@ -40,13 +40,9 @@ curl -s -X PATCH "https://api.supabase.com/v1/projects/rymspebhcinjttcrmtow/conf
 
 ### Direct SQL via session pooler
 ```bash
-node -e "
+source .env.local && node -e "
 const { Client } = require('pg');
-const c = new Client({
-  host: 'aws-0-us-west-2.pooler.supabase.com', port: 5432,
-  user: 'postgres.rymspebhcinjttcrmtow', password: '!i3fHR5NmrocwzZd',
-  database: 'postgres', ssl: { rejectUnauthorized: false }
-});
+const c = new Client({ connectionString: process.env.SUPABASE_CONNECTION_STRING });
 async function run() {
   await c.connect();
   // Your SQL here

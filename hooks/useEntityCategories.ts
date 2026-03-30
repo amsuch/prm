@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "@/lib/auth/ctx";
+import { sanitizePostgrestValue } from "@/lib/sanitize";
 import type { Tables } from "@/types/database";
 
 export type EntityCategory = Tables<"entity_categories">;
@@ -23,7 +24,7 @@ export function useEntityCategories() {
       const { data, error: queryError } = await supabase
         .from("entity_categories")
         .select("*")
-        .or(`user_id.is.null,user_id.eq.${userId}`)
+        .or(`user_id.is.null,user_id.eq.${sanitizePostgrestValue(userId)}`)
         .order("is_system", { ascending: false })
         .order("name", { ascending: true });
 

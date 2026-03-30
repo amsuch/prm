@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "@/lib/auth/ctx";
+import { sanitizePostgrestValue } from "@/lib/sanitize";
 
 export type RelationshipType = {
   id: string;
@@ -28,7 +29,7 @@ export function useRelationshipTypes() {
       const { data, error: queryError } = await supabase
         .from("relationship_types")
         .select("*")
-        .or(`is_system.eq.true,user_id.eq.${userId}`)
+        .or(`is_system.eq.true,user_id.eq.${sanitizePostgrestValue(userId)}`)
         .order("category")
         .order("name");
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "@/lib/auth/ctx";
+import { sanitizePostgrestValue } from "@/lib/sanitize";
 import type { Tables } from "@/types/database";
 
 export type EntityWithCount = Tables<"entities"> & {
@@ -30,7 +31,7 @@ export function useEntities(searchQuery: string = "") {
         .order("name", { ascending: true });
 
       if (searchQuery.trim()) {
-        const search = searchQuery.trim();
+        const search = sanitizePostgrestValue(searchQuery.trim());
         query = query.or(
           `name.ilike.%${search}%,category.ilike.%${search}%,address.ilike.%${search}%`,
         );

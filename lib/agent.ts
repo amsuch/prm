@@ -1021,7 +1021,7 @@ async function handleUpdateContact(
         .from("custom_field_definitions")
         .select("field_key")
         .eq("user_id", userId)
-        .ilike("name", `%${field}%`)
+        .ilike("name", `%${sanitizePostgrestValue(field)}%`)
         .limit(1);
       const defsByName = (cfByName as unknown as { field_key: string }[]) ?? [];
       if (defsByName.length > 0) {

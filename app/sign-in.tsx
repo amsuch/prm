@@ -337,16 +337,21 @@ export default function SignIn() {
               </Text>
             </Pressable>
 
-            {/* Dev quick sign-in */}
-            {__DEV__ && (
+            {/* Dev quick sign-in — only available when EXPO_PUBLIC_DEV_AUTH is explicitly set */}
+            {__DEV__ && process.env.EXPO_PUBLIC_DEV_AUTH === "true" && (
               <Pressable
                 onPress={async () => {
                   setLoading(true);
                   setError("");
                   try {
+                    const devEmail = process.env.EXPO_PUBLIC_DEV_EMAIL;
+                    const devPassword = process.env.EXPO_PUBLIC_DEV_PASSWORD;
+                    if (!devEmail || !devPassword) {
+                      throw new Error("Set EXPO_PUBLIC_DEV_EMAIL and EXPO_PUBLIC_DEV_PASSWORD in .env.local");
+                    }
                     const { error: devErr } = await supabase.auth.signInWithPassword({
-                      email: "dev@prm.local",
-                      password: "password123",
+                      email: devEmail,
+                      password: devPassword,
                     });
                     if (devErr) throw devErr;
                     router.replace("/");

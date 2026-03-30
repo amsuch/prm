@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { sanitizePostgrestValue } from "@/lib/sanitize";
 
 export type SearchFilters = {
   query: string;
@@ -85,12 +86,12 @@ export function buildFilterQuery(
 
   // Company filter
   if (filters.company.trim()) {
-    query = query.ilike("company", `%${filters.company.trim()}%`);
+    query = query.ilike("company", `%${sanitizePostgrestValue(filters.company.trim())}%`);
   }
 
   // Job title filter
   if (filters.jobTitle?.trim()) {
-    query = query.ilike("job_title", `%${filters.jobTitle.trim()}%`);
+    query = query.ilike("job_title", `%${sanitizePostgrestValue(filters.jobTitle.trim())}%`);
   }
 
   // Source filter

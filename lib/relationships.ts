@@ -24,7 +24,7 @@ export async function getRelationshipTypes(userId: string): Promise<Relationship
   const { data, error } = await supabase
     .from("relationship_types")
     .select("*")
-    .or(`is_system.eq.true,user_id.eq.${userId}`)
+    .or(`is_system.eq.true,user_id.eq.${sanitizePostgrestValue(userId)}`)
     .order("category")
     .order("name");
 
