@@ -63,6 +63,8 @@ async function callOpenAIWithTools(
   const openAIMessages = convertMessagesToOpenAI(messages);
   const openAITools = toolsToOpenAIFormat(tools);
 
+  console.log("[LLM:OpenAI] Calling", config.model, "with", openAIMessages.length, "messages,", openAITools.length, "tools");
+
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -83,6 +85,7 @@ async function callOpenAIWithTools(
     const msg =
       (err as { error?: { message?: string } })?.error?.message ??
       `OpenAI API error: ${res.status}`;
+    console.error("[LLM:OpenAI] Error:", res.status, msg);
     throw new Error(msg);
   }
 
@@ -170,6 +173,8 @@ async function callAnthropicWithTools(
   const { systemPrompt, apiMessages } = convertMessagesToAnthropic(messages);
   const anthropicTools = toolsToAnthropicFormat(tools);
 
+  console.log("[LLM:Anthropic] Calling", config.model, "with", apiMessages.length, "messages,", anthropicTools.length, "tools");
+
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -183,7 +188,7 @@ async function callAnthropicWithTools(
       system: systemPrompt || config.systemPrompt,
       messages: apiMessages,
       tools: anthropicTools,
-      max_completion_tokens: 4096,
+      max_tokens: 4096,
       temperature: 0.3,
     }),
   });

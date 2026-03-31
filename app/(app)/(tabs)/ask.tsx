@@ -168,16 +168,38 @@ export default function AskScreen() {
 
     setMessages(loaded);
 
-    // Rebuild conversation history for the LLM from DB messages
+    // Rebuild conversation history for the LLM from DB messages.
+    // Only include user messages and FINAL agent responses (skip intermediate
+    // placeholders like "Thinking...", "Searching contacts...", etc.)
     const history: ToolMessage[] = [];
     for (const m of dbMessages) {
       if (m.role === "user") {
         history.push({ role: "user", content: m.content });
       } else if (m.role === "agent") {
+        // Skip placeholder / intermediate messages that aren't real LLM responses
+        if (
+          m.content === "Thinking..." ||
+          m.content === "Executing..." ||
+          m.content === "Something went wrong. Please try again." ||
+          !m.content.trim()
+        ) {
+          continue;
+        }
         history.push({ role: "assistant", content: m.content });
       }
     }
-    conversationHistory.current = history;
+    // Ensure alternating user/assistant turns — LLMs expect this
+    // If there are consecutive same-role messages, only keep the last one
+    const cleanHistory: ToolMessage[] = [];
+    for (const msg of history) {
+      if (cleanHistory.length > 0 && cleanHistory[cleanHistory.length - 1].role === msg.role) {
+        cleanHistory[cleanHistory.length - 1] = msg; // replace with latest
+      } else {
+        cleanHistory.push(msg);
+      }
+    }
+    conversationHistory.current = cleanHistory;
+    console.log("[Chat] Rebuilt history:", cleanHistory.length, "messages for session", activeSessionId);
 
     // Check if this is a fresh session (no messages)
     setIsFirstMessage(dbMessages.length === 0);

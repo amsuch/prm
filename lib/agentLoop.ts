@@ -115,14 +115,30 @@ export async function* runAgentLoop(
     { role: "user", content: userMessage },
   ];
 
+  console.log("[AgentLoop] Starting:", {
+    provider: config.provider,
+    model: config.model,
+    historyLength: history?.length ?? 0,
+    toolCount: tools.length,
+    messageCount: messages.length,
+  });
+
   yield { type: "thinking", text: "Thinking..." };
 
   for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
     let response;
     try {
+      console.log("[AgentLoop] Iteration", iteration, "- calling LLM with", messages.length, "messages");
       response = await callLLMWithTools(config, messages, tools);
+      console.log("[AgentLoop] LLM response:", {
+        hasContent: !!response.content,
+        contentLength: response.content?.length ?? 0,
+        toolCallCount: response.toolCalls.length,
+        model: response.model,
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "LLM request failed";
+      console.error("[AgentLoop] LLM error:", msg);
       yield { type: "error", text: msg };
       return;
     }
