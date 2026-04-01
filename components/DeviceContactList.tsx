@@ -7,6 +7,7 @@ import {
   TextInput,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Colors } from "@/constants/colors";
 import type { DeviceContact } from "@/lib/contacts";
 import { getInitials } from "@/lib/utils";
 
@@ -54,9 +55,9 @@ export function DeviceContactList({
 
       return (
         <Pressable
-          className={`flex-row items-center border-b border-stone-100 px-4 py-3 ${
-            isSelected ? "bg-indigo-50/50" : "bg-white"
-          } active:bg-stone-50`}
+          className={`flex-row items-center border-b border-stone-100 dark:border-stone-800 px-4 py-3 ${
+            isSelected ? "bg-indigo-50/50 dark:bg-indigo-950/50" : "bg-white dark:bg-stone-900"
+          } active:bg-stone-50 dark:active:bg-stone-800`}
           onPress={() => onToggle(item.id)}
         >
           {/* Checkbox */}
@@ -64,7 +65,7 @@ export function DeviceContactList({
             className={`mr-3 h-6 w-6 items-center justify-center rounded-md border-2 ${
               isSelected
                 ? "border-indigo-600 bg-indigo-600"
-                : "border-stone-300 bg-white"
+                : "border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900"
             }`}
           >
             {isSelected && (
@@ -73,30 +74,30 @@ export function DeviceContactList({
           </View>
 
           {/* Avatar */}
-          <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-stone-200">
-            <Text className="text-sm font-semibold text-stone-600">
+          <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-stone-200 dark:bg-stone-700">
+            <Text className="text-sm font-semibold text-stone-600 dark:text-stone-400">
               {initials}
             </Text>
           </View>
 
           {/* Info */}
           <View className="flex-1">
-            <Text className="text-sm font-medium text-stone-900">
+            <Text className="text-sm font-medium text-stone-900 dark:text-stone-100">
               {item.firstName} {item.lastName}
             </Text>
             {item.company && (
-              <Text className="text-xs text-stone-500" numberOfLines={1}>
+              <Text className="text-xs text-stone-500 dark:text-stone-400" numberOfLines={1}>
                 {item.company}
                 {item.jobTitle ? ` - ${item.jobTitle}` : ""}
               </Text>
             )}
             {primaryEmail && (
-              <Text className="text-xs text-stone-400" numberOfLines={1}>
+              <Text className="text-xs text-stone-400 dark:text-stone-500" numberOfLines={1}>
                 {primaryEmail}
               </Text>
             )}
             {!primaryEmail && primaryPhone && (
-              <Text className="text-xs text-stone-400" numberOfLines={1}>
+              <Text className="text-xs text-stone-400 dark:text-stone-500" numberOfLines={1}>
                 {primaryPhone}
               </Text>
             )}
@@ -110,11 +111,11 @@ export function DeviceContactList({
   return (
     <View className="flex-1">
       {/* Search + controls */}
-      <View className="border-b border-stone-200 bg-white px-4 py-3">
-        <View className="mb-3 flex-row items-center rounded-lg border border-stone-200 bg-stone-50 px-3">
-          <Ionicons name="search-outline" size={18} color="#9ca3af" />
+      <View className="border-b border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 px-4 py-3">
+        <View className="mb-3 flex-row items-center rounded-lg border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 px-3">
+          <Ionicons name="search-outline" size={18} color={Colors.gray[400]} />
           <TextInput
-            className="ml-2 flex-1 py-2.5 text-sm text-stone-900"
+            className="ml-2 flex-1 py-2.5 text-sm text-stone-900 dark:text-stone-100"
             placeholder="Search contacts..."
             placeholderTextColor="#a8a29e"
             value={search}
@@ -124,21 +125,21 @@ export function DeviceContactList({
           />
           {search.length > 0 && (
             <Pressable onPress={() => setSearch("")}>
-              <Ionicons name="close-circle" size={18} color="#9ca3af" />
+              <Ionicons name="close-circle" size={18} color={Colors.gray[400]} />
             </Pressable>
           )}
         </View>
 
         <View className="flex-row items-center justify-between">
-          <Text className="text-xs text-stone-500">
+          <Text className="text-xs text-stone-500 dark:text-stone-400">
             {selectedIds.size} of {contacts.length} selected
             {search ? ` (${filteredContacts.length} shown)` : ""}
           </Text>
           <Pressable
-            className="rounded-md px-3 py-1.5 active:bg-stone-100"
+            className="rounded-md px-3 py-1.5 active:bg-stone-100 dark:active:bg-stone-800"
             onPress={allSelected ? onDeselectAll : onSelectAll}
           >
-            <Text className="text-xs font-semibold text-indigo-600">
+            <Text className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
               {allSelected ? "Deselect All" : "Select All"}
             </Text>
           </Pressable>
@@ -154,8 +155,8 @@ export function DeviceContactList({
         contentContainerStyle={filteredContacts.length === 0 ? { flex: 1 } : undefined}
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center py-12">
-            <Ionicons name="search-outline" size={40} color="#d1d5db" />
-            <Text className="mt-3 text-sm text-stone-400">
+            <Ionicons name="search-outline" size={40} color={Colors.gray[300]} />
+            <Text className="mt-3 text-sm text-stone-400 dark:text-stone-500">
               {search
                 ? "No contacts match your search"
                 : "No contacts found on device"}

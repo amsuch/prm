@@ -24,7 +24,7 @@ export function ContactCards({ contacts }: { contacts: AgentResultContact[] }) {
           <Pressable
             key={contact.id}
             onPress={() => router.push(`/contact/${contact.id}`)}
-            className="mt-2 flex-row items-center rounded-xl border border-stone-100 bg-stone-50 p-2.5 active:bg-stone-100"
+            className="mt-2 flex-row items-center rounded-xl border border-stone-100 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 p-2.5 active:bg-stone-100 dark:active:bg-stone-700"
           >
             <Avatar
               firstName={contact.first_name}
@@ -34,14 +34,14 @@ export function ContactCards({ contacts }: { contacts: AgentResultContact[] }) {
             />
             <View className="ml-2.5 flex-1">
               <Text
-                className="text-sm font-semibold text-stone-900"
+                className="text-sm font-semibold text-stone-900 dark:text-stone-100"
                 numberOfLines={1}
               >
                 {fullName}
               </Text>
               {subtitle ? (
                 <Text
-                  className="text-xs text-stone-500"
+                  className="text-xs text-stone-500 dark:text-stone-400"
                   numberOfLines={1}
                 >
                   {subtitle}

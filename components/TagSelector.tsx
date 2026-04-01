@@ -56,7 +56,7 @@ export function TagSelector({
               key={tag.id}
               onPress={() => onToggleTag(tag.id)}
               className={`flex-row items-center rounded-full px-3 py-1.5 ${
-                isSelected ? "bg-indigo-600" : "bg-white border border-stone-200"
+                isSelected ? "bg-indigo-600" : "bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700"
               }`}
             >
               {isSelected && (
@@ -69,7 +69,7 @@ export function TagSelector({
               )}
               <Text
                 className={`text-sm ${
-                  isSelected ? "text-white font-medium" : "text-stone-600"
+                  isSelected ? "text-white font-medium" : "text-stone-600 dark:text-stone-400"
                 }`}
               >
                 {tag.name}
@@ -82,10 +82,10 @@ export function TagSelector({
         {!showNewInput && (
           <Pressable
             onPress={() => setShowNewInput(true)}
-            className="flex-row items-center rounded-full border border-dashed border-stone-300 px-3 py-1.5"
+            className="flex-row items-center rounded-full border border-dashed border-stone-300 dark:border-stone-600 px-3 py-1.5"
           >
             <Ionicons name="add" size={14} color={Colors.gray[500]} />
-            <Text className="ml-1 text-sm text-stone-500">New tag</Text>
+            <Text className="ml-1 text-sm text-stone-500 dark:text-stone-400">New tag</Text>
           </Pressable>
         )}
       </View>
@@ -94,7 +94,7 @@ export function TagSelector({
       {showNewInput && (
         <View className="mt-3 flex-row items-center gap-2">
           <TextInput
-            className="flex-1 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900"
+            className="flex-1 rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-2 text-sm text-stone-900 dark:text-stone-100"
             placeholder="Tag name"
             placeholderTextColor={Colors.gray[400]}
             value={newTagName}
@@ -119,7 +119,7 @@ export function TagSelector({
               setShowNewInput(false);
               setNewTagName("");
             }}
-            className="rounded-lg bg-stone-100 px-3 py-2"
+            className="rounded-lg bg-stone-100 dark:bg-stone-800 px-3 py-2"
           >
             <Ionicons name="close" size={16} color={Colors.gray[500]} />
           </Pressable>

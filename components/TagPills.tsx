@@ -6,13 +6,13 @@ type TagPillsProps = {
 };
 
 const TAG_COLORS = [
-  { bg: "bg-indigo-50", text: "text-indigo-700" },
-  { bg: "bg-purple-50", text: "text-purple-700" },
-  { bg: "bg-green-50", text: "text-green-700" },
-  { bg: "bg-amber-50", text: "text-amber-700" },
-  { bg: "bg-rose-50", text: "text-rose-700" },
-  { bg: "bg-cyan-50", text: "text-cyan-700" },
-  { bg: "bg-indigo-50", text: "text-indigo-700" },
+  { bg: "bg-indigo-50 dark:bg-indigo-950", text: "text-indigo-700 dark:text-indigo-300" },
+  { bg: "bg-purple-50 dark:bg-purple-950", text: "text-purple-700 dark:text-purple-300" },
+  { bg: "bg-green-50 dark:bg-green-950", text: "text-green-700 dark:text-green-300" },
+  { bg: "bg-amber-50 dark:bg-amber-950", text: "text-amber-700 dark:text-amber-300" },
+  { bg: "bg-rose-50 dark:bg-rose-950", text: "text-rose-700 dark:text-rose-300" },
+  { bg: "bg-cyan-50 dark:bg-cyan-950", text: "text-cyan-700 dark:text-cyan-300" },
+  { bg: "bg-indigo-50 dark:bg-indigo-950", text: "text-indigo-700 dark:text-indigo-300" },
 ];
 
 function getTagColor(index: number) {

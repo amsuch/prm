@@ -92,14 +92,14 @@ export function LogInteractionModal({
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1 bg-stone-50"
+        className="flex-1 bg-stone-50 dark:bg-stone-950"
       >
         {/* Header */}
-        <View className="flex-row items-center justify-between border-b border-stone-200 bg-white px-4 pb-3 pt-4">
+        <View className="flex-row items-center justify-between border-b border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 px-4 pb-3 pt-4">
           <Pressable onPress={onClose} hitSlop={8}>
             <Ionicons name="close" size={24} color={Colors.gray[600]} />
           </Pressable>
-          <Text className="text-lg font-semibold text-stone-900">Log Interaction</Text>
+          <Text className="text-lg font-semibold text-stone-900 dark:text-stone-100">Log Interaction</Text>
           <View style={{ width: 24 }} />
         </View>
 
@@ -109,16 +109,16 @@ export function LogInteractionModal({
           showsVerticalScrollIndicator={false}
         >
           {/* Contact Name */}
-          <View className="mx-4 mt-4 flex-row items-center rounded-xl bg-white px-3 py-2.5 shadow-sm">
+          <View className="mx-4 mt-4 flex-row items-center rounded-xl bg-white dark:bg-stone-900 px-3 py-2.5 shadow-sm">
             <Ionicons name="person" size={16} color={Colors.brand[600]} />
-            <Text className="ml-2 text-sm font-medium text-stone-700">
+            <Text className="ml-2 text-sm font-medium text-stone-700 dark:text-stone-300">
               with {contactName}
             </Text>
           </View>
 
           {/* Type Selection */}
           <View className="mx-4 mt-5">
-            <Text className="mb-2 text-sm font-semibold text-stone-700">Type</Text>
+            <Text className="mb-2 text-sm font-semibold text-stone-700 dark:text-stone-300">Type</Text>
             <View className="flex-row flex-wrap gap-2">
               {INTERACTION_TYPES.map((type) => {
                 const isSelected = selectedType === type.value;
@@ -128,8 +128,8 @@ export function LogInteractionModal({
                     onPress={() => setSelectedType(type.value)}
                     className={`flex-row items-center rounded-xl px-3 py-2 ${
                       isSelected
-                        ? "border-2 bg-white shadow-sm"
-                        : "border-2 border-transparent bg-white active:bg-stone-50"
+                        ? "border-2 bg-white dark:bg-stone-900 shadow-sm"
+                        : "border-2 border-transparent bg-white dark:bg-stone-900 active:bg-stone-50 dark:active:bg-stone-800"
                     }`}
                     style={isSelected ? { borderColor: type.color } : undefined}
                   >
@@ -140,7 +140,7 @@ export function LogInteractionModal({
                     />
                     <Text
                       className={`ml-1.5 text-sm font-medium ${
-                        isSelected ? "text-stone-900" : "text-stone-500"
+                        isSelected ? "text-stone-900 dark:text-stone-100" : "text-stone-500 dark:text-stone-400"
                       }`}
                     >
                       {type.label}
@@ -153,7 +153,7 @@ export function LogInteractionModal({
 
           {/* Direction */}
           <View className="mx-4 mt-5">
-            <Text className="mb-2 text-sm font-semibold text-stone-700">Direction</Text>
+            <Text className="mb-2 text-sm font-semibold text-stone-700 dark:text-stone-300">Direction</Text>
             <View className="flex-row gap-2">
               {INTERACTION_DIRECTIONS.map((dir) => {
                 const isSelected = direction === dir.value;
@@ -164,12 +164,12 @@ export function LogInteractionModal({
                     className={`flex-1 items-center rounded-xl py-2.5 ${
                       isSelected
                         ? "bg-indigo-600"
-                        : "bg-white shadow-sm active:bg-stone-50"
+                        : "bg-white dark:bg-stone-900 shadow-sm active:bg-stone-50 dark:active:bg-stone-800"
                     }`}
                   >
                     <Text
                       className={`text-sm font-medium ${
-                        isSelected ? "text-white" : "text-stone-600"
+                        isSelected ? "text-white" : "text-stone-600 dark:text-stone-400"
                       }`}
                     >
                       {dir.label}
@@ -182,11 +182,11 @@ export function LogInteractionModal({
 
           {/* Title */}
           <View className="mx-4 mt-5">
-            <Text className="mb-2 text-sm font-semibold text-stone-700">
+            <Text className="mb-2 text-sm font-semibold text-stone-700 dark:text-stone-300">
               Title (optional)
             </Text>
             <TextInput
-              className="rounded-xl bg-white px-3 py-3 text-base text-stone-900 shadow-sm"
+              className="rounded-xl bg-white dark:bg-stone-900 px-3 py-3 text-base text-stone-900 dark:text-stone-100 shadow-sm"
               placeholder={`e.g., ${selectedTypeConfig?.label ?? "Interaction"} about project`}
               placeholderTextColor={Colors.gray[400]}
               value={title}
@@ -197,11 +197,11 @@ export function LogInteractionModal({
 
           {/* Body / Notes */}
           <View className="mx-4 mt-5">
-            <Text className="mb-2 text-sm font-semibold text-stone-700">
+            <Text className="mb-2 text-sm font-semibold text-stone-700 dark:text-stone-300">
               Notes (optional)
             </Text>
             <TextInput
-              className="min-h-[120px] rounded-xl bg-white px-3 py-3 text-base text-stone-900 shadow-sm"
+              className="min-h-[120px] rounded-xl bg-white dark:bg-stone-900 px-3 py-3 text-base text-stone-900 dark:text-stone-100 shadow-sm"
               placeholder="What was discussed? Key takeaways..."
               placeholderTextColor={Colors.gray[400]}
               value={body}
@@ -212,9 +212,9 @@ export function LogInteractionModal({
           </View>
 
           {/* Date display */}
-          <View className="mx-4 mt-5 flex-row items-center rounded-xl bg-white px-3 py-3 shadow-sm">
+          <View className="mx-4 mt-5 flex-row items-center rounded-xl bg-white dark:bg-stone-900 px-3 py-3 shadow-sm">
             <Ionicons name="calendar-outline" size={18} color={Colors.gray[500]} />
-            <Text className="ml-2 text-sm text-stone-600">
+            <Text className="ml-2 text-sm text-stone-600 dark:text-stone-400">
               {new Date().toLocaleDateString("en-US", {
                 weekday: "short",
                 month: "short",
@@ -224,7 +224,7 @@ export function LogInteractionModal({
                 minute: "2-digit",
               })}
             </Text>
-            <Text className="ml-auto text-xs text-stone-400">Now</Text>
+            <Text className="ml-auto text-xs text-stone-400 dark:text-stone-500">Now</Text>
           </View>
 
           {/* Spacer for bottom button */}
@@ -232,12 +232,12 @@ export function LogInteractionModal({
         </ScrollView>
 
         {/* Save Button */}
-        <View className="border-t border-stone-200 bg-white px-4 pb-8 pt-3">
+        <View className="border-t border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 px-4 pb-8 pt-3">
           <Pressable
             onPress={handleSave}
             disabled={isSaving}
             className={`items-center rounded-xl py-3.5 ${
-              isSaving ? "bg-stone-200" : "bg-indigo-600 active:bg-indigo-700"
+              isSaving ? "bg-stone-200 dark:bg-stone-700" : "bg-indigo-600 active:bg-indigo-700"
             }`}
           >
             {isSaving ? (

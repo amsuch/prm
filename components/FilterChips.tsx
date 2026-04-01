@@ -31,8 +31,9 @@ export function FilterChips({ activeFilter, onFilterChange, tags }: FilterChipsP
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      className="mb-2 px-4"
-      contentContainerStyle={{ gap: 8 }}
+      className="mb-3 px-4"
+      contentContainerStyle={{ gap: 8, alignItems: "center" }}
+      style={{ maxHeight: 40 }}
     >
       {chips.map((chip) => {
         const isActive = activeFilter === chip.id;
@@ -40,13 +41,14 @@ export function FilterChips({ activeFilter, onFilterChange, tags }: FilterChipsP
           <Pressable
             key={chip.id}
             onPress={() => onFilterChange(chip.id)}
-            className={`rounded-full px-4 py-1.5 ${
-              isActive ? "bg-indigo-600" : "bg-white border border-stone-200"
+            style={{ alignSelf: "center" }}
+            className={`rounded-lg px-3.5 py-1.5 ${
+              isActive ? "bg-indigo-600" : "bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700"
             }`}
           >
             <Text
-              className={`text-sm font-medium ${
-                isActive ? "text-white" : "text-stone-600"
+              className={`text-xs font-semibold ${
+                isActive ? "text-white" : "text-stone-600 dark:text-stone-400"
               }`}
             >
               {chip.label}

@@ -39,7 +39,7 @@ export default function DeviceContactsScreen() {
   // Check if we're on web
   if (!isDeviceContactsAvailable()) {
     return (
-      <View className="flex-1 bg-stone-50">
+      <View className="flex-1 bg-stone-50 dark:bg-stone-950">
         <EmptyState
           icon="phone-portrait-outline"
           title="Mobile Only Feature"
@@ -166,10 +166,10 @@ export default function DeviceContactsScreen() {
   // Permission request screen
   if (step === "permission" && permissionStatus !== "granted") {
     return (
-      <View className="flex-1 bg-stone-50">
+      <View className="flex-1 bg-stone-50 dark:bg-stone-950">
         <View className="flex-1 items-center justify-center px-6">
           <View className="w-full max-w-sm items-center">
-            <View className="mb-6 h-24 w-24 items-center justify-center rounded-full bg-indigo-100">
+            <View className="mb-6 h-24 w-24 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/50">
               <Ionicons
                 name="people-circle-outline"
                 size={48}
@@ -177,29 +177,29 @@ export default function DeviceContactsScreen() {
               />
             </View>
 
-            <Text className="text-center text-xl font-bold text-stone-900">
+            <Text className="text-center text-xl font-bold text-stone-900 dark:text-stone-100">
               Import Device Contacts
             </Text>
 
-            <Text className="mt-2 text-center text-sm leading-5 text-stone-500">
+            <Text className="mt-2 text-center text-sm leading-5 text-stone-500 dark:text-stone-400">
               We need access to your contacts to import them into the app.
               You can select which contacts to import.
             </Text>
 
             {permissionStatus === "denied" ? (
               <>
-                <View className="mt-6 w-full rounded-xl border border-amber-200 bg-amber-50 p-4">
+                <View className="mt-6 w-full rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950">
                   <View className="flex-row items-center gap-2">
                     <Ionicons
                       name="warning-outline"
                       size={20}
                       color="#d97706"
                     />
-                    <Text className="flex-1 text-sm font-medium text-amber-800">
+                    <Text className="flex-1 text-sm font-medium text-amber-800 dark:text-amber-300">
                       Permission Denied
                     </Text>
                   </View>
-                  <Text className="mt-2 text-xs leading-4 text-amber-700">
+                  <Text className="mt-2 text-xs leading-4 text-amber-700 dark:text-amber-300">
                     Contact access was denied. Please enable it in your device
                     settings to use this feature.
                   </Text>
@@ -216,18 +216,18 @@ export default function DeviceContactsScreen() {
                 </Pressable>
 
                 <Pressable
-                  className="mt-3 w-full flex-row items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white py-4 active:bg-stone-50"
+                  className="mt-3 w-full flex-row items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white py-4 active:bg-stone-50 dark:border-stone-700 dark:bg-stone-800 dark:active:bg-stone-700"
                   onPress={handleRequestPermission}
                 >
                   <Ionicons name="refresh-outline" size={20} color="#2563eb" />
-                  <Text className="text-base font-semibold text-indigo-600">
+                  <Text className="text-base font-semibold text-indigo-600 dark:text-indigo-400">
                     Try Again
                   </Text>
                 </Pressable>
               </>
             ) : (
               <>
-                <View className="mt-6 w-full rounded-xl border border-stone-200 bg-white p-4">
+                <View className="mt-6 w-full rounded-xl border border-stone-200 bg-white p-4 dark:border-stone-700 dark:bg-stone-900">
                   <PermissionFeature
                     icon="shield-checkmark-outline"
                     title="Privacy First"
@@ -258,8 +258,8 @@ export default function DeviceContactsScreen() {
             )}
 
             {error && (
-              <View className="mt-4 w-full rounded-lg border border-red-200 bg-red-50 px-4 py-3">
-                <Text className="text-sm text-red-700">{error}</Text>
+              <View className="mt-4 w-full rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-800 dark:bg-red-950">
+                <Text className="text-sm text-red-700 dark:text-red-400">{error}</Text>
               </View>
             )}
           </View>
@@ -271,7 +271,7 @@ export default function DeviceContactsScreen() {
   // Loading contacts
   if (step === "loading") {
     return (
-      <View className="flex-1 bg-stone-50">
+      <View className="flex-1 bg-stone-50 dark:bg-stone-950">
         <LoadingSpinner message="Loading device contacts..." />
       </View>
     );
@@ -280,10 +280,10 @@ export default function DeviceContactsScreen() {
   // Select contacts
   if (step === "select") {
     return (
-      <View className="flex-1 bg-stone-50">
+      <View className="flex-1 bg-stone-50 dark:bg-stone-950">
         {error && (
-          <View className="border-b border-red-200 bg-red-50 px-4 py-3">
-            <Text className="text-sm text-red-700">{error}</Text>
+          <View className="border-b border-red-200 bg-red-50 px-4 py-3 dark:border-red-800 dark:bg-red-950">
+            <Text className="text-sm text-red-700 dark:text-red-400">{error}</Text>
           </View>
         )}
 
@@ -296,12 +296,12 @@ export default function DeviceContactsScreen() {
         />
 
         {/* Import button */}
-        <View className="border-t border-stone-200 bg-white px-4 pb-8 pt-4">
+        <View className="border-t border-stone-200 bg-white px-4 pb-8 pt-4 dark:border-stone-800 dark:bg-stone-900">
           <Pressable
             className={`flex-row items-center justify-center gap-2 rounded-xl py-4 ${
               selectedIds.size > 0
                 ? "bg-indigo-600 active:bg-indigo-700"
-                : "bg-stone-300"
+                : "bg-stone-300 dark:bg-stone-700"
             }`}
             onPress={handleStartImport}
             disabled={selectedIds.size === 0}
@@ -319,7 +319,7 @@ export default function DeviceContactsScreen() {
 
   // Importing / Complete
   return (
-    <View className="flex-1 bg-stone-50">
+    <View className="flex-1 bg-stone-50 dark:bg-stone-950">
       <View className="flex-1 p-4">
         <ImportProgress
           progress={progress}
@@ -339,11 +339,11 @@ export default function DeviceContactsScreen() {
             </Pressable>
 
             <Pressable
-              className="flex-row items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white py-4 active:bg-stone-50"
+              className="flex-row items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white py-4 active:bg-stone-50 dark:border-stone-700 dark:bg-stone-800 dark:active:bg-stone-700"
               onPress={handleReset}
             >
               <Ionicons name="refresh-outline" size={20} color="#2563eb" />
-              <Text className="text-base font-semibold text-indigo-600">
+              <Text className="text-base font-semibold text-indigo-600 dark:text-indigo-400">
                 Import More Contacts
               </Text>
             </Pressable>
@@ -367,12 +367,12 @@ function PermissionFeature({
 }) {
   return (
     <View className="mb-3 flex-row last:mb-0">
-      <View className="mr-3 h-8 w-8 items-center justify-center rounded-full bg-indigo-50">
+      <View className="mr-3 h-8 w-8 items-center justify-center rounded-full bg-indigo-50 dark:bg-indigo-950">
         <Ionicons name={icon} size={18} color="#2563eb" />
       </View>
       <View className="flex-1">
-        <Text className="text-sm font-medium text-stone-900">{title}</Text>
-        <Text className="text-xs text-stone-500">{description}</Text>
+        <Text className="text-sm font-medium text-stone-900 dark:text-stone-100">{title}</Text>
+        <Text className="text-xs text-stone-500 dark:text-stone-400">{description}</Text>
       </View>
     </View>
   );

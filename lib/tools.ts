@@ -569,9 +569,371 @@ export function getToolDefinitions(): ToolDefinition[] {
       },
     },
 
+    {
+      name: "enrich_contact",
+      description:
+        "Look up a person's professional details using their LinkedIn profile URL, email address, or full name. Returns enrichment data including name, company, job title, location, bio, education, and skills. Also checks if the person already exists in the user's contacts by matching email or phone. Use this when the user provides a LinkedIn URL or asks you to research someone before creating a contact. This is a read-only lookup — it does NOT create or modify any contacts. After getting results, present them to the user. If existing_matches is non-empty, tell the user this person may already exist and offer to update that contact instead. Otherwise ask if they want to create a new contact.",
+      parameters: {
+        type: "object",
+        properties: {
+          identifier: {
+            type: "string",
+            description:
+              "The LinkedIn profile URL (e.g., 'linkedin.com/in/johndoe'), email address, or full name to look up.",
+          },
+          type: {
+            type: "string",
+            description:
+              "Type of identifier: 'linkedin' for a LinkedIn URL, 'email' for an email address, 'name' for a person's name.",
+            enum: ["linkedin", "email", "name"],
+          },
+        },
+        required: ["identifier", "type"],
+      },
+      async execute(input, userId) {
+        const identifier = input.identifier as string;
+        const type = input.type as string;
+
+        // Normalize LinkedIn URLs
+        let value = identifier;
+        if (type === "linkedin") {
+          // Accept various formats: full URL, linkedin.com/in/..., /in/...
+          if (!value.startsWith("http")) {
+            value = value.startsWith("linkedin.com")
+              ? `https://www.${value}`
+              : value.startsWith("/in/")
+                ? `https://www.linkedin.com${value}`
+                : `https://www.linkedin.com/in/${value}`;
+          }
+        }
+
+        const { data, error } = await supabase.functions.invoke(
+          "enrich-contact",
+          {
+            body: { type, value },
+          },
+        );
+
+        if (error) {
+          throw new Error(
+            `Enrichment failed: ${error.message ?? "Unknown error"}`,
+          );
+        }
+
+        if (!data?.success) {
+          throw new Error(data?.error ?? "Enrichment returned no data");
+        }
+
+        const enrichment = data.enrichment as Record<string, unknown>;
+
+        // Filter out empty/null fields
+        const cleaned: Record<string, unknown> = {};
+        for (const [key, val] of Object.entries(enrichment)) {
+          if (
+            val !== null &&
+            val !== undefined &&
+            val !== "" &&
+            !(Array.isArray(val) && val.length === 0)
+          ) {
+            cleaned[key] = val;
+          }
+        }
+
+        // Check for existing contacts matching enriched email or phone
+        type MatchedContact = {
+          contact_id: string;
+          first_name: string;
+          last_name: string | null;
+          company: string | null;
+        };
+        const existingMatches: MatchedContact[] = [];
+
+        if (cleaned.email) {
+          const { data: emailMatches } = await supabase
+            .from("contact_emails")
+            .select("contact_id, contacts!inner(first_name, last_name, company, user_id)")
+            .ilike("email", cleaned.email as string);
+
+          type EmailMatchRow = {
+            contact_id: string;
+            contacts: { first_name: string; last_name: string | null; company: string | null; user_id: string };
+          };
+          for (const row of (emailMatches as unknown as EmailMatchRow[]) ?? []) {
+            if (row.contacts.user_id === userId) {
+              existingMatches.push({
+                contact_id: row.contact_id,
+                first_name: row.contacts.first_name,
+                last_name: row.contacts.last_name,
+                company: row.contacts.company,
+              });
+            }
+          }
+        }
+
+        if (cleaned.phone && existingMatches.length === 0) {
+          const { data: phoneMatches } = await supabase
+            .from("contact_phones")
+            .select("contact_id, contacts!inner(first_name, last_name, company, user_id)")
+            .eq("phone", cleaned.phone as string);
+
+          type PhoneMatchRow = {
+            contact_id: string;
+            contacts: { first_name: string; last_name: string | null; company: string | null; user_id: string };
+          };
+          for (const row of (phoneMatches as unknown as PhoneMatchRow[]) ?? []) {
+            if (row.contacts.user_id === userId) {
+              existingMatches.push({
+                contact_id: row.contact_id,
+                first_name: row.contacts.first_name,
+                last_name: row.contacts.last_name,
+                company: row.contacts.company,
+              });
+            }
+          }
+        }
+
+        return {
+          success: true,
+          message: existingMatches.length > 0
+            ? `Found enrichment data for ${cleaned.first_name ?? ""} ${cleaned.last_name ?? ""}. This person may already be in your contacts.`.trim()
+            : `Found enrichment data for ${cleaned.first_name ?? ""} ${cleaned.last_name ?? ""}`.trim(),
+          enrichment: cleaned,
+          existing_matches: existingMatches,
+          source: "parallel",
+        };
+      },
+    },
+
     // ======================================================================
     // WRITE TOOLS (require approval in HITL mode)
     // ======================================================================
+
+    {
+      name: "queue_enrichment",
+      description:
+        "Queue one or more people for background enrichment. Jobs run server-side — the user can close the app and contacts will be created automatically when enrichment completes. Use this when the user wants to enrich multiple people at once (e.g., 'enrich all these LinkedIn profiles') or wants enrichment to run in the background. Each item gets added to a processing queue. For a single person where the user wants immediate results, prefer enrich_contact instead.",
+      parameters: {
+        type: "object",
+        properties: {
+          items: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                identifier: {
+                  type: "string",
+                  description: "LinkedIn URL, email, or name.",
+                },
+                type: {
+                  type: "string",
+                  enum: ["linkedin", "email", "name"],
+                  description: "Type of identifier.",
+                },
+              },
+              required: ["identifier", "type"],
+            },
+            description: "List of people to enrich.",
+          },
+        },
+        required: ["items"],
+      },
+      requiresApproval: true,
+      async execute(input, userId) {
+        const items = input.items as { identifier: string; type: string }[];
+
+        if (items.length === 0) {
+          return { success: false, message: "No items provided." };
+        }
+
+        // Normalize LinkedIn URLs
+        const rows = items.map((item) => {
+          let value = item.identifier;
+          if (item.type === "linkedin" && !value.startsWith("http")) {
+            value = value.startsWith("linkedin.com")
+              ? `https://www.${value}`
+              : value.startsWith("/in/")
+                ? `https://www.linkedin.com${value}`
+                : `https://www.linkedin.com/in/${value}`;
+          }
+          return {
+            user_id: userId,
+            identifier: value,
+            type: item.type,
+            status: "pending" as const,
+          };
+        });
+
+        const { data, error } = await supabase
+          .from("enrichment_queue")
+          .insert(rows)
+          .select("id");
+
+        if (error) throw new Error(error.message);
+
+        const inserted = (data as unknown as { id: string }[]) ?? [];
+
+        return {
+          success: true,
+          message: `Queued ${inserted.length} enrichment job(s). They'll run in the background — contacts will be created automatically when each one completes.`,
+          job_count: inserted.length,
+          job_ids: inserted.map((r) => r.id),
+        };
+      },
+    },
+
+    {
+      name: "create_contact_from_enrichment",
+      description:
+        "Create a new contact using data from a previous enrich_contact lookup. Takes all enrichment fields and creates a full contact record. Core fields (name, company, title) go to contact columns. Email and phone go to their respective tables. Extra fields (education, skills, previous companies, etc.) are stored in custom_fields JSONB. Use this AFTER enrich_contact when the user confirms they want to create a NEW contact. If the person already exists (existing_matches from enrich_contact), use update_contact instead to avoid duplicates.",
+      parameters: {
+        type: "object",
+        properties: {
+          first_name: {
+            type: "string",
+            description: "First name from enrichment.",
+          },
+          last_name: {
+            type: "string",
+            description: "Last name from enrichment.",
+          },
+          company: {
+            type: "string",
+            description: "Company from enrichment.",
+          },
+          job_title: {
+            type: "string",
+            description: "Job title from enrichment.",
+          },
+          department: {
+            type: "string",
+            description: "Department from enrichment.",
+          },
+          email: {
+            type: "string",
+            description: "Email from enrichment.",
+          },
+          phone: {
+            type: "string",
+            description: "Phone from enrichment.",
+          },
+          linkedin_url: {
+            type: "string",
+            description: "LinkedIn profile URL.",
+          },
+          bio: {
+            type: "string",
+            description: "Professional bio/summary to store in notes.",
+          },
+          location: {
+            type: "string",
+            description: "Location to store in notes.",
+          },
+          profile_photo_url: {
+            type: "string",
+            description: "URL of their profile photo.",
+          },
+          education: {
+            type: "string",
+            description: "Most recent education (school and degree).",
+          },
+          previous_companies: {
+            type: "array",
+            items: { type: "string" },
+            description: "List of previous employers.",
+          },
+        },
+        required: ["first_name"],
+      },
+      requiresApproval: true,
+      async execute(input, userId) {
+        const firstName = input.first_name as string;
+        const lastName = (input.last_name as string) || null;
+        const company = (input.company as string) || null;
+        const jobTitle = (input.job_title as string) || null;
+        const department = (input.department as string) || null;
+        const email = input.email as string | undefined;
+        const phone = input.phone as string | undefined;
+        const linkedinUrl = input.linkedin_url as string | undefined;
+        const bio = input.bio as string | undefined;
+        const location = input.location as string | undefined;
+        const profilePhotoUrl = input.profile_photo_url as string | undefined;
+        const education = input.education as string | undefined;
+        const previousCompanies = input.previous_companies as string[] | undefined;
+
+        // Build notes from enrichment data
+        const notesParts: string[] = [];
+        if (bio) notesParts.push(bio);
+        if (location) notesParts.push(`Location: ${location}`);
+        const notes = notesParts.length > 0 ? notesParts.join("\n") : null;
+
+        // Build custom_fields for extra enrichment data
+        const customFields: Record<string, unknown> = {};
+        if (education) customFields.education = education;
+        if (previousCompanies && previousCompanies.length > 0) {
+          customFields.previous_companies = previousCompanies;
+        }
+        if (location) customFields.location = location;
+
+        const { data: contactData, error: contactError } = await supabase
+          .from("contacts")
+          .insert({
+            user_id: userId,
+            first_name: firstName,
+            last_name: lastName,
+            company,
+            job_title: jobTitle,
+            department,
+            notes,
+            avatar_url: profilePhotoUrl ?? null,
+            custom_fields: Object.keys(customFields).length > 0 ? customFields : null,
+            source: "enrichment",
+          } as never)
+          .select(
+            "id, first_name, last_name, company, job_title, avatar_url",
+          )
+          .single();
+
+        if (contactError) throw new Error(contactError.message);
+        const contact = contactData as unknown as AgentResultContact;
+
+        // Add email
+        if (email) {
+          await supabase.from("contact_emails").insert({
+            contact_id: contact.id,
+            email,
+            label: "work",
+            is_primary: true,
+          });
+        }
+
+        // Add phone
+        if (phone) {
+          await supabase.from("contact_phones").insert({
+            contact_id: contact.id,
+            phone,
+            label: "work",
+            is_primary: true,
+          });
+        }
+
+        // Add LinkedIn URL
+        if (linkedinUrl) {
+          await supabase.from("contact_urls").insert({
+            contact_id: contact.id,
+            url: linkedinUrl,
+            label: "linkedin",
+          });
+        }
+
+        const fullName = [firstName, lastName].filter(Boolean).join(" ");
+        const extraCount = Object.keys(customFields).length;
+        return {
+          success: true,
+          message: `Created contact "${fullName}" from enrichment data.${extraCount > 0 ? ` Stored ${extraCount} extra field(s) (${Object.keys(customFields).join(", ")}).` : ""}`,
+          contact,
+        };
+      },
+    },
 
     {
       name: "create_contact",

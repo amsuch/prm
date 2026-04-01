@@ -48,6 +48,8 @@ const ALWAYS_REQUIRE_APPROVAL = new Set([
   "archive_contacts",
   "bulk_tag_contacts",
   "bulk_update_contacts",
+  "create_contact_from_enrichment",
+  "queue_enrichment",
 ]);
 
 const DEFAULT_SYSTEM_PROMPT = `You are a personal relationship manager assistant with access to tools that query and modify the user's contact database.
@@ -83,6 +85,12 @@ function getToolDescription(toolCall: ToolCall): string {
       return `Add ${args.first_name} to entity${args.role ? ` as ${args.role}` : ""}`;
     case "log_interaction":
       return `Log ${args.type} interaction with contact`;
+    case "create_contact_from_enrichment":
+      return `Create contact from enrichment: ${args.first_name}${args.last_name ? " " + args.last_name : ""}${args.company ? " at " + args.company : ""}`;
+    case "queue_enrichment": {
+      const queueItems = args.items as { identifier: string }[] | undefined;
+      return `Queue ${queueItems?.length ?? 0} enrichment job(s) to run in background`;
+    }
     default:
       return `Execute ${toolCall.name}`;
   }
@@ -115,14 +123,30 @@ export async function* runAgentLoop(
     { role: "user", content: userMessage },
   ];
 
+  console.log("[AgentLoop] Starting:", {
+    provider: config.provider,
+    model: config.model,
+    historyLength: history?.length ?? 0,
+    toolCount: tools.length,
+    messageCount: messages.length,
+  });
+
   yield { type: "thinking", text: "Thinking..." };
 
   for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
     let response;
     try {
+      console.log("[AgentLoop] Iteration", iteration, "- calling LLM with", messages.length, "messages");
       response = await callLLMWithTools(config, messages, tools);
+      console.log("[AgentLoop] LLM response:", {
+        hasContent: !!response.content,
+        contentLength: response.content?.length ?? 0,
+        toolCallCount: response.toolCalls.length,
+        model: response.model,
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "LLM request failed";
+      console.error("[AgentLoop] LLM error:", msg);
       yield { type: "error", text: msg };
       return;
     }

@@ -1,5 +1,5 @@
 -- PRM-SC Database Schema
--- Personal Relationship Manager
+-- PRM (Personal Relationship Manager)
 
 -- Enable extensions
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
@@ -453,3 +453,34 @@ BEGIN
   WHERE cr.contact_b_id = p_contact_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+-- ============================================================
+-- ENRICHMENT QUEUE (server-side background enrichment via Parallel API)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS enrichment_queue (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  identifier TEXT NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('linkedin', 'email', 'name')),
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+  result_json JSONB,
+  contact_id UUID REFERENCES contacts(id) ON DELETE SET NULL,
+  error_message TEXT,
+  created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+  completed_at TIMESTAMPTZ
+);
+
+ALTER TABLE enrichment_queue ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own enrichment jobs" ON enrichment_queue
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own enrichment jobs" ON enrichment_queue
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Service role full access" ON enrichment_queue
+  FOR ALL USING (auth.role() = 'service_role');
+
+CREATE INDEX IF NOT EXISTS idx_enrichment_queue_pending
+  ON enrichment_queue (status, created_at)
+  WHERE status = 'pending';

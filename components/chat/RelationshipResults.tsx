@@ -27,7 +27,7 @@ export function RelationshipCards({
             onPress={() =>
               router.push(`/contact/${rel.related_contact_id}`)
             }
-            className="mt-2 flex-row items-center rounded-xl border border-stone-100 bg-stone-50 p-2.5 active:bg-stone-100"
+            className="mt-2 flex-row items-center rounded-xl border border-stone-100 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 p-2.5 active:bg-stone-100 dark:active:bg-stone-700"
           >
             <Avatar
               firstName={rel.related_first_name}
@@ -36,12 +36,12 @@ export function RelationshipCards({
             />
             <View className="ml-2.5 flex-1">
               <Text
-                className="text-sm font-semibold text-stone-900"
+                className="text-sm font-semibold text-stone-900 dark:text-stone-100"
                 numberOfLines={1}
               >
                 {fullName}
               </Text>
-              <Text className="text-xs text-stone-500">
+              <Text className="text-xs text-stone-500 dark:text-stone-400">
                 {rel.relationship_name}
                 {rel.related_company ? ` - ${rel.related_company}` : ""}
               </Text>

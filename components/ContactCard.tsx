@@ -1,9 +1,11 @@
-import { View, Text, Pressable } from "react-native";
+import { View, Text } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { formatRelativeTime } from "@/lib/utils";
 import { Colors } from "@/constants/colors";
+import { Shadows } from "@/constants/shadows";
 import { Avatar } from "@/components/Avatar";
+import { AnimatedPressable } from "@/components/AnimatedPressable";
 import type { ContactWithDetails } from "@/hooks/useContacts";
 
 type ContactCardProps = {
@@ -18,9 +20,11 @@ export function ContactCard({ contact }: ContactCardProps) {
     contact.contact_tags?.map((ct) => ct.tags).filter(Boolean) ?? [];
 
   return (
-    <Pressable
+    <AnimatedPressable
+      scaleDown={0.98}
       onPress={() => router.push(`/contact/${contact.id}`)}
-      className="mx-4 mb-2 flex-row items-center rounded-xl bg-white p-3 shadow-sm active:bg-stone-50"
+      className="mx-4 mb-3 flex-row items-center rounded-xl bg-white dark:bg-stone-900 dark:border dark:border-stone-800 p-4 shadow-sm active:bg-stone-50 dark:active:bg-stone-800"
+      style={Shadows.sm}
     >
       {/* Avatar */}
       <Avatar
@@ -31,12 +35,12 @@ export function ContactCard({ contact }: ContactCardProps) {
       />
 
       {/* Info */}
-      <View className="ml-3 flex-1">
-        <Text className="text-base font-semibold text-stone-900" numberOfLines={1}>
+      <View className="ml-3.5 flex-1">
+        <Text className="text-base font-semibold text-stone-900 dark:text-stone-100" numberOfLines={1}>
           {fullName}
         </Text>
         {subtitle ? (
-          <Text className="mt-0.5 text-sm text-stone-500" numberOfLines={1}>
+          <Text className="mt-0.5 text-xs text-stone-500 dark:text-stone-400" numberOfLines={1}>
             {subtitle}
           </Text>
         ) : null}
@@ -45,16 +49,16 @@ export function ContactCard({ contact }: ContactCardProps) {
             {tags.slice(0, 3).map((tag) => (
               <View
                 key={tag.id}
-                className="rounded-full bg-indigo-50 px-2 py-0.5"
+                className="rounded-full bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5"
               >
-                <Text className="text-xs font-medium text-indigo-700">
+                <Text className="text-xs font-medium text-indigo-700 dark:text-indigo-300">
                   {tag.name}
                 </Text>
               </View>
             ))}
             {tags.length > 3 && (
-              <View className="rounded-full bg-stone-100 px-2 py-0.5">
-                <Text className="text-xs text-stone-500">
+              <View className="rounded-full bg-stone-100 dark:bg-stone-800 px-2 py-0.5">
+                <Text className="text-xs text-stone-500 dark:text-stone-400">
                   +{tags.length - 3}
                 </Text>
               </View>
@@ -65,7 +69,7 @@ export function ContactCard({ contact }: ContactCardProps) {
 
       {/* Right side: last contacted */}
       <View className="items-end ml-2">
-        <Text className="text-xs text-stone-400">
+        <Text className="text-xs text-stone-400 dark:text-stone-500">
           {formatRelativeTime(contact.last_contacted_at)}
         </Text>
         <Ionicons
@@ -75,6 +79,6 @@ export function ContactCard({ contact }: ContactCardProps) {
           style={{ marginTop: 4 }}
         />
       </View>
-    </Pressable>
+    </AnimatedPressable>
   );
 }

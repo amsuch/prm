@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import type { Json } from "@/types/database";
 import {
   View,
@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Animated,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -23,6 +24,73 @@ import { validateContactForm, type ContactFormData, type ValidationError } from 
 import { CustomFieldInput } from "@/components/CustomFieldInput";
 import { TagSelector } from "@/components/TagSelector";
 import type { ContactFull } from "@/hooks/useContact";
+
+// ---------------------------------------------------------------------------
+// Enrichment progress phases shown during the ~30-45s wait
+// ---------------------------------------------------------------------------
+const ENRICH_PHASES = [
+  "Searching the web...",
+  "Finding profile details...",
+  "Analyzing professional background...",
+  "Extracting contact info...",
+];
+
+function useEnrichProgress(isEnriching: boolean) {
+  const [phaseIndex, setPhaseIndex] = useState(0);
+  const pulseAnim = useRef(new Animated.Value(0.4)).current;
+
+  useEffect(() => {
+    if (!isEnriching) {
+      setPhaseIndex(0);
+      return;
+    }
+    // Rotate through phases every 8 seconds
+    const interval = setInterval(() => {
+      setPhaseIndex((prev) => (prev + 1) % ENRICH_PHASES.length);
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [isEnriching]);
+
+  useEffect(() => {
+    if (!isEnriching) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 0.4, duration: 800, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [isEnriching, pulseAnim]);
+
+  return { phase: ENRICH_PHASES[phaseIndex], pulseAnim };
+}
+
+/**
+ * Detect if a string looks like a LinkedIn URL.
+ */
+function isLinkedInUrl(text: string): boolean {
+  const t = text.trim().toLowerCase();
+  return (
+    t.includes("linkedin.com/in/") ||
+    t.startsWith("/in/") ||
+    /^https?:\/\/(www\.)?linkedin\.com/.test(t)
+  );
+}
+
+/**
+ * Normalize a LinkedIn URL input to a full URL.
+ */
+function normalizeLinkedInUrl(value: string): string {
+  if (!value.startsWith("http")) {
+    return value.startsWith("linkedin.com")
+      ? `https://www.${value}`
+      : value.startsWith("/in/")
+        ? `https://www.linkedin.com${value}`
+        : `https://www.linkedin.com/in/${value}`;
+  }
+  return value;
+}
 
 type ContactFormProps = {
   existingContact?: ContactFull | null;
@@ -104,6 +172,81 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
     }
     return {};
   });
+
+  // LinkedIn enrichment
+  const [linkedInInput, setLinkedInInput] = useState("");
+  const [isEnriching, setIsEnriching] = useState(false);
+  const [enrichError, setEnrichError] = useState<string | null>(null);
+  const [enrichedFrom, setEnrichedFrom] = useState<string | null>(null);
+  const { phase: enrichPhase, pulseAnim } = useEnrichProgress(isEnriching);
+
+  const handleEnrichFromUrl = useCallback(async () => {
+    const url = linkedInInput.trim();
+    if (!url) return;
+
+    setIsEnriching(true);
+    setEnrichError(null);
+
+    try {
+      const normalizedUrl = normalizeLinkedInUrl(url);
+
+      const { data, error } = await supabase.functions.invoke("enrich-contact", {
+        body: { type: "linkedin", value: normalizedUrl },
+      });
+
+      if (error) throw new Error(error.message ?? "Enrichment failed");
+      if (!data?.success) throw new Error(data?.error ?? "No data returned");
+
+      const e = data.enrichment as Record<string, unknown>;
+
+      // Auto-fill form fields from enrichment
+      if (e.first_name && typeof e.first_name === "string") setFirstName(e.first_name);
+      if (e.last_name && typeof e.last_name === "string") setLastName(e.last_name);
+      if (e.company && typeof e.company === "string") setCompany(e.company);
+      if (e.job_title && typeof e.job_title === "string") setJobTitle(e.job_title);
+      if (e.department && typeof e.department === "string") setDepartment(e.department);
+
+      // Build notes from bio + location
+      const notesParts: string[] = [];
+      if (e.bio && typeof e.bio === "string") notesParts.push(e.bio);
+      if (e.location && typeof e.location === "string") notesParts.push(`Location: ${e.location}`);
+      if (notesParts.length > 0) setNotes(notesParts.join("\n"));
+
+      // Fill email
+      if (e.email && typeof e.email === "string") {
+        setEmails([{ label: "work", email: e.email, is_primary: true }]);
+      }
+
+      // Fill phone
+      if (e.phone && typeof e.phone === "string") {
+        setPhones([{ label: "work", phone: e.phone, is_primary: true }]);
+      }
+
+      // Fill LinkedIn URL
+      setUrls((prev) => {
+        const hasLinkedin = prev.some((u) => u.label === "linkedin");
+        if (hasLinkedin) {
+          return prev.map((u) => u.label === "linkedin" ? { ...u, url: normalizedUrl } : u);
+        }
+        return [...prev, { label: "linkedin", url: normalizedUrl }];
+      });
+
+      // Fill custom fields (education, previous companies)
+      const newCustom: Record<string, unknown> = { ...customFields };
+      if (e.education && typeof e.education === "string") newCustom.education = e.education;
+      if (Array.isArray(e.previous_companies) && e.previous_companies.length > 0) {
+        newCustom.previous_companies = e.previous_companies;
+      }
+      if (e.location && typeof e.location === "string") newCustom.location = e.location;
+      setCustomFields(newCustom);
+
+      setEnrichedFrom(normalizedUrl);
+    } catch (err) {
+      setEnrichError(err instanceof Error ? err.message : "Enrichment failed");
+    } finally {
+      setIsEnriching(false);
+    }
+  }, [linkedInInput, customFields]);
 
   // Company autocomplete
   const [showCompanySuggestions, setShowCompanySuggestions] = useState(false);
@@ -342,24 +485,103 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
       className="flex-1"
     >
       <ScrollView
-        className="flex-1 bg-stone-50"
+        className="flex-1 bg-stone-50 dark:bg-stone-950"
         contentContainerStyle={{ paddingBottom: 100 }}
         keyboardShouldPersistTaps="handled"
       >
+        {/* LinkedIn Enrichment — only in create mode */}
+        {mode === "create" && (
+          <View className="mx-4 mt-5 rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950 p-5 shadow-sm">
+            <View className="mb-3 flex-row items-center">
+              <Ionicons name="sparkles" size={16} color="#8b5cf6" />
+              <Text className="ml-2 text-sm font-semibold text-purple-700 dark:text-purple-300">
+                Auto-fill from LinkedIn
+              </Text>
+            </View>
+
+            {enrichedFrom ? (
+              <View className="flex-row items-center rounded-lg bg-green-50 dark:bg-green-950 p-3">
+                <Ionicons name="checkmark-circle" size={18} color={Colors.success} />
+                <Text className="ml-2 flex-1 text-xs text-green-700 dark:text-green-300" numberOfLines={1}>
+                  Filled from {enrichedFrom}
+                </Text>
+                <Pressable
+                  onPress={() => {
+                    setEnrichedFrom(null);
+                    setLinkedInInput("");
+                  }}
+                >
+                  <Text className="text-xs font-medium text-green-600 dark:text-green-400">
+                    Clear
+                  </Text>
+                </Pressable>
+              </View>
+            ) : (
+              <>
+                <View className="flex-row items-center gap-2">
+                  <TextInput
+                    className="flex-1 rounded-lg border border-purple-200 dark:border-purple-700 bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100"
+                    placeholder="linkedin.com/in/johndoe"
+                    placeholderTextColor={Colors.gray[400]}
+                    value={linkedInInput}
+                    onChangeText={setLinkedInInput}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!isEnriching}
+                    onSubmitEditing={handleEnrichFromUrl}
+                  />
+                  <Pressable
+                    onPress={handleEnrichFromUrl}
+                    disabled={isEnriching || !linkedInInput.trim()}
+                    className="items-center justify-center rounded-lg bg-purple-600 px-4 py-2.5 active:bg-purple-700 disabled:opacity-50"
+                  >
+                    {isEnriching ? (
+                      <ActivityIndicator color="white" size="small" />
+                    ) : (
+                      <Ionicons name="search" size={18} color="white" />
+                    )}
+                  </Pressable>
+                </View>
+
+                {isEnriching && (
+                  <Animated.View
+                    className="mt-3 flex-row items-center"
+                    style={{ opacity: pulseAnim }}
+                  >
+                    <Ionicons name="globe-outline" size={14} color="#8b5cf6" />
+                    <Text className="ml-2 text-xs text-purple-600 dark:text-purple-400">
+                      {enrichPhase}
+                    </Text>
+                  </Animated.View>
+                )}
+
+                {enrichError && (
+                  <View className="mt-2 flex-row items-center">
+                    <Ionicons name="alert-circle" size={14} color={Colors.error} />
+                    <Text className="ml-1 text-xs text-red-500 dark:text-red-400">
+                      {enrichError}
+                    </Text>
+                  </View>
+                )}
+              </>
+            )}
+          </View>
+        )}
+
         {/* Basic Info Section */}
-        <View className="mx-4 mt-4 rounded-xl bg-white p-4 shadow-sm">
-          <Text className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-400">
+        <View className="mx-4 mt-5 rounded-xl bg-white dark:bg-stone-900 p-5 shadow-sm">
+          <Text className="mb-4 text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
             Basic Information
           </Text>
 
           {/* First Name */}
-          <View className="mb-3">
-            <Text className="mb-1 text-sm font-medium text-stone-700">
-              First Name <Text className="text-red-500">*</Text>
+          <View className="mb-4">
+            <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">
+              First Name <Text className="text-red-500 dark:text-red-400">*</Text>
             </Text>
             <TextInput
-              className={`rounded-lg border bg-white px-3 py-2.5 text-sm text-stone-900 ${
-                getFieldError("first_name") ? "border-red-400" : "border-stone-200"
+              className={`rounded-lg border bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100 ${
+                getFieldError("first_name") ? "border-red-400" : "border-stone-200 dark:border-stone-700"
               }`}
               placeholder="First name"
               placeholderTextColor={Colors.gray[400]}
@@ -368,17 +590,17 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
               autoCapitalize="words"
             />
             {getFieldError("first_name") && (
-              <Text className="mt-1 text-xs text-red-500">
+              <Text className="mt-1 text-xs text-red-500 dark:text-red-400">
                 {getFieldError("first_name")}
               </Text>
             )}
           </View>
 
           {/* Last Name */}
-          <View className="mb-3">
-            <Text className="mb-1 text-sm font-medium text-stone-700">Last Name</Text>
+          <View className="mb-4">
+            <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">Last Name</Text>
             <TextInput
-              className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900"
+              className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100"
               placeholder="Last name"
               placeholderTextColor={Colors.gray[400]}
               value={lastName}
@@ -388,10 +610,10 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
           </View>
 
           {/* Company with autocomplete */}
-          <View className="mb-3" style={{ zIndex: 10 }}>
-            <Text className="mb-1 text-sm font-medium text-stone-700">Company</Text>
+          <View className="mb-4" style={{ zIndex: 10 }}>
+            <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">Company</Text>
             <TextInput
-              className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900"
+              className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100"
               placeholder="Company"
               placeholderTextColor={Colors.gray[400]}
               value={company}
@@ -408,7 +630,7 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
             />
             {showCompanySuggestions && filteredCompanies.length > 0 && (
               <View
-                className="rounded-lg border border-stone-200 bg-white shadow-md"
+                className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 shadow-md"
                 style={{
                   position: Platform.OS === "web" ? ("absolute" as const) : ("relative" as const),
                   top: Platform.OS === "web" ? 68 : 0,
@@ -431,10 +653,10 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
                         setShowCompanySuggestions(false);
                       }}
                       className={`px-3 py-2.5 active:bg-indigo-50 ${
-                        idx > 0 ? "border-t border-stone-100" : ""
+                        idx > 0 ? "border-t border-stone-100 dark:border-stone-800" : ""
                       }`}
                     >
-                      <Text className="text-sm text-stone-900">{c}</Text>
+                      <Text className="text-sm text-stone-900 dark:text-stone-100">{c}</Text>
                     </Pressable>
                   ))}
                 </ScrollView>
@@ -443,10 +665,10 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
           </View>
 
           {/* Job Title */}
-          <View className="mb-3">
-            <Text className="mb-1 text-sm font-medium text-stone-700">Job Title</Text>
+          <View className="mb-4">
+            <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">Job Title</Text>
             <TextInput
-              className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900"
+              className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100"
               placeholder="Job title"
               placeholderTextColor={Colors.gray[400]}
               value={jobTitle}
@@ -456,10 +678,10 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
           </View>
 
           {/* Department */}
-          <View className="mb-3">
-            <Text className="mb-1 text-sm font-medium text-stone-700">Department</Text>
+          <View className="mb-4">
+            <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">Department</Text>
             <TextInput
-              className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900"
+              className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100"
               placeholder="Department"
               placeholderTextColor={Colors.gray[400]}
               value={department}
@@ -469,10 +691,10 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
           </View>
 
           {/* Birthday */}
-          <View className="mb-3">
-            <Text className="mb-1 text-sm font-medium text-stone-700">Birthday</Text>
+          <View className="mb-4">
+            <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">Birthday</Text>
             <TextInput
-              className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900"
+              className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100"
               placeholder="YYYY-MM-DD"
               placeholderTextColor={Colors.gray[400]}
               value={birthday}
@@ -482,9 +704,9 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
 
           {/* Notes */}
           <View>
-            <Text className="mb-1 text-sm font-medium text-stone-700">Notes</Text>
+            <Text className="mb-1 text-sm font-medium text-stone-700 dark:text-stone-300">Notes</Text>
             <TextInput
-              className="rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900"
+              className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100"
               placeholder="Add notes..."
               placeholderTextColor={Colors.gray[400]}
               value={notes}
@@ -498,17 +720,17 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
         </View>
 
         {/* Emails Section */}
-        <View className="mx-4 mt-3 rounded-xl bg-white p-4 shadow-sm">
-          <View className="mb-3 flex-row items-center justify-between">
-            <Text className="text-sm font-semibold uppercase tracking-wide text-stone-400">
+        <View className="mx-4 mt-5 rounded-xl bg-white dark:bg-stone-900 p-5 shadow-sm">
+          <View className="mb-4 flex-row items-center justify-between">
+            <Text className="text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
               Email Addresses
             </Text>
             <Pressable
               onPress={handleAddEmail}
-              className="flex-row items-center rounded-lg bg-indigo-50 px-2.5 py-1"
+              className="flex-row items-center rounded-lg bg-indigo-50 dark:bg-indigo-950 px-2.5 py-1"
             >
               <Ionicons name="add" size={14} color={Colors.brand[600]} />
-              <Text className="ml-0.5 text-xs font-medium text-indigo-700">Add</Text>
+              <Text className="ml-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-300">Add</Text>
             </Pressable>
           </View>
 
@@ -530,8 +752,8 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
                       <Text
                         className={`text-xs capitalize ${
                           entry.label === label
-                            ? "font-semibold text-indigo-600"
-                            : "text-stone-400"
+                            ? "font-semibold text-indigo-600 dark:text-indigo-400"
+                            : "text-stone-400 dark:text-stone-500"
                         }`}
                       >
                         {label}
@@ -550,7 +772,7 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
                 )}
               </View>
               <TextInput
-                className={`mt-1 rounded-lg border bg-white px-3 py-2.5 text-sm text-stone-900 ${
+                className={`mt-1 rounded-lg border bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100 ${
                   getFieldError(`email_${index}`)
                     ? "border-red-400"
                     : "border-stone-200"
@@ -563,7 +785,7 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
                 autoCapitalize="none"
               />
               {getFieldError(`email_${index}`) && (
-                <Text className="mt-1 text-xs text-red-500">
+                <Text className="mt-1 text-xs text-red-500 dark:text-red-400">
                   {getFieldError(`email_${index}`)}
                 </Text>
               )}
@@ -572,17 +794,17 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
         </View>
 
         {/* Phones Section */}
-        <View className="mx-4 mt-3 rounded-xl bg-white p-4 shadow-sm">
-          <View className="mb-3 flex-row items-center justify-between">
-            <Text className="text-sm font-semibold uppercase tracking-wide text-stone-400">
+        <View className="mx-4 mt-5 rounded-xl bg-white dark:bg-stone-900 p-5 shadow-sm">
+          <View className="mb-4 flex-row items-center justify-between">
+            <Text className="text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
               Phone Numbers
             </Text>
             <Pressable
               onPress={handleAddPhone}
-              className="flex-row items-center rounded-lg bg-indigo-50 px-2.5 py-1"
+              className="flex-row items-center rounded-lg bg-indigo-50 dark:bg-indigo-950 px-2.5 py-1"
             >
               <Ionicons name="add" size={14} color={Colors.brand[600]} />
-              <Text className="ml-0.5 text-xs font-medium text-indigo-700">Add</Text>
+              <Text className="ml-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-300">Add</Text>
             </Pressable>
           </View>
 
@@ -603,8 +825,8 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
                       <Text
                         className={`text-xs capitalize ${
                           entry.label === label
-                            ? "font-semibold text-indigo-600"
-                            : "text-stone-400"
+                            ? "font-semibold text-indigo-600 dark:text-indigo-400"
+                            : "text-stone-400 dark:text-stone-500"
                         }`}
                       >
                         {label}
@@ -623,7 +845,7 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
                 )}
               </View>
               <TextInput
-                className={`mt-1 rounded-lg border bg-white px-3 py-2.5 text-sm text-stone-900 ${
+                className={`mt-1 rounded-lg border bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100 ${
                   getFieldError(`phone_${index}`)
                     ? "border-red-400"
                     : "border-stone-200"
@@ -635,7 +857,7 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
                 keyboardType="phone-pad"
               />
               {getFieldError(`phone_${index}`) && (
-                <Text className="mt-1 text-xs text-red-500">
+                <Text className="mt-1 text-xs text-red-500 dark:text-red-400">
                   {getFieldError(`phone_${index}`)}
                 </Text>
               )}
@@ -644,22 +866,22 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
         </View>
 
         {/* URLs Section */}
-        <View className="mx-4 mt-3 rounded-xl bg-white p-4 shadow-sm">
-          <View className="mb-3 flex-row items-center justify-between">
-            <Text className="text-sm font-semibold uppercase tracking-wide text-stone-400">
+        <View className="mx-4 mt-5 rounded-xl bg-white dark:bg-stone-900 p-5 shadow-sm">
+          <View className="mb-4 flex-row items-center justify-between">
+            <Text className="text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
               URLs
             </Text>
             <Pressable
               onPress={handleAddUrl}
-              className="flex-row items-center rounded-lg bg-indigo-50 px-2.5 py-1"
+              className="flex-row items-center rounded-lg bg-indigo-50 dark:bg-indigo-950 px-2.5 py-1"
             >
               <Ionicons name="add" size={14} color={Colors.brand[600]} />
-              <Text className="ml-0.5 text-xs font-medium text-indigo-700">Add</Text>
+              <Text className="ml-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-300">Add</Text>
             </Pressable>
           </View>
 
           {urls.length === 0 && (
-            <Text className="py-2 text-center text-sm text-stone-400">
+            <Text className="py-2 text-center text-sm text-stone-400 dark:text-stone-500">
               No URLs added
             </Text>
           )}
@@ -681,8 +903,8 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
                       <Text
                         className={`text-xs capitalize ${
                           entry.label === label
-                            ? "font-semibold text-indigo-600"
-                            : "text-stone-400"
+                            ? "font-semibold text-indigo-600 dark:text-indigo-400"
+                            : "text-stone-400 dark:text-stone-500"
                         }`}
                       >
                         {label}
@@ -696,7 +918,7 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
                 </Pressable>
               </View>
               <TextInput
-                className={`mt-1 rounded-lg border bg-white px-3 py-2.5 text-sm text-stone-900 ${
+                className={`mt-1 rounded-lg border bg-white dark:bg-stone-800 px-3 py-2.5 text-sm text-stone-900 dark:text-stone-100 ${
                   getFieldError(`url_${index}`)
                     ? "border-red-400"
                     : "border-stone-200"
@@ -709,7 +931,7 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
                 autoCapitalize="none"
               />
               {getFieldError(`url_${index}`) && (
-                <Text className="mt-1 text-xs text-red-500">
+                <Text className="mt-1 text-xs text-red-500 dark:text-red-400">
                   {getFieldError(`url_${index}`)}
                 </Text>
               )}
@@ -718,8 +940,8 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
         </View>
 
         {/* Tags Section */}
-        <View className="mx-4 mt-3 rounded-xl bg-white p-4 shadow-sm">
-          <Text className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-400">
+        <View className="mx-4 mt-5 rounded-xl bg-white dark:bg-stone-900 p-5 shadow-sm">
+          <Text className="mb-4 text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
             Tags
           </Text>
           <TagSelector
@@ -732,8 +954,8 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
 
         {/* Custom Fields Section */}
         {definitions.length > 0 && (
-          <View className="mx-4 mt-3 rounded-xl bg-white p-4 shadow-sm">
-            <Text className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-400">
+          <View className="mx-4 mt-5 rounded-xl bg-white dark:bg-stone-900 p-5 shadow-sm">
+            <Text className="mb-4 text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
               Custom Fields
             </Text>
             {definitions.map((def) => (
@@ -749,7 +971,7 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
       </ScrollView>
 
       {/* Save Button */}
-      <View className="absolute bottom-0 left-0 right-0 border-t border-stone-100 bg-white px-4 pb-8 pt-3">
+      <View className="absolute bottom-0 left-0 right-0 border-t border-stone-100 dark:border-stone-800 bg-white dark:bg-stone-900 px-4 pb-8 pt-3">
         <Pressable
           onPress={handleSave}
           disabled={isSaving}

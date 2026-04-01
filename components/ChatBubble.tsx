@@ -1,14 +1,17 @@
 import { View, Text } from "react-native";
 import type { AgentResponse, PendingAction } from "@/lib/agent";
 import type { ToolCall } from "@/lib/agentLoop";
+import { Shadows } from "@/constants/shadows";
 import { ContactCards } from "./chat/ContactResults";
 import { InteractionCard } from "./chat/InteractionResult";
 import { RelationshipCards } from "./chat/RelationshipResults";
 import { StatsCard } from "./chat/StatsDisplay";
 import { ToolProgressList, type ToolProgressItem } from "./chat/ToolProgress";
 import { AgentApprovalCard, PendingActionCard } from "./chat/ApprovalCard";
+import { EnrichmentResultCard } from "./chat/EnrichmentCard";
 import { SQLResultCard } from "./chat/SQLResult";
 import { ActionCard } from "./chat/ActionResult";
+import { MarkdownText, markdownStyles } from "./MarkdownText";
 
 type ChatBubbleProps = {
   role: "user" | "agent";
@@ -49,7 +52,7 @@ export function ChatBubble({
   // Agent message
   return (
     <View className="mb-3 px-4">
-      <View className="max-w-[90%] rounded-2xl rounded-bl-md bg-white px-4 py-3 shadow-sm">
+      <View className="max-w-[90%] rounded-2xl rounded-bl-md bg-white dark:bg-stone-900 px-4 py-3 shadow-sm" style={Shadows.xs}>
         {isLoading ? (
           <View>
             {/* Tool progress indicators */}
@@ -60,7 +63,7 @@ export function ChatBubble({
                 <View className="mr-2 h-2 w-2 rounded-full bg-stone-300" />
                 <View className="mr-2 h-2 w-2 rounded-full bg-stone-400" />
                 <View className="h-2 w-2 rounded-full bg-stone-500" />
-                <Text className="ml-3 text-sm text-stone-400">
+                <Text className="ml-3 text-sm text-stone-400 dark:text-stone-500">
                   Thinking...
                 </Text>
               </View>
@@ -72,7 +75,31 @@ export function ChatBubble({
             {toolProgress && toolProgress.length > 0 && !pendingApproval && (
               <ToolProgressList progress={toolProgress} />
             )}
-            <Text className="text-base text-stone-900">{text}</Text>
+            {/* Show enrichment card if enrich_contact returned data */}
+            {toolProgress?.map((tp, i) => {
+              if (
+                tp.name === "enrich_contact" &&
+                tp.status === "done" &&
+                tp.result &&
+                typeof tp.result === "object" &&
+                (tp.result as Record<string, unknown>).enrichment
+              ) {
+                const result = tp.result as Record<string, unknown>;
+                return (
+                  <EnrichmentResultCard
+                    key={`enrich-${i}`}
+                    enrichment={result.enrichment as Record<string, unknown>}
+                    existingMatches={
+                      result.existing_matches as
+                        | { contact_id: string; first_name: string; last_name: string | null; company: string | null }[]
+                        | undefined
+                    }
+                  />
+                );
+              }
+              return null;
+            })}
+            <MarkdownText style={markdownStyles}>{text}</MarkdownText>
             {/* Pending approval card from the agent loop */}
             {pendingApproval && (
               <AgentApprovalCard

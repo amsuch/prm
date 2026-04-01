@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { Colors } from "@/constants/colors";
 import type { Tables, InsertTables } from "@/types/database";
 
 export type Interaction = Tables<"interactions">;
@@ -26,9 +27,9 @@ export const INTERACTION_TYPES: {
   { value: "meeting", label: "Meeting", icon: "people-outline", color: "#8b5cf6" },
   { value: "text", label: "Text", icon: "chatbubble-outline", color: "#06b6d4" },
   { value: "social", label: "Social", icon: "globe-outline", color: "#f59e0b" },
-  { value: "note", label: "Note", icon: "document-text-outline", color: "#6b7280" },
+  { value: "note", label: "Note", icon: "document-text-outline", color: Colors.gray[500] },
   { value: "gift", label: "Gift", icon: "gift-outline", color: "#ec4899" },
-  { value: "other", label: "Other", icon: "ellipsis-horizontal-outline", color: "#9ca3af" },
+  { value: "other", label: "Other", icon: "ellipsis-horizontal-outline", color: Colors.gray[400] },
 ];
 
 export const INTERACTION_DIRECTIONS: {

@@ -79,7 +79,7 @@ export function CustomFieldsView({
         return (
           <View
             key={def.id}
-            className="mb-2 flex-row items-start rounded-lg bg-stone-50 px-3 py-2.5"
+            className="mb-2 flex-row items-start rounded-lg bg-stone-50 dark:bg-stone-800 px-3 py-2.5"
           >
             <Ionicons
               name={iconName}
@@ -88,19 +88,19 @@ export function CustomFieldsView({
               style={{ marginTop: 2 }}
             />
             <View className="ml-2 flex-1">
-              <Text className="text-xs font-medium uppercase tracking-wide text-stone-400">
+              <Text className="text-xs font-medium uppercase tracking-wide text-stone-400 dark:text-stone-500">
                 {def.name}
               </Text>
               {isUrl ? (
                 <Pressable
                   onPress={() => Linking.openURL(display)}
                 >
-                  <Text className="mt-0.5 text-sm text-indigo-600 underline">
+                  <Text className="mt-0.5 text-sm text-indigo-600 dark:text-indigo-400 underline">
                     {display}
                   </Text>
                 </Pressable>
               ) : (
-                <Text className="mt-0.5 text-sm text-stone-800">{display}</Text>
+                <Text className="mt-0.5 text-sm text-stone-800 dark:text-stone-200">{display}</Text>
               )}
             </View>
           </View>

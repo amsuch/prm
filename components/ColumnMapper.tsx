@@ -35,12 +35,12 @@ export function ColumnMapper({
   const mappedCount = Object.values(mapping).filter(Boolean).length;
 
   return (
-    <View className="rounded-xl border border-stone-200 bg-white">
-      <View className="border-b border-stone-200 px-4 py-3">
-        <Text className="text-sm font-semibold text-stone-900">
+    <View className="rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900">
+      <View className="border-b border-stone-200 dark:border-stone-700 px-4 py-3">
+        <Text className="text-sm font-semibold text-stone-900 dark:text-stone-100">
           Column Mapping
         </Text>
-        <Text className="mt-1 text-xs text-stone-500">
+        <Text className="mt-1 text-xs text-stone-500 dark:text-stone-400">
           {mappedCount} of {TARGET_FIELDS.length} fields mapped
         </Text>
       </View>
@@ -52,30 +52,30 @@ export function ColumnMapper({
           const isMapped = currentMapping !== null;
 
           return (
-            <View key={key} className="border-b border-stone-100">
+            <View key={key} className="border-b border-stone-100 dark:border-stone-800">
               <Pressable
-                className="flex-row items-center justify-between px-4 py-3 active:bg-stone-50"
+                className="flex-row items-center justify-between px-4 py-3 active:bg-stone-50 dark:active:bg-stone-800"
                 onPress={() =>
                   setExpandedField(isExpanded ? null : key)
                 }
               >
                 <View className="flex-1">
                   <View className="flex-row items-center gap-2">
-                    <Text className="text-sm font-medium text-stone-900">
+                    <Text className="text-sm font-medium text-stone-900 dark:text-stone-100">
                       {label}
                       {key === "first_name" && (
-                        <Text className="text-red-500"> *</Text>
+                        <Text className="text-red-500 dark:text-red-400"> *</Text>
                       )}
                     </Text>
                     {isMapped && (
-                      <View className="rounded-full bg-green-100 px-2 py-0.5">
-                        <Text className="text-xs font-medium text-green-700">
+                      <View className="rounded-full bg-green-100 dark:bg-green-900 px-2 py-0.5">
+                        <Text className="text-xs font-medium text-green-700 dark:text-green-300">
                           Mapped
                         </Text>
                       </View>
                     )}
                   </View>
-                  <Text className="mt-0.5 text-xs text-stone-400">
+                  <Text className="mt-0.5 text-xs text-stone-400 dark:text-stone-500">
                     {description}
                   </Text>
                 </View>
@@ -83,7 +83,7 @@ export function ColumnMapper({
                 <View className="ml-3 min-w-24 items-end">
                   <Text
                     className={`text-sm ${
-                      isMapped ? "font-medium text-indigo-600" : "text-stone-400"
+                      isMapped ? "font-medium text-indigo-600 dark:text-indigo-400" : "text-stone-400 dark:text-stone-500"
                     }`}
                     numberOfLines={1}
                   >
@@ -93,12 +93,12 @@ export function ColumnMapper({
               </Pressable>
 
               {isExpanded && (
-                <View className="border-t border-stone-100 bg-stone-50 px-4 py-2">
+                <View className="border-t border-stone-100 dark:border-stone-800 bg-stone-50 dark:bg-stone-800 px-4 py-2">
                   <Pressable
                     className="rounded-lg px-3 py-2 active:bg-stone-200"
                     onPress={() => handleSelect(key, null)}
                   >
-                    <Text className="text-sm italic text-stone-400">
+                    <Text className="text-sm italic text-stone-400 dark:text-stone-500">
                       None (skip this field)
                     </Text>
                   </Pressable>
@@ -114,7 +114,7 @@ export function ColumnMapper({
                         key={header}
                         className={`rounded-lg px-3 py-2 ${
                           isSelected
-                            ? "bg-indigo-50"
+                            ? "bg-indigo-50 dark:bg-indigo-950"
                             : isUsedElsewhere
                               ? "opacity-40"
                               : "active:bg-stone-200"
@@ -127,8 +127,8 @@ export function ColumnMapper({
                         <Text
                           className={`text-sm ${
                             isSelected
-                              ? "font-semibold text-indigo-600"
-                              : "text-stone-700"
+                              ? "font-semibold text-indigo-600 dark:text-indigo-400"
+                              : "text-stone-700 dark:text-stone-300"
                           }`}
                         >
                           {header}
