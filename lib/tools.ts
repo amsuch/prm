@@ -572,7 +572,7 @@ export function getToolDefinitions(): ToolDefinition[] {
     {
       name: "enrich_contact",
       description:
-        "Look up a person's professional details using their LinkedIn profile URL, email address, or full name. Returns enrichment data including name, company, job title, location, bio, education, and skills. Use this when the user provides a LinkedIn URL or asks you to research someone before creating a contact. This is a read-only lookup — it does NOT create or modify any contacts. After getting results, present them and ask if the user wants to create a contact with the enriched data.",
+        "Look up a person's professional details using their LinkedIn profile URL, email address, or full name. Returns enrichment data including name, company, job title, location, bio, education, and skills. Also checks if the person already exists in the user's contacts by matching email or phone. Use this when the user provides a LinkedIn URL or asks you to research someone before creating a contact. This is a read-only lookup — it does NOT create or modify any contacts. After getting results, present them to the user. If existing_matches is non-empty, tell the user this person may already exist and offer to update that contact instead. Otherwise ask if they want to create a new contact.",
       parameters: {
         type: "object",
         properties: {
@@ -590,7 +590,7 @@ export function getToolDefinitions(): ToolDefinition[] {
         },
         required: ["identifier", "type"],
       },
-      async execute(input, _userId) {
+      async execute(input, userId) {
         const identifier = input.identifier as string;
         const type = input.type as string;
 
@@ -639,10 +639,66 @@ export function getToolDefinitions(): ToolDefinition[] {
           }
         }
 
+        // Check for existing contacts matching enriched email or phone
+        type MatchedContact = {
+          contact_id: string;
+          first_name: string;
+          last_name: string | null;
+          company: string | null;
+        };
+        const existingMatches: MatchedContact[] = [];
+
+        if (cleaned.email) {
+          const { data: emailMatches } = await supabase
+            .from("contact_emails")
+            .select("contact_id, contacts!inner(first_name, last_name, company, user_id)")
+            .ilike("email", cleaned.email as string);
+
+          type EmailMatchRow = {
+            contact_id: string;
+            contacts: { first_name: string; last_name: string | null; company: string | null; user_id: string };
+          };
+          for (const row of (emailMatches as unknown as EmailMatchRow[]) ?? []) {
+            if (row.contacts.user_id === userId) {
+              existingMatches.push({
+                contact_id: row.contact_id,
+                first_name: row.contacts.first_name,
+                last_name: row.contacts.last_name,
+                company: row.contacts.company,
+              });
+            }
+          }
+        }
+
+        if (cleaned.phone && existingMatches.length === 0) {
+          const { data: phoneMatches } = await supabase
+            .from("contact_phones")
+            .select("contact_id, contacts!inner(first_name, last_name, company, user_id)")
+            .eq("phone", cleaned.phone as string);
+
+          type PhoneMatchRow = {
+            contact_id: string;
+            contacts: { first_name: string; last_name: string | null; company: string | null; user_id: string };
+          };
+          for (const row of (phoneMatches as unknown as PhoneMatchRow[]) ?? []) {
+            if (row.contacts.user_id === userId) {
+              existingMatches.push({
+                contact_id: row.contact_id,
+                first_name: row.contacts.first_name,
+                last_name: row.contacts.last_name,
+                company: row.contacts.company,
+              });
+            }
+          }
+        }
+
         return {
           success: true,
-          message: `Found enrichment data for ${cleaned.first_name ?? ""} ${cleaned.last_name ?? ""}`.trim(),
+          message: existingMatches.length > 0
+            ? `Found enrichment data for ${cleaned.first_name ?? ""} ${cleaned.last_name ?? ""}. This person may already be in your contacts.`.trim()
+            : `Found enrichment data for ${cleaned.first_name ?? ""} ${cleaned.last_name ?? ""}`.trim(),
           enrichment: cleaned,
+          existing_matches: existingMatches,
           source: "parallel",
         };
       },
@@ -655,7 +711,7 @@ export function getToolDefinitions(): ToolDefinition[] {
     {
       name: "create_contact_from_enrichment",
       description:
-        "Create a new contact using data from a previous enrich_contact lookup. Takes the enrichment data and creates a full contact record with emails, phone, LinkedIn URL, and notes. Use this AFTER enrich_contact when the user confirms they want to create the contact. Always call enrich_contact first, then present the results, then use this tool if the user approves.",
+        "Create a new contact using data from a previous enrich_contact lookup. Takes all enrichment fields and creates a full contact record. Core fields (name, company, title) go to contact columns. Email and phone go to their respective tables. Extra fields (education, skills, previous companies, etc.) are stored in custom_fields JSONB. Use this AFTER enrich_contact when the user confirms they want to create a NEW contact. If the person already exists (existing_matches from enrich_contact), use update_contact instead to avoid duplicates.",
       parameters: {
         type: "object",
         properties: {
@@ -699,6 +755,24 @@ export function getToolDefinitions(): ToolDefinition[] {
             type: "string",
             description: "Location to store in notes.",
           },
+          profile_photo_url: {
+            type: "string",
+            description: "URL of their profile photo.",
+          },
+          education: {
+            type: "string",
+            description: "Most recent education (school and degree).",
+          },
+          previous_companies: {
+            type: "array",
+            items: { type: "string" },
+            description: "List of previous employers.",
+          },
+          skills: {
+            type: "array",
+            items: { type: "string" },
+            description: "Professional skills or areas of expertise.",
+          },
         },
         required: ["first_name"],
       },
@@ -714,12 +788,27 @@ export function getToolDefinitions(): ToolDefinition[] {
         const linkedinUrl = input.linkedin_url as string | undefined;
         const bio = input.bio as string | undefined;
         const location = input.location as string | undefined;
+        const profilePhotoUrl = input.profile_photo_url as string | undefined;
+        const education = input.education as string | undefined;
+        const previousCompanies = input.previous_companies as string[] | undefined;
+        const skills = input.skills as string[] | undefined;
 
         // Build notes from enrichment data
         const notesParts: string[] = [];
         if (bio) notesParts.push(bio);
         if (location) notesParts.push(`Location: ${location}`);
         const notes = notesParts.length > 0 ? notesParts.join("\n") : null;
+
+        // Build custom_fields for extra enrichment data
+        const customFields: Record<string, unknown> = {};
+        if (education) customFields.education = education;
+        if (previousCompanies && previousCompanies.length > 0) {
+          customFields.previous_companies = previousCompanies;
+        }
+        if (skills && skills.length > 0) {
+          customFields.skills = skills;
+        }
+        if (location) customFields.location = location;
 
         const { data: contactData, error: contactError } = await supabase
           .from("contacts")
@@ -731,8 +820,10 @@ export function getToolDefinitions(): ToolDefinition[] {
             job_title: jobTitle,
             department,
             notes,
+            avatar_url: profilePhotoUrl ?? null,
+            custom_fields: Object.keys(customFields).length > 0 ? customFields : null,
             source: "enrichment",
-          })
+          } as never)
           .select(
             "id, first_name, last_name, company, job_title, avatar_url",
           )
@@ -771,9 +862,10 @@ export function getToolDefinitions(): ToolDefinition[] {
         }
 
         const fullName = [firstName, lastName].filter(Boolean).join(" ");
+        const extraCount = Object.keys(customFields).length;
         return {
           success: true,
-          message: `Created contact "${fullName}" from enrichment data.`,
+          message: `Created contact "${fullName}" from enrichment data.${extraCount > 0 ? ` Stored ${extraCount} extra field(s) (${Object.keys(customFields).join(", ")}).` : ""}`,
           contact,
         };
       },
