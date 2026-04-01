@@ -8,6 +8,7 @@ import { RelationshipCards } from "./chat/RelationshipResults";
 import { StatsCard } from "./chat/StatsDisplay";
 import { ToolProgressList, type ToolProgressItem } from "./chat/ToolProgress";
 import { AgentApprovalCard, PendingActionCard } from "./chat/ApprovalCard";
+import { EnrichmentResultCard } from "./chat/EnrichmentCard";
 import { SQLResultCard } from "./chat/SQLResult";
 import { ActionCard } from "./chat/ActionResult";
 import { MarkdownText, markdownStyles } from "./MarkdownText";
@@ -74,6 +75,26 @@ export function ChatBubble({
             {toolProgress && toolProgress.length > 0 && !pendingApproval && (
               <ToolProgressList progress={toolProgress} />
             )}
+            {/* Show enrichment card if enrich_contact returned data */}
+            {toolProgress?.map((tp, i) => {
+              if (
+                tp.name === "enrich_contact" &&
+                tp.status === "done" &&
+                tp.result &&
+                typeof tp.result === "object" &&
+                (tp.result as Record<string, unknown>).enrichment
+              ) {
+                return (
+                  <EnrichmentResultCard
+                    key={`enrich-${i}`}
+                    enrichment={
+                      (tp.result as Record<string, unknown>).enrichment as Record<string, unknown>
+                    }
+                  />
+                );
+              }
+              return null;
+            })}
             <MarkdownText style={markdownStyles}>{text}</MarkdownText>
             {/* Pending approval card from the agent loop */}
             {pendingApproval && (

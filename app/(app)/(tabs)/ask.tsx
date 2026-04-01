@@ -319,7 +319,11 @@ export default function AskScreen() {
           case "approval_needed":
             pendingApprovalRef.current = {
               toolCall: event.toolCall,
-              messages: [...conversationHistory.current],
+              messages: [
+                ...conversationHistory.current,
+                { role: "user" as const, content: messageText },
+                { role: "assistant" as const, content: null, toolCalls: [event.toolCall] },
+              ],
             };
             setMessages((prev) =>
               prev.map((msg) =>
@@ -615,10 +619,13 @@ export default function AskScreen() {
                 ),
               );
               if (event.type === "done") {
-                conversationHistory.current.push({
-                  role: "assistant",
-                  content: event.finalText,
-                });
+                // Restore full history: savedMessages includes previous turns +
+                // the user message + assistant tool-call from before approval.
+                // Add the final assistant response on top.
+                conversationHistory.current = [
+                  ...savedMessages,
+                  { role: "assistant" as const, content: event.finalText },
+                ];
                 await updateDbMessage(agentDbId, event.finalText);
                 if (activeSessionId) await touchSession(activeSessionId);
               }
@@ -1208,6 +1215,10 @@ function getToolLabel(
       return `Adding person to entity...`;
     case "log_interaction":
       return `Logging interaction...`;
+    case "enrich_contact":
+      return `Researching ${args.identifier ?? "contact"}...`;
+    case "create_contact_from_enrichment":
+      return `Creating contact "${args.first_name}"...`;
     default:
       return `Running ${name}...`;
   }

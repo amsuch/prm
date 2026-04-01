@@ -569,9 +569,215 @@ export function getToolDefinitions(): ToolDefinition[] {
       },
     },
 
+    {
+      name: "enrich_contact",
+      description:
+        "Look up a person's professional details using their LinkedIn profile URL, email address, or full name. Returns enrichment data including name, company, job title, location, bio, education, and skills. Use this when the user provides a LinkedIn URL or asks you to research someone before creating a contact. This is a read-only lookup — it does NOT create or modify any contacts. After getting results, present them and ask if the user wants to create a contact with the enriched data.",
+      parameters: {
+        type: "object",
+        properties: {
+          identifier: {
+            type: "string",
+            description:
+              "The LinkedIn profile URL (e.g., 'linkedin.com/in/johndoe'), email address, or full name to look up.",
+          },
+          type: {
+            type: "string",
+            description:
+              "Type of identifier: 'linkedin' for a LinkedIn URL, 'email' for an email address, 'name' for a person's name.",
+            enum: ["linkedin", "email", "name"],
+          },
+        },
+        required: ["identifier", "type"],
+      },
+      async execute(input, _userId) {
+        const identifier = input.identifier as string;
+        const type = input.type as string;
+
+        // Normalize LinkedIn URLs
+        let value = identifier;
+        if (type === "linkedin") {
+          // Accept various formats: full URL, linkedin.com/in/..., /in/...
+          if (!value.startsWith("http")) {
+            value = value.startsWith("linkedin.com")
+              ? `https://www.${value}`
+              : value.startsWith("/in/")
+                ? `https://www.linkedin.com${value}`
+                : `https://www.linkedin.com/in/${value}`;
+          }
+        }
+
+        const { data, error } = await supabase.functions.invoke(
+          "enrich-contact",
+          {
+            body: { type, value },
+          },
+        );
+
+        if (error) {
+          throw new Error(
+            `Enrichment failed: ${error.message ?? "Unknown error"}`,
+          );
+        }
+
+        if (!data?.success) {
+          throw new Error(data?.error ?? "Enrichment returned no data");
+        }
+
+        const enrichment = data.enrichment as Record<string, unknown>;
+
+        // Filter out empty/null fields
+        const cleaned: Record<string, unknown> = {};
+        for (const [key, val] of Object.entries(enrichment)) {
+          if (
+            val !== null &&
+            val !== undefined &&
+            val !== "" &&
+            !(Array.isArray(val) && val.length === 0)
+          ) {
+            cleaned[key] = val;
+          }
+        }
+
+        return {
+          success: true,
+          message: `Found enrichment data for ${cleaned.first_name ?? ""} ${cleaned.last_name ?? ""}`.trim(),
+          enrichment: cleaned,
+          source: "parallel",
+        };
+      },
+    },
+
     // ======================================================================
     // WRITE TOOLS (require approval in HITL mode)
     // ======================================================================
+
+    {
+      name: "create_contact_from_enrichment",
+      description:
+        "Create a new contact using data from a previous enrich_contact lookup. Takes the enrichment data and creates a full contact record with emails, phone, LinkedIn URL, and notes. Use this AFTER enrich_contact when the user confirms they want to create the contact. Always call enrich_contact first, then present the results, then use this tool if the user approves.",
+      parameters: {
+        type: "object",
+        properties: {
+          first_name: {
+            type: "string",
+            description: "First name from enrichment.",
+          },
+          last_name: {
+            type: "string",
+            description: "Last name from enrichment.",
+          },
+          company: {
+            type: "string",
+            description: "Company from enrichment.",
+          },
+          job_title: {
+            type: "string",
+            description: "Job title from enrichment.",
+          },
+          department: {
+            type: "string",
+            description: "Department from enrichment.",
+          },
+          email: {
+            type: "string",
+            description: "Email from enrichment.",
+          },
+          phone: {
+            type: "string",
+            description: "Phone from enrichment.",
+          },
+          linkedin_url: {
+            type: "string",
+            description: "LinkedIn profile URL.",
+          },
+          bio: {
+            type: "string",
+            description: "Professional bio/summary to store in notes.",
+          },
+          location: {
+            type: "string",
+            description: "Location to store in notes.",
+          },
+        },
+        required: ["first_name"],
+      },
+      requiresApproval: true,
+      async execute(input, userId) {
+        const firstName = input.first_name as string;
+        const lastName = (input.last_name as string) || null;
+        const company = (input.company as string) || null;
+        const jobTitle = (input.job_title as string) || null;
+        const department = (input.department as string) || null;
+        const email = input.email as string | undefined;
+        const phone = input.phone as string | undefined;
+        const linkedinUrl = input.linkedin_url as string | undefined;
+        const bio = input.bio as string | undefined;
+        const location = input.location as string | undefined;
+
+        // Build notes from enrichment data
+        const notesParts: string[] = [];
+        if (bio) notesParts.push(bio);
+        if (location) notesParts.push(`Location: ${location}`);
+        const notes = notesParts.length > 0 ? notesParts.join("\n") : null;
+
+        const { data: contactData, error: contactError } = await supabase
+          .from("contacts")
+          .insert({
+            user_id: userId,
+            first_name: firstName,
+            last_name: lastName,
+            company,
+            job_title: jobTitle,
+            department,
+            notes,
+            source: "enrichment",
+          })
+          .select(
+            "id, first_name, last_name, company, job_title, avatar_url",
+          )
+          .single();
+
+        if (contactError) throw new Error(contactError.message);
+        const contact = contactData as unknown as AgentResultContact;
+
+        // Add email
+        if (email) {
+          await supabase.from("contact_emails").insert({
+            contact_id: contact.id,
+            email,
+            label: "work",
+            is_primary: true,
+          });
+        }
+
+        // Add phone
+        if (phone) {
+          await supabase.from("contact_phones").insert({
+            contact_id: contact.id,
+            phone,
+            label: "work",
+            is_primary: true,
+          });
+        }
+
+        // Add LinkedIn URL
+        if (linkedinUrl) {
+          await supabase.from("contact_urls").insert({
+            contact_id: contact.id,
+            url: linkedinUrl,
+            label: "linkedin",
+          });
+        }
+
+        const fullName = [firstName, lastName].filter(Boolean).join(" ");
+        return {
+          success: true,
+          message: `Created contact "${fullName}" from enrichment data.`,
+          contact,
+        };
+      },
+    },
 
     {
       name: "create_contact",

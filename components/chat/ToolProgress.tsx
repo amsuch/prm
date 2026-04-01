@@ -26,6 +26,8 @@ export const TOOL_ICONS: Record<string, { icon: string; label: string }> = {
   create_entity: { icon: "business", label: "Creating entity" },
   add_entity_person: { icon: "person-add", label: "Adding person" },
   log_interaction: { icon: "chatbubble", label: "Logging interaction" },
+  enrich_contact: { icon: "sparkles", label: "Enriching contact" },
+  create_contact_from_enrichment: { icon: "person-add", label: "Creating enriched contact" },
 };
 
 export function ToolProgressList({
