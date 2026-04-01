@@ -84,11 +84,15 @@ export function ChatBubble({
                 typeof tp.result === "object" &&
                 (tp.result as Record<string, unknown>).enrichment
               ) {
+                const result = tp.result as Record<string, unknown>;
                 return (
                   <EnrichmentResultCard
                     key={`enrich-${i}`}
-                    enrichment={
-                      (tp.result as Record<string, unknown>).enrichment as Record<string, unknown>
+                    enrichment={result.enrichment as Record<string, unknown>}
+                    existingMatches={
+                      result.existing_matches as
+                        | { contact_id: string; first_name: string; last_name: string | null; company: string | null }[]
+                        | undefined
                     }
                   />
                 );

@@ -1,4 +1,5 @@
-import { View, Text } from "react-native";
+import { useState, useEffect, useRef } from "react";
+import { View, Text, Animated } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/colors";
 
@@ -30,6 +31,65 @@ export const TOOL_ICONS: Record<string, { icon: string; label: string }> = {
   create_contact_from_enrichment: { icon: "person-add", label: "Creating enriched contact" },
 };
 
+const ENRICH_PHASES = [
+  "Searching the web",
+  "Finding profile details",
+  "Analyzing background",
+  "Extracting info",
+];
+
+function EnrichRunningIndicator() {
+  const [phaseIndex, setPhaseIndex] = useState(0);
+  const pulseAnim = useRef(new Animated.Value(0.5)).current;
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPhaseIndex((prev) => (prev + 1) % ENRICH_PHASES.length);
+    }, 7000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 0.5, duration: 700, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulseAnim]);
+
+  return (
+    <View className="mt-1 rounded-lg bg-purple-50 dark:bg-purple-950 p-2">
+      <View className="flex-row items-center">
+        <Animated.View style={{ opacity: pulseAnim }}>
+          <Ionicons name="sparkles" size={14} color="#8b5cf6" />
+        </Animated.View>
+        <Animated.Text
+          className="ml-2 text-xs font-medium text-purple-600 dark:text-purple-400"
+          style={{ opacity: pulseAnim }}
+        >
+          {ENRICH_PHASES[phaseIndex]}...
+        </Animated.Text>
+      </View>
+      {/* Mini progress dots */}
+      <View className="mt-1.5 flex-row items-center gap-1 pl-5">
+        {ENRICH_PHASES.map((_, i) => (
+          <View
+            key={i}
+            className={`h-1 rounded-full ${
+              i <= phaseIndex
+                ? "w-5 bg-purple-400 dark:bg-purple-500"
+                : "w-3 bg-purple-200 dark:bg-purple-800"
+            }`}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}
+
 export function ToolProgressList({
   progress,
 }: {
@@ -38,6 +98,11 @@ export function ToolProgressList({
   return (
     <View className="mb-2">
       {progress.map((tp, index) => {
+        // Special enrichment running indicator
+        if (tp.name === "enrich_contact" && tp.status === "running") {
+          return <EnrichRunningIndicator key={`${tp.name}-${index}`} />;
+        }
+
         const toolInfo = TOOL_ICONS[tp.name] ?? {
           icon: "ellipse",
           label: tp.name,
@@ -60,6 +125,8 @@ export function ToolProgressList({
         if (tp.arguments) {
           if (tp.arguments.query)
             detail = ` "${tp.arguments.query}"`;
+          else if (tp.arguments.identifier)
+            detail = ` ${tp.arguments.identifier}`;
           else if (tp.arguments.first_name)
             detail = ` ${tp.arguments.first_name}`;
           else if (tp.arguments.tag)
