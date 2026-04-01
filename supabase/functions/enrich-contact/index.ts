@@ -12,6 +12,7 @@ const corsHeaders = {
 };
 
 /** Output schema for person enrichment from Parallel Task API. */
+/** 10 properties — within the core processor's recommended limit. */
 const PERSON_OUTPUT_SCHEMA = {
   type: "json" as const,
   json_schema: {
@@ -20,49 +21,16 @@ const PERSON_OUTPUT_SCHEMA = {
       first_name: { type: "string", description: "Person's first name" },
       last_name: { type: "string", description: "Person's last name" },
       company: { type: "string", description: "Current company or employer" },
-      job_title: {
-        type: "string",
-        description: "Current job title or role",
-      },
-      department: {
-        type: "string",
-        description: "Department within the company",
-      },
-      email: {
-        type: "string",
-        description: "Professional or public email address",
-      },
+      job_title: { type: "string", description: "Current job title or role" },
+      department: { type: "string", description: "Department within the company" },
+      email: { type: "string", description: "Professional or public email address" },
       phone: { type: "string", description: "Phone number if available" },
-      location: {
-        type: "string",
-        description: "City and state/country of residence",
-      },
-      linkedin_url: {
-        type: "string",
-        description: "Full LinkedIn profile URL",
-      },
-      bio: {
-        type: "string",
-        description:
-          "Brief professional summary or headline (1-2 sentences)",
-      },
-      profile_photo_url: {
-        type: "string",
-        description: "URL of their profile photo if publicly available",
-      },
-      education: {
-        type: "string",
-        description: "Most recent education (school and degree)",
-      },
+      location: { type: "string", description: "City and state/country of residence" },
+      bio: { type: "string", description: "Brief professional summary or headline (1-2 sentences)" },
       previous_companies: {
         type: "array",
         items: { type: "string" },
         description: "List of notable previous employers",
-      },
-      skills: {
-        type: "array",
-        items: { type: "string" },
-        description: "Top professional skills or areas of expertise",
       },
     },
   },

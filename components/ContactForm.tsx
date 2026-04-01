@@ -231,14 +231,11 @@ export function ContactForm({ existingContact, mode }: ContactFormProps) {
         return [...prev, { label: "linkedin", url: normalizedUrl }];
       });
 
-      // Fill custom fields (education, skills, previous companies)
+      // Fill custom fields (education, previous companies)
       const newCustom: Record<string, unknown> = { ...customFields };
       if (e.education && typeof e.education === "string") newCustom.education = e.education;
       if (Array.isArray(e.previous_companies) && e.previous_companies.length > 0) {
         newCustom.previous_companies = e.previous_companies;
-      }
-      if (Array.isArray(e.skills) && e.skills.length > 0) {
-        newCustom.skills = e.skills;
       }
       if (e.location && typeof e.location === "string") newCustom.location = e.location;
       setCustomFields(newCustom);

@@ -17,7 +17,6 @@ type EnrichmentData = {
   profile_photo_url?: string;
   education?: string;
   previous_companies?: string[];
-  skills?: string[];
 };
 
 type ExistingMatch = {
@@ -42,8 +41,6 @@ const FIELD_CONFIG: {
   { key: "education", label: "Education", icon: "school" },
 ];
 
-const SKILLS_VISIBLE = 8;
-
 export function EnrichmentResultCard({
   enrichment,
   existingMatches,
@@ -56,8 +53,6 @@ export function EnrichmentResultCard({
     .join(" ");
 
   const hasMatches = existingMatches && existingMatches.length > 0;
-  const totalSkills = enrichment.skills?.length ?? 0;
-  const hiddenSkills = Math.max(0, totalSkills - SKILLS_VISIBLE);
 
   return (
     <View className="mt-3 rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950 p-3">
@@ -186,33 +181,6 @@ export function EnrichmentResultCard({
         </View>
       ) : null}
 
-      {/* Skills */}
-      {enrichment.skills && enrichment.skills.length > 0 ? (
-        <View className="mt-2">
-          <Text className="mb-1 text-xs font-medium text-stone-400 dark:text-stone-500">
-            Skills
-          </Text>
-          <View className="flex-row flex-wrap gap-1">
-            {enrichment.skills.slice(0, SKILLS_VISIBLE).map((skill, i) => (
-              <View
-                key={i}
-                className="rounded-full bg-purple-100 dark:bg-purple-900 px-2.5 py-0.5"
-              >
-                <Text className="text-xs text-purple-700 dark:text-purple-300">
-                  {skill}
-                </Text>
-              </View>
-            ))}
-            {hiddenSkills > 0 && (
-              <View className="rounded-full bg-purple-50 dark:bg-purple-950 px-2.5 py-0.5">
-                <Text className="text-xs text-purple-400 dark:text-purple-500">
-                  +{hiddenSkills} more
-                </Text>
-              </View>
-            )}
-          </View>
-        </View>
-      ) : null}
     </View>
   );
 }

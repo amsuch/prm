@@ -709,6 +709,79 @@ export function getToolDefinitions(): ToolDefinition[] {
     // ======================================================================
 
     {
+      name: "queue_enrichment",
+      description:
+        "Queue one or more people for background enrichment. Jobs run server-side — the user can close the app and contacts will be created automatically when enrichment completes. Use this when the user wants to enrich multiple people at once (e.g., 'enrich all these LinkedIn profiles') or wants enrichment to run in the background. Each item gets added to a processing queue. For a single person where the user wants immediate results, prefer enrich_contact instead.",
+      parameters: {
+        type: "object",
+        properties: {
+          items: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                identifier: {
+                  type: "string",
+                  description: "LinkedIn URL, email, or name.",
+                },
+                type: {
+                  type: "string",
+                  enum: ["linkedin", "email", "name"],
+                  description: "Type of identifier.",
+                },
+              },
+              required: ["identifier", "type"],
+            },
+            description: "List of people to enrich.",
+          },
+        },
+        required: ["items"],
+      },
+      requiresApproval: true,
+      async execute(input, userId) {
+        const items = input.items as { identifier: string; type: string }[];
+
+        if (items.length === 0) {
+          return { success: false, message: "No items provided." };
+        }
+
+        // Normalize LinkedIn URLs
+        const rows = items.map((item) => {
+          let value = item.identifier;
+          if (item.type === "linkedin" && !value.startsWith("http")) {
+            value = value.startsWith("linkedin.com")
+              ? `https://www.${value}`
+              : value.startsWith("/in/")
+                ? `https://www.linkedin.com${value}`
+                : `https://www.linkedin.com/in/${value}`;
+          }
+          return {
+            user_id: userId,
+            identifier: value,
+            type: item.type,
+            status: "pending" as const,
+          };
+        });
+
+        const { data, error } = await supabase
+          .from("enrichment_queue")
+          .insert(rows)
+          .select("id");
+
+        if (error) throw new Error(error.message);
+
+        const inserted = (data as unknown as { id: string }[]) ?? [];
+
+        return {
+          success: true,
+          message: `Queued ${inserted.length} enrichment job(s). They'll run in the background — contacts will be created automatically when each one completes.`,
+          job_count: inserted.length,
+          job_ids: inserted.map((r) => r.id),
+        };
+      },
+    },
+
+    {
       name: "create_contact_from_enrichment",
       description:
         "Create a new contact using data from a previous enrich_contact lookup. Takes all enrichment fields and creates a full contact record. Core fields (name, company, title) go to contact columns. Email and phone go to their respective tables. Extra fields (education, skills, previous companies, etc.) are stored in custom_fields JSONB. Use this AFTER enrich_contact when the user confirms they want to create a NEW contact. If the person already exists (existing_matches from enrich_contact), use update_contact instead to avoid duplicates.",
@@ -768,11 +841,6 @@ export function getToolDefinitions(): ToolDefinition[] {
             items: { type: "string" },
             description: "List of previous employers.",
           },
-          skills: {
-            type: "array",
-            items: { type: "string" },
-            description: "Professional skills or areas of expertise.",
-          },
         },
         required: ["first_name"],
       },
@@ -791,7 +859,6 @@ export function getToolDefinitions(): ToolDefinition[] {
         const profilePhotoUrl = input.profile_photo_url as string | undefined;
         const education = input.education as string | undefined;
         const previousCompanies = input.previous_companies as string[] | undefined;
-        const skills = input.skills as string[] | undefined;
 
         // Build notes from enrichment data
         const notesParts: string[] = [];
@@ -804,9 +871,6 @@ export function getToolDefinitions(): ToolDefinition[] {
         if (education) customFields.education = education;
         if (previousCompanies && previousCompanies.length > 0) {
           customFields.previous_companies = previousCompanies;
-        }
-        if (skills && skills.length > 0) {
-          customFields.skills = skills;
         }
         if (location) customFields.location = location;
 

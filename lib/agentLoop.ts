@@ -49,6 +49,7 @@ const ALWAYS_REQUIRE_APPROVAL = new Set([
   "bulk_tag_contacts",
   "bulk_update_contacts",
   "create_contact_from_enrichment",
+  "queue_enrichment",
 ]);
 
 const DEFAULT_SYSTEM_PROMPT = `You are a personal relationship manager assistant with access to tools that query and modify the user's contact database.
@@ -86,6 +87,10 @@ function getToolDescription(toolCall: ToolCall): string {
       return `Log ${args.type} interaction with contact`;
     case "create_contact_from_enrichment":
       return `Create contact from enrichment: ${args.first_name}${args.last_name ? " " + args.last_name : ""}${args.company ? " at " + args.company : ""}`;
+    case "queue_enrichment": {
+      const queueItems = args.items as { identifier: string }[] | undefined;
+      return `Queue ${queueItems?.length ?? 0} enrichment job(s) to run in background`;
+    }
     default:
       return `Execute ${toolCall.name}`;
   }

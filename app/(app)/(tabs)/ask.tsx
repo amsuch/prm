@@ -1219,6 +1219,10 @@ function getToolLabel(
       return `Researching ${args.identifier ?? "contact"}...`;
     case "create_contact_from_enrichment":
       return `Creating contact "${args.first_name}"...`;
+    case "queue_enrichment": {
+      const items = args.items as unknown[];
+      return `Queuing ${items?.length ?? 0} enrichment job(s)...`;
+    }
     default:
       return `Running ${name}...`;
   }
