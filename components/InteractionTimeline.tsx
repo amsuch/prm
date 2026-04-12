@@ -13,16 +13,31 @@ type InteractionTimelineProps = {
   error: string | null;
   onLogPress: () => void;
   onRefresh: () => void;
+  onInteractionPress?: (interaction: Tables<"interactions">) => void;
 };
 
-function InteractionItem({ interaction }: { interaction: Tables<"interactions"> }) {
+function InteractionItem({
+  interaction,
+  onPress,
+}: {
+  interaction: Tables<"interactions">;
+  onPress?: (interaction: Tables<"interactions">) => void;
+}) {
   const [isExpanded, setIsExpanded] = useState(false);
   const config = getInteractionTypeConfig(interaction.type);
   const hasBody = !!interaction.body;
 
+  const handlePress = () => {
+    if (onPress) {
+      onPress(interaction);
+    } else if (hasBody) {
+      setIsExpanded(!isExpanded);
+    }
+  };
+
   return (
     <Pressable
-      onPress={() => hasBody && setIsExpanded(!isExpanded)}
+      onPress={handlePress}
       className="flex-row rounded-xl bg-white dark:bg-stone-900 px-3 py-2.5 active:bg-stone-50 dark:active:bg-stone-800"
     >
       {/* Type Icon */}
@@ -77,16 +92,14 @@ function InteractionItem({ interaction }: { interaction: Tables<"interactions"> 
         )}
       </View>
 
-      {/* Expand indicator */}
-      {hasBody && (
-        <View className="ml-1 justify-center">
-          <Ionicons
-            name={isExpanded ? "chevron-up" : "chevron-down"}
-            size={14}
-            color={Colors.gray[300]}
-          />
-        </View>
-      )}
+      {/* Expand/navigate indicator */}
+      <View className="ml-1 justify-center">
+        <Ionicons
+          name={onPress ? "chevron-forward" : isExpanded ? "chevron-up" : hasBody ? "chevron-down" : "chevron-forward"}
+          size={14}
+          color={Colors.gray[300]}
+        />
+      </View>
     </Pressable>
   );
 }
@@ -97,6 +110,7 @@ export function InteractionTimeline({
   error,
   onLogPress,
   onRefresh,
+  onInteractionPress,
 }: InteractionTimelineProps) {
   const hasInteractions = groupedInteractions.length > 0;
 
@@ -169,6 +183,7 @@ export function InteractionTimeline({
                   <InteractionItem
                     key={interaction.id}
                     interaction={interaction}
+                    onPress={onInteractionPress}
                   />
                 ))}
               </View>

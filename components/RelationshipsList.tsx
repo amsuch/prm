@@ -15,6 +15,7 @@ type RelationshipsListProps = {
   error: string | null;
   onAddPress: () => void;
   onRefresh: () => void;
+  onEditPress?: (relationship: RelationshipItem) => void;
 };
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -36,9 +37,11 @@ const CATEGORY_ORDER = ["Family", "Professional", "Social", "Other"];
 function RelationshipCard({
   item,
   onRemove,
+  onEdit,
 }: {
   item: RelationshipItem;
   onRemove: (id: string) => void;
+  onEdit?: (item: RelationshipItem) => void;
 }) {
   const router = useRouter();
   const fullName = [item.related_first_name, item.related_last_name]
@@ -85,6 +88,15 @@ function RelationshipCard({
           </Text>
         ) : null}
       </View>
+      {onEdit && (
+        <Pressable
+          onPress={() => onEdit(item)}
+          hitSlop={8}
+          className="mr-1 rounded-lg p-1.5 active:bg-stone-100 dark:active:bg-stone-700"
+        >
+          <Ionicons name="create-outline" size={16} color={Colors.gray[400]} />
+        </Pressable>
+      )}
       <Ionicons name="chevron-forward" size={16} color={Colors.gray[300]} />
     </Pressable>
   );
@@ -96,6 +108,7 @@ export function RelationshipsList({
   error,
   onAddPress,
   onRefresh,
+  onEditPress,
 }: RelationshipsListProps) {
   const handleRemove = async (relationshipId: string) => {
     try {
@@ -197,6 +210,7 @@ export function RelationshipsList({
                       key={item.relationship_id}
                       item={item}
                       onRemove={handleRemove}
+                      onEdit={onEditPress}
                     />
                   ))}
                 </View>

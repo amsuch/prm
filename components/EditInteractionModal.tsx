@@ -13,79 +13,112 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/colors";
-import { useSession } from "@/lib/auth/ctx";
 import {
-  logInteraction,
+  updateInteraction,
+  deleteInteraction,
   INTERACTION_TYPES,
   INTERACTION_DIRECTIONS,
   type InteractionType,
   type InteractionDirection,
 } from "@/lib/interactions";
 import { DateTimePicker } from "@/components/DateTimePicker";
+import type { Tables } from "@/types/database";
 
-type LogInteractionModalProps = {
+type EditInteractionModalProps = {
   visible: boolean;
   onClose: () => void;
-  onLogged: () => void;
-  contactId: string;
+  onUpdated: () => void;
+  interaction: Tables<"interactions"> | null;
   contactName: string;
 };
 
-export function LogInteractionModal({
+export function EditInteractionModal({
   visible,
   onClose,
-  onLogged,
-  contactId,
+  onUpdated,
+  interaction,
   contactName,
-}: LogInteractionModalProps) {
-  const { session } = useSession();
-  const userId = session?.user?.id;
-
+}: EditInteractionModalProps) {
   const [selectedType, setSelectedType] = useState<InteractionType>("call");
   const [direction, setDirection] = useState<InteractionDirection>("outbound");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [occurredAt, setOccurredAt] = useState(new Date().toISOString());
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  // Reset form when modal opens
+  // Populate form from interaction when modal opens
   useEffect(() => {
-    if (visible) {
-      setSelectedType("call");
-      setDirection("outbound");
-      setTitle("");
-      setBody("");
-      setOccurredAt(new Date().toISOString());
+    if (visible && interaction) {
+      setSelectedType((interaction.type as InteractionType) ?? "call");
+      setDirection(
+        interaction.direction
+          ? (interaction.direction as InteractionDirection)
+          : "none",
+      );
+      setTitle(interaction.title ?? "");
+      setBody(interaction.body ?? "");
+      setOccurredAt(interaction.occurred_at);
     }
-  }, [visible]);
+  }, [visible, interaction]);
 
   const handleSave = useCallback(async () => {
-    if (!userId) return;
+    if (!interaction) return;
 
     setIsSaving(true);
     try {
-      await logInteraction({
-        userId,
-        contactId,
+      await updateInteraction(interaction.id, {
         type: selectedType,
         direction,
         title: title.trim() || undefined,
         body: body.trim() || undefined,
         occurredAt,
       });
-      onLogged();
+      onUpdated();
       onClose();
     } catch (err) {
       Alert.alert(
         "Error",
-        err instanceof Error ? err.message : "Failed to log interaction",
+        err instanceof Error ? err.message : "Failed to update interaction",
       );
     } finally {
       setIsSaving(false);
     }
-  }, [userId, contactId, selectedType, direction, title, body, occurredAt, onLogged, onClose]);
+  }, [interaction, selectedType, direction, title, body, occurredAt, onUpdated, onClose]);
+
+  const handleDelete = useCallback(() => {
+    if (!interaction) return;
+
+    Alert.alert(
+      "Delete Interaction",
+      "Are you sure you want to delete this interaction? This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setIsDeleting(true);
+            try {
+              await deleteInteraction(interaction.id);
+              onUpdated();
+              onClose();
+            } catch (err) {
+              Alert.alert(
+                "Error",
+                err instanceof Error ? err.message : "Failed to delete interaction",
+              );
+            } finally {
+              setIsDeleting(false);
+            }
+          },
+        },
+      ],
+    );
+  }, [interaction, onUpdated, onClose]);
 
   const selectedTypeConfig = INTERACTION_TYPES.find((t) => t.value === selectedType);
+  const disabled = isSaving || isDeleting;
 
   return (
     <Modal
@@ -99,12 +132,20 @@ export function LogInteractionModal({
         className="flex-1 bg-stone-50 dark:bg-stone-950"
       >
         {/* Header */}
-        <View className="flex-row items-center justify-between border-b border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 px-4 pb-3 pt-4">
+        <View className="flex-row items-center justify-between border-b border-stone-200 bg-white px-4 pb-3 pt-4 dark:border-stone-700 dark:bg-stone-900">
           <Pressable onPress={onClose} hitSlop={8}>
             <Ionicons name="close" size={24} color={Colors.gray[600]} />
           </Pressable>
-          <Text className="text-lg font-semibold text-stone-900 dark:text-stone-100">Log Interaction</Text>
-          <View style={{ width: 24 }} />
+          <Text className="text-lg font-semibold text-stone-900 dark:text-stone-100">
+            Edit Interaction
+          </Text>
+          <Pressable onPress={handleDelete} hitSlop={8} disabled={disabled}>
+            <Ionicons
+              name="trash-outline"
+              size={22}
+              color={disabled ? Colors.gray[300] : Colors.error}
+            />
+          </Pressable>
         </View>
 
         <ScrollView
@@ -113,7 +154,7 @@ export function LogInteractionModal({
           showsVerticalScrollIndicator={false}
         >
           {/* Contact Name */}
-          <View className="mx-4 mt-4 flex-row items-center rounded-xl bg-white dark:bg-stone-900 px-3 py-2.5 shadow-sm">
+          <View className="mx-4 mt-4 flex-row items-center rounded-xl bg-white px-3 py-2.5 shadow-sm dark:bg-stone-900">
             <Ionicons name="person" size={16} color={Colors.brand[600]} />
             <Text className="ml-2 text-sm font-medium text-stone-700 dark:text-stone-300">
               with {contactName}
@@ -122,7 +163,9 @@ export function LogInteractionModal({
 
           {/* Type Selection */}
           <View className="mx-4 mt-5">
-            <Text className="mb-2 text-sm font-semibold text-stone-700 dark:text-stone-300">Type</Text>
+            <Text className="mb-2 text-sm font-semibold text-stone-700 dark:text-stone-300">
+              Type
+            </Text>
             <View className="flex-row flex-wrap gap-2">
               {INTERACTION_TYPES.map((type) => {
                 const isSelected = selectedType === type.value;
@@ -132,8 +175,8 @@ export function LogInteractionModal({
                     onPress={() => setSelectedType(type.value)}
                     className={`flex-row items-center rounded-xl px-3 py-2 ${
                       isSelected
-                        ? "border-2 bg-white dark:bg-stone-900 shadow-sm"
-                        : "border-2 border-transparent bg-white dark:bg-stone-900 active:bg-stone-50 dark:active:bg-stone-800"
+                        ? "border-2 bg-white shadow-sm dark:bg-stone-900"
+                        : "border-2 border-transparent bg-white active:bg-stone-50 dark:bg-stone-900 dark:active:bg-stone-800"
                     }`}
                     style={isSelected ? { borderColor: type.color } : undefined}
                   >
@@ -144,7 +187,9 @@ export function LogInteractionModal({
                     />
                     <Text
                       className={`ml-1.5 text-sm font-medium ${
-                        isSelected ? "text-stone-900 dark:text-stone-100" : "text-stone-500 dark:text-stone-400"
+                        isSelected
+                          ? "text-stone-900 dark:text-stone-100"
+                          : "text-stone-500 dark:text-stone-400"
                       }`}
                     >
                       {type.label}
@@ -157,7 +202,9 @@ export function LogInteractionModal({
 
           {/* Direction */}
           <View className="mx-4 mt-5">
-            <Text className="mb-2 text-sm font-semibold text-stone-700 dark:text-stone-300">Direction</Text>
+            <Text className="mb-2 text-sm font-semibold text-stone-700 dark:text-stone-300">
+              Direction
+            </Text>
             <View className="flex-row gap-2">
               {INTERACTION_DIRECTIONS.map((dir) => {
                 const isSelected = direction === dir.value;
@@ -168,12 +215,14 @@ export function LogInteractionModal({
                     className={`flex-1 items-center rounded-xl py-2.5 ${
                       isSelected
                         ? "bg-indigo-600"
-                        : "bg-white dark:bg-stone-900 shadow-sm active:bg-stone-50 dark:active:bg-stone-800"
+                        : "bg-white shadow-sm active:bg-stone-50 dark:bg-stone-900 dark:active:bg-stone-800"
                     }`}
                   >
                     <Text
                       className={`text-sm font-medium ${
-                        isSelected ? "text-white" : "text-stone-600 dark:text-stone-400"
+                        isSelected
+                          ? "text-white"
+                          : "text-stone-600 dark:text-stone-400"
                       }`}
                     >
                       {dir.label}
@@ -190,7 +239,7 @@ export function LogInteractionModal({
               Title (optional)
             </Text>
             <TextInput
-              className="rounded-xl bg-white dark:bg-stone-900 px-3 py-3 text-base text-stone-900 dark:text-stone-100 shadow-sm"
+              className="rounded-xl bg-white px-3 py-3 text-base text-stone-900 shadow-sm dark:bg-stone-900 dark:text-stone-100"
               placeholder={`e.g., ${selectedTypeConfig?.label ?? "Interaction"} about project`}
               placeholderTextColor={Colors.gray[400]}
               value={title}
@@ -205,7 +254,7 @@ export function LogInteractionModal({
               Notes (optional)
             </Text>
             <TextInput
-              className="min-h-[120px] rounded-xl bg-white dark:bg-stone-900 px-3 py-3 text-base text-stone-900 dark:text-stone-100 shadow-sm"
+              className="min-h-[120px] rounded-xl bg-white px-3 py-3 text-base text-stone-900 shadow-sm dark:bg-stone-900 dark:text-stone-100"
               placeholder="What was discussed? Key takeaways..."
               placeholderTextColor={Colors.gray[400]}
               value={body}
@@ -228,27 +277,22 @@ export function LogInteractionModal({
         </ScrollView>
 
         {/* Save Button */}
-        <View className="border-t border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 px-4 pb-8 pt-3">
+        <View className="border-t border-stone-200 bg-white px-4 pb-8 pt-3 dark:border-stone-700 dark:bg-stone-900">
           <Pressable
             onPress={handleSave}
-            disabled={isSaving}
+            disabled={disabled}
             className={`items-center rounded-xl py-3.5 ${
-              isSaving ? "bg-stone-200 dark:bg-stone-700" : "bg-indigo-600 active:bg-indigo-700"
+              disabled
+                ? "bg-stone-200 dark:bg-stone-700"
+                : "bg-indigo-600 active:bg-indigo-700"
             }`}
           >
             {isSaving ? (
               <ActivityIndicator size="small" color="#ffffff" />
             ) : (
-              <View className="flex-row items-center">
-                <Ionicons
-                  name={selectedTypeConfig?.icon as keyof typeof Ionicons.glyphMap ?? "add"}
-                  size={18}
-                  color="#ffffff"
-                />
-                <Text className="ml-2 text-base font-semibold text-white">
-                  Log {selectedTypeConfig?.label ?? "Interaction"}
-                </Text>
-              </View>
+              <Text className="text-base font-semibold text-white">
+                Save Changes
+              </Text>
             )}
           </Pressable>
         </View>

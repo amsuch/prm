@@ -14,17 +14,22 @@ import { TagPills } from "@/components/TagPills";
 import { InteractionTimeline } from "@/components/InteractionTimeline";
 import { RelationshipsList } from "@/components/RelationshipsList";
 import { CustomFieldsView } from "@/components/CustomFieldsView";
+import { EnrichmentFields } from "@/components/EnrichmentFields";
 import { MarkdownText } from "@/components/MarkdownText";
 import { AddRelationshipModal } from "@/components/AddRelationshipModal";
+import { EditRelationshipModal } from "@/components/EditRelationshipModal";
 import { LogInteractionModal } from "@/components/LogInteractionModal";
+import { EditInteractionModal } from "@/components/EditInteractionModal";
 import { useContact } from "@/hooks/useContact";
 import { useInteractions } from "@/hooks/useInteractions";
 import { useRelationships } from "@/hooks/useRelationships";
 import { useCustomFieldDefinitions } from "@/hooks/useCustomFieldDefinitions";
 import { formatRelativeTime, formatDate } from "@/lib/utils";
 import { Colors } from "@/constants/colors";
+import type { Tables } from "@/types/database";
+import type { RelationshipItem } from "@/hooks/useRelationships";
 
-type SectionId = "info" | "tags" | "custom" | "notes";
+type SectionId = "info" | "details" | "tags" | "custom" | "notes";
 
 export default function ContactDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -49,6 +54,8 @@ export default function ContactDetailScreen() {
   const [collapsedSections, setCollapsedSections] = useState<Set<SectionId>>(new Set());
   const [showAddRelationship, setShowAddRelationship] = useState(false);
   const [showLogInteraction, setShowLogInteraction] = useState(false);
+  const [editingInteraction, setEditingInteraction] = useState<Tables<"interactions"> | null>(null);
+  const [editingRelationship, setEditingRelationship] = useState<RelationshipItem | null>(null);
 
   const toggleSection = (section: SectionId) => {
     setCollapsedSections((prev) => {
@@ -233,6 +240,29 @@ export default function ContactDetailScreen() {
           </>
         )}
 
+        {/* Enrichment Details (location, education, previous companies from Parallel) */}
+        {contact.custom_fields &&
+          (() => {
+            const cf = contact.custom_fields as Record<string, unknown> | null;
+            const hasEnrichment = cf && (cf.location || cf.education || (Array.isArray(cf.previous_companies) && cf.previous_companies.length > 0));
+            if (!hasEnrichment) return null;
+            return (
+              <>
+                <SectionHeader
+                  title="Details"
+                  sectionId="details"
+                  isCollapsed={collapsedSections.has("details")}
+                  onToggle={toggleSection}
+                />
+                {!collapsedSections.has("details") && (
+                  <View className="mx-4 rounded-xl bg-white p-4 shadow-sm dark:border dark:border-stone-800 dark:bg-stone-900">
+                    <EnrichmentFields customFields={contact.custom_fields} />
+                  </View>
+                )}
+              </>
+            );
+          })()}
+
         {/* Relationships Section (self-contained with header) */}
         <RelationshipsList
           groupedRelationships={groupedRelationships}
@@ -240,6 +270,7 @@ export default function ContactDetailScreen() {
           error={relationshipsError}
           onAddPress={() => setShowAddRelationship(true)}
           onRefresh={refreshRelationships}
+          onEditPress={(rel) => setEditingRelationship(rel)}
         />
 
         {/* Interactions Timeline (self-contained with header) */}
@@ -249,6 +280,7 @@ export default function ContactDetailScreen() {
           error={interactionsError}
           onLogPress={() => setShowLogInteraction(true)}
           onRefresh={refreshInteractions}
+          onInteractionPress={(interaction) => setEditingInteraction(interaction)}
         />
 
         {/* Custom Fields Section */}
@@ -343,6 +375,26 @@ export default function ContactDetailScreen() {
         }}
         contactId={id!}
         contactName={fullName}
+      />
+
+      {/* Edit Interaction Modal */}
+      <EditInteractionModal
+        visible={!!editingInteraction}
+        onClose={() => setEditingInteraction(null)}
+        onUpdated={() => {
+          refreshInteractions();
+          refetch();
+        }}
+        interaction={editingInteraction}
+        contactName={fullName}
+      />
+
+      {/* Edit Relationship Modal */}
+      <EditRelationshipModal
+        visible={!!editingRelationship}
+        onClose={() => setEditingRelationship(null)}
+        onUpdated={refreshRelationships}
+        relationship={editingRelationship}
       />
     </View>
   );
