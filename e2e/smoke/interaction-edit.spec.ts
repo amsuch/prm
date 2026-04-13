@@ -1,27 +1,22 @@
 import { test, expect } from "@playwright/test";
+import { goToFirstContactDetail } from "../helpers/contacts";
 
 test.describe("Interaction modals", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/contacts");
-    await page.waitForLoadState("networkidle");
-
-    const contactCard = page.locator("[role='button']").first();
-    if (!(await contactCard.isVisible({ timeout: 5_000 }).catch(() => false))) {
+    const hasContact = await goToFirstContactDetail(page);
+    if (!hasContact) {
       test.skip(true, "No contacts exist in dev environment");
-      return;
     }
-    await contactCard.click();
-    await page.waitForURL("**/contact/*");
   });
 
   test("Log Interaction modal has date/time picker", async ({ page }) => {
     // Open the Log Interaction modal
-    await page.getByText("Log Interaction").click();
+    await page.getByText("Log Interaction", { exact: true }).click();
 
     // Modal should show form fields
-    await expect(page.getByText("Type")).toBeVisible({ timeout: 5_000 });
-    await expect(page.getByText("Direction")).toBeVisible();
-    await expect(page.getByText("Date & Time")).toBeVisible();
+    await expect(page.getByText("Type", { exact: true }).first()).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText("Direction", { exact: true })).toBeVisible();
+    await expect(page.getByText("Date & Time", { exact: true })).toBeVisible();
 
     // On web, the date picker is a native <input type="datetime-local">
     const dateInput = page.locator('input[type="datetime-local"]');
@@ -33,8 +28,8 @@ test.describe("Interaction modals", () => {
   });
 
   test("can change date in Log Interaction modal", async ({ page }) => {
-    await page.getByText("Log Interaction").click();
-    await expect(page.getByText("Date & Time")).toBeVisible({ timeout: 5_000 });
+    await page.getByText("Log Interaction", { exact: true }).click();
+    await expect(page.getByText("Date & Time", { exact: true })).toBeVisible({ timeout: 5_000 });
 
     // Set a specific date/time
     const dateInput = page.locator('input[type="datetime-local"]');
@@ -46,33 +41,45 @@ test.describe("Interaction modals", () => {
 
   test("clicking an interaction opens edit modal", async ({ page }) => {
     // Check if any interactions exist in the Activity section
-    const activitySection = page.getByText("Activity");
+    const activitySection = page.getByText("Activity", { exact: true });
     await expect(activitySection).toBeVisible();
 
-    // Look for interaction items (they have chevron-forward icons now)
-    // Interactions are inside the activity timeline
-    const interactionItems = page.locator(
-      "[role='button']:below(:text('Activity')):above(:text('Notes'))",
-    );
-
-    const firstInteraction = interactionItems.first();
-    if (
-      !(await firstInteraction.isVisible({ timeout: 3_000 }).catch(() => false))
-    ) {
+    // No interactions exist for this test contact ("Test" has no interactions)
+    // So we check for the empty state
+    const noInteractions = page.getByText("No interactions yet");
+    if (await noInteractions.isVisible({ timeout: 2_000 }).catch(() => false)) {
       test.skip(true, "No interactions exist for this contact");
       return;
     }
 
-    await firstInteraction.click();
+    // If interactions exist, they're rendered as div elements (not role="button")
+    // because React Native Web's Pressable wrapped in reanimated doesn't add role.
+    // Look for interaction type text within the Activity section area
+    const interactionTypes = ["Meeting", "Call", "Email", "Note", "Message"];
+    let foundInteraction = false;
+
+    for (const type of interactionTypes) {
+      const item = page.getByText(type, { exact: true }).first();
+      if (await item.isVisible({ timeout: 500 }).catch(() => false)) {
+        await item.click();
+        foundInteraction = true;
+        break;
+      }
+    }
+
+    if (!foundInteraction) {
+      test.skip(true, "No interactions found for this contact");
+      return;
+    }
 
     // Edit Interaction modal should open
     await expect(page.getByText("Edit Interaction")).toBeVisible({
       timeout: 5_000,
     });
 
-    // Should have the same fields as log modal plus a delete button
-    await expect(page.getByText("Type")).toBeVisible();
-    await expect(page.getByText("Date & Time")).toBeVisible();
-    await expect(page.getByText("Save Changes")).toBeVisible();
+    // Should have the same fields as log modal plus save button
+    await expect(page.getByText("Type", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("Date & Time", { exact: true })).toBeVisible();
+    await expect(page.getByText("Save Changes", { exact: true })).toBeVisible();
   });
 });

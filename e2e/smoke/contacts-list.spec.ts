@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { goToFirstContactDetail } from "../helpers/contacts";
 
 test.describe("Contacts list", () => {
   test("loads contacts tab", async ({ page }) => {
@@ -16,20 +17,13 @@ test.describe("Contacts list", () => {
   });
 
   test("can navigate to a contact detail page", async ({ page }) => {
-    await page.goto("/contacts");
-    await page.waitForLoadState("networkidle");
-
-    // Wait for contacts to load — if none exist, skip
-    const contactCard = page.locator("[role='button']").first();
-    if (!(await contactCard.isVisible({ timeout: 5_000 }).catch(() => false))) {
+    const hasContact = await goToFirstContactDetail(page);
+    if (!hasContact) {
       test.skip(true, "No contacts exist in dev environment");
       return;
     }
 
-    await contactCard.click();
-    await page.waitForURL("**/contact/*");
-
-    // Should show contact detail sections
-    await expect(page.getByText("Contact Info")).toBeVisible({ timeout: 10_000 });
+    // goToFirstContactDetail already verifies Contact Info is visible
+    await expect(page.getByText("Contact Info", { exact: true })).toBeVisible();
   });
 });

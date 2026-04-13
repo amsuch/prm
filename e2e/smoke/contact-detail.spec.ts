@@ -1,28 +1,22 @@
 import { test, expect } from "@playwright/test";
+import { goToFirstContactDetail } from "../helpers/contacts";
 
 test.describe("Contact detail page", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/contacts");
-    await page.waitForLoadState("networkidle");
-
-    // Click first contact card
-    const contactCard = page.locator("[role='button']").first();
-    if (!(await contactCard.isVisible({ timeout: 5_000 }).catch(() => false))) {
+    const hasContact = await goToFirstContactDetail(page);
+    if (!hasContact) {
       test.skip(true, "No contacts exist in dev environment");
-      return;
     }
-    await contactCard.click();
-    await page.waitForURL("**/contact/*");
   });
 
   test("shows stats bar", async ({ page }) => {
     await expect(page.getByText("Last Contacted")).toBeVisible();
-    await expect(page.getByText("Interactions")).toBeVisible();
-    await expect(page.getByText("Connected")).toBeVisible();
+    await expect(page.getByText("Interactions", { exact: true })).toBeVisible();
+    await expect(page.getByText("Connected", { exact: true })).toBeVisible();
   });
 
   test("shows contact info section", async ({ page }) => {
-    await expect(page.getByText("Contact Info")).toBeVisible();
+    await expect(page.getByText("Contact Info", { exact: true })).toBeVisible();
   });
 
   test("shows enrichment fields when present", async ({ page }) => {
@@ -32,20 +26,20 @@ test.describe("Contact detail page", () => {
       // At least one enrichment field should be visible
       await expect(
         page
-          .getByText("Location")
-          .or(page.getByText("Education"))
-          .or(page.getByText("Previous Companies")),
+          .getByText("Location", { exact: true })
+          .or(page.getByText("Education", { exact: true }))
+          .or(page.getByText("Previous Companies", { exact: true })),
       ).toBeVisible();
     }
   });
 
   test("shows bottom action bar with Edit and Log Interaction", async ({ page }) => {
-    await expect(page.getByText("Edit")).toBeVisible();
-    await expect(page.getByText("Log Interaction")).toBeVisible();
+    await expect(page.getByText("Edit", { exact: true })).toBeVisible();
+    await expect(page.getByText("Log Interaction", { exact: true })).toBeVisible();
   });
 
   test("shows Activity and Relationships sections", async ({ page }) => {
-    await expect(page.getByText("Activity")).toBeVisible();
-    await expect(page.getByText("Relationships")).toBeVisible();
+    await expect(page.getByText("Activity", { exact: true })).toBeVisible();
+    await expect(page.getByText("Relationships", { exact: true })).toBeVisible();
   });
 });
