@@ -277,6 +277,7 @@ export type Database = {
         };
         Update: {
           notes?: string | null;
+          relationship_type_id?: string;
         };
         Relationships: [
           {

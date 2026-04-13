@@ -73,6 +73,28 @@ export async function addRelationship(params: {
 }
 
 /**
+ * Update an existing relationship's type and/or notes.
+ */
+export async function updateRelationship(
+  relationshipId: string,
+  params: { notes?: string | null; relationshipTypeId?: string },
+): Promise<void> {
+  const updateData: Record<string, unknown> = {};
+  if (params.notes !== undefined) updateData.notes = params.notes;
+  if (params.relationshipTypeId !== undefined)
+    updateData.relationship_type_id = params.relationshipTypeId;
+
+  if (Object.keys(updateData).length === 0) return;
+
+  const { error } = await supabase
+    .from("contact_relationships")
+    .update(updateData)
+    .eq("id", relationshipId);
+
+  if (error) throw error;
+}
+
+/**
  * Remove a relationship by its ID.
  */
 export async function removeRelationship(relationshipId: string): Promise<void> {
