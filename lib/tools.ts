@@ -13,6 +13,10 @@ import {
   addPersonToEntity,
   promotePersonToContact,
 } from "@/lib/entities";
+import {
+  createEvent as createEventCrud,
+  addPersonToEvent,
+} from "@/lib/events";
 import { validateSQL, sanitizePostgrestValue } from "@/lib/sanitize";
 import type { Tables } from "@/types/database";
 
@@ -75,6 +79,7 @@ type InteractionRow = Tables<"interactions">;
 type TagRow = Tables<"tags">;
 type EntityRow = Tables<"entities">;
 type EntityPersonRow = Tables<"entity_people">;
+type EventRow = Tables<"events">;
 
 const STANDARD_CONTACT_FIELDS = [
   "company",
@@ -97,7 +102,7 @@ const SQL_SCHEMA_DESCRIPTION = `Execute a read-only SQL query against the user's
 
 ## Database Schema
 
-Tables: contacts (id, user_id, first_name, last_name, company, job_title, department, birthday, notes, source, custom_fields JSONB, is_archived, last_contacted_at, created_at, updated_at), contact_emails (id, contact_id, label, email, is_primary), contact_phones (id, contact_id, label, phone, is_primary), tags (id, user_id, name, color), contact_tags (contact_id, tag_id), interactions (id, user_id, contact_id, type, direction, title, body, occurred_at, created_at), relationship_types (id, name, reverse_name, category, is_symmetric), contact_relationships (contact_a_id, contact_b_id, relationship_type_id, notes), entities (id, user_id, name, category, address, phone, website, notes, is_archived), entity_people (id, entity_id, user_id, first_name, last_name, role, notes, promoted_contact_id), reminders (id, user_id, contact_id, title, remind_at, recurrence, is_completed), custom_field_definitions (id, user_id, name, field_key, field_type, options, display_order).
+Tables: contacts (id, user_id, first_name, last_name, company, job_title, department, birthday, notes, source, custom_fields JSONB, is_archived, last_contacted_at, created_at, updated_at), contact_emails (id, contact_id, label, email, is_primary), contact_phones (id, contact_id, label, phone, is_primary), tags (id, user_id, name, color), contact_tags (contact_id, tag_id), interactions (id, user_id, contact_id, type, direction, title, body, occurred_at, created_at), relationship_types (id, name, reverse_name, category, is_symmetric), contact_relationships (contact_a_id, contact_b_id, relationship_type_id, notes), entities (id, user_id, name, category, address, phone, website, notes, is_archived), entity_people (id, entity_id, user_id, first_name, last_name, role, notes, promoted_contact_id), events (id, user_id, name, category, event_date DATE, location, url, description, notes, is_archived), event_people (id, event_id, user_id, first_name, last_name, role, notes, promoted_contact_id), reminders (id, user_id, contact_id, title, remind_at, recurrence, is_completed), custom_field_definitions (id, user_id, name, field_key, field_type, options, display_order).
 
 Rules: ALWAYS include WHERE user_id = $1. ALWAYS filter is_archived = false unless asked about archived. Use ILIKE for text matching. LIMIT results (max 100). Use $1 for user_id. Only SELECT queries allowed.`;
 
@@ -481,6 +486,67 @@ export function getToolDefinitions(): ToolDefinition[] {
 
         if (error) throw new Error(error.message);
         return (data ?? []) as unknown as TagRow[];
+      },
+    },
+
+    {
+      name: "list_events",
+      description:
+        "List events (conferences, meetups, parties, weddings, workshops, etc.) that the user has attended or tracked. Optionally filter by category or search query. Use this when the user asks about their events or where they met someone.",
+      parameters: {
+        type: "object",
+        properties: {
+          category: {
+            type: "string",
+            description:
+              "Optional category filter (e.g., 'Conference', 'Meetup', 'Party').",
+          },
+          query: {
+            type: "string",
+            description:
+              "Optional text query to search event names, locations, or descriptions.",
+          },
+        },
+        required: [],
+      },
+      async execute(input, userId) {
+        let query = supabase
+          .from("events")
+          .select("*, event_people(id)")
+          .eq("user_id", userId)
+          .eq("is_archived", false)
+          .order("event_date", { ascending: false, nullsFirst: false });
+
+        const category = input.category as string | undefined;
+        const searchQuery = input.query as string | undefined;
+
+        if (category) {
+          query = query.ilike(
+            "category",
+            `%${sanitizePostgrestValue(category)}%`,
+          );
+        }
+        if (searchQuery) {
+          const q = sanitizePostgrestValue(searchQuery);
+          query = query.or(
+            `name.ilike.%${q}%,category.ilike.%${q}%,location.ilike.%${q}%,description.ilike.%${q}%`,
+          );
+        }
+
+        const { data, error } = await query.limit(20);
+        if (error) throw new Error(error.message);
+
+        type RawEvent = EventRow & { event_people: { id: string }[] };
+        return ((data ?? []) as unknown as RawEvent[]).map((e) => ({
+          id: e.id,
+          name: e.name,
+          category: e.category,
+          event_date: e.event_date,
+          location: e.location,
+          url: e.url,
+          description: e.description,
+          people_count: e.event_people?.length ?? 0,
+        }));
       },
     },
 
@@ -1599,6 +1665,126 @@ export function getToolDefinitions(): ToolDefinition[] {
         return {
           success: true,
           message: `Added ${firstName}${lastName ? " " + lastName : ""} to entity${role ? ` as ${role}` : ""}.`,
+          person: {
+            id: person.id,
+            first_name: person.first_name,
+            last_name: person.last_name,
+            role: person.role,
+          },
+        };
+      },
+    },
+
+    {
+      name: "create_event",
+      description:
+        "Create a new event (conference, meetup, party, wedding, workshop, dinner, etc.) that the user attended or plans to attend. Events can have people associated with them who can later be promoted to full contacts. Use this when the user describes an event they went to or gives a link to one.",
+      parameters: {
+        type: "object",
+        properties: {
+          name: {
+            type: "string",
+            description: "Name of the event (e.g., 'React NYC Meetup').",
+          },
+          category: {
+            type: "string",
+            description:
+              "Category of the event (e.g., 'Conference', 'Meetup', 'Party', 'Wedding', 'Workshop', 'Dinner').",
+          },
+          event_date: {
+            type: "string",
+            description: "ISO date (YYYY-MM-DD) when the event happened.",
+          },
+          location: {
+            type: "string",
+            description: "Venue, city, or address of the event.",
+          },
+          url: {
+            type: "string",
+            description: "Link to the event page, if any.",
+          },
+          description: {
+            type: "string",
+            description: "Short description of the event.",
+          },
+        },
+        required: ["name"],
+      },
+      requiresApproval: true,
+      async execute(input, userId) {
+        const name = input.name as string;
+        const category = (input.category as string) || null;
+        const event_date = (input.event_date as string) || null;
+        const location = (input.location as string) || null;
+        const url = (input.url as string) || null;
+        const description = (input.description as string) || null;
+
+        const event = await createEventCrud(userId, {
+          name,
+          category,
+          event_date,
+          location,
+          url,
+          description,
+        });
+
+        return {
+          success: true,
+          message: `Created event "${name}"${category ? ` (${category})` : ""}.`,
+          event: {
+            id: event.id,
+            name: event.name,
+            category: event.category,
+            event_date: event.event_date,
+            location: event.location,
+          },
+        };
+      },
+    },
+
+    {
+      name: "add_event_person",
+      description:
+        "Add a person (someone the user met at the event) to an event. These are casual acquaintances who can later be promoted to full contacts. Use this when the user says they met someone at a specific event.",
+      parameters: {
+        type: "object",
+        properties: {
+          event_id: {
+            type: "string",
+            description: "UUID of the event to add the person to.",
+          },
+          first_name: {
+            type: "string",
+            description: "First name of the person.",
+          },
+          last_name: {
+            type: "string",
+            description: "Last name of the person.",
+          },
+          role: {
+            type: "string",
+            description:
+              "How they're described at the event (e.g., 'speaker', 'organizer', 'guest').",
+          },
+        },
+        required: ["event_id", "first_name"],
+      },
+      requiresApproval: true,
+      async execute(input, userId) {
+        const eventId = input.event_id as string;
+        const firstName = input.first_name as string;
+        const lastName = (input.last_name as string) || null;
+        const role = (input.role as string) || null;
+
+        const person = await addPersonToEvent(eventId, userId, {
+          first_name: firstName,
+          last_name: lastName,
+          role,
+        });
+
+        return {
+          success: true,
+          message: `Added ${firstName}${lastName ? " " + lastName : ""} to event${role ? ` as ${role}` : ""}.`,
           person: {
             id: person.id,
             first_name: person.first_name,

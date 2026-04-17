@@ -723,6 +723,131 @@ export type Database = {
           },
         ];
       };
+      events: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          category: string | null;
+          event_date: string | null;
+          location: string | null;
+          url: string | null;
+          description: string | null;
+          notes: string | null;
+          is_archived: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          name: string;
+          category?: string | null;
+          event_date?: string | null;
+          location?: string | null;
+          url?: string | null;
+          description?: string | null;
+          notes?: string | null;
+          is_archived?: boolean;
+        };
+        Update: {
+          name?: string;
+          category?: string | null;
+          event_date?: string | null;
+          location?: string | null;
+          url?: string | null;
+          description?: string | null;
+          notes?: string | null;
+          is_archived?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "events_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      event_categories: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          name: string;
+          icon: string;
+          color: string;
+          is_system: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          name: string;
+          icon?: string;
+          color?: string;
+          is_system?: boolean;
+        };
+        Update: {
+          name?: string;
+          icon?: string;
+          color?: string;
+        };
+        Relationships: [];
+      };
+      event_people: {
+        Row: {
+          id: string;
+          event_id: string;
+          user_id: string;
+          first_name: string;
+          last_name: string | null;
+          role: string | null;
+          notes: string | null;
+          promoted_contact_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          event_id: string;
+          user_id: string;
+          first_name: string;
+          last_name?: string | null;
+          role?: string | null;
+          notes?: string | null;
+          promoted_contact_id?: string | null;
+        };
+        Update: {
+          first_name?: string;
+          last_name?: string | null;
+          role?: string | null;
+          notes?: string | null;
+          promoted_contact_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "event_people_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "event_people_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "event_people_promoted_contact_id_fkey";
+            columns: ["promoted_contact_id"];
+            isOneToOne: false;
+            referencedRelation: "contacts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {

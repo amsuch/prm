@@ -18,6 +18,7 @@ import { getInitials, formatDate } from "@/lib/utils";
 import { CustomFieldManager } from "@/components/CustomFieldManager";
 import { RelationshipTypeManager } from "@/components/RelationshipTypeManager";
 import { EntityCategoryManager } from "@/components/EntityCategoryManager";
+import { EventCategoryManager } from "@/components/EventCategoryManager";
 import { useTags } from "@/hooks/useTags";
 import { useUserEmails } from "@/hooks/useUserEmails";
 import { useCalendarSync } from "@/hooks/useCalendarSync";
@@ -1250,6 +1251,12 @@ export default function SettingsScreen() {
       <SectionHeader title="Entity Categories" />
       <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm dark:bg-stone-900 dark:border dark:border-stone-800">
         <EntityCategoryManager />
+      </View>
+
+      {/* Event Categories */}
+      <SectionHeader title="Event Categories" />
+      <View className="mx-4 overflow-hidden rounded-xl bg-white shadow-sm dark:bg-stone-900 dark:border dark:border-stone-800">
+        <EventCategoryManager />
       </View>
 
       {/* Relationship Types */}
