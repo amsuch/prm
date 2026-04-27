@@ -484,3 +484,65 @@ CREATE POLICY "Service role full access" ON enrichment_queue
 CREATE INDEX IF NOT EXISTS idx_enrichment_queue_pending
   ON enrichment_queue (status, created_at)
   WHERE status = 'pending';
+
+-- ============================================================
+-- CALENDAR SYNC STATE (Google Calendar OAuth + sync cursor)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS calendar_sync_state (
+  user_id UUID PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE,
+  is_connected BOOLEAN NOT NULL DEFAULT false,
+  provider_token TEXT,
+  provider_refresh_token TEXT,
+  provider_token_expires_at TIMESTAMPTZ,
+  sync_token TEXT,
+  last_sync_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+ALTER TABLE calendar_sync_state ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage own calendar sync state" ON calendar_sync_state
+  FOR ALL USING (auth.uid() = user_id);
+
+-- Backfill the new column on existing deployments.
+ALTER TABLE calendar_sync_state
+  ADD COLUMN IF NOT EXISTS provider_token_expires_at TIMESTAMPTZ;
+
+-- ============================================================
+-- CALENDAR SUGGESTIONS (unmatched attendees queued for review)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS calendar_suggestions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  display_name TEXT,
+  event_title TEXT,
+  event_date TIMESTAMPTZ,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_contact_id UUID REFERENCES contacts(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+ALTER TABLE calendar_suggestions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage own calendar suggestions" ON calendar_suggestions
+  FOR ALL USING (auth.uid() = user_id);
+
+CREATE INDEX IF NOT EXISTS calendar_suggestions_user_status_idx
+  ON calendar_suggestions(user_id, status, created_at DESC);
+
+-- One pending suggestion per (user, email). Allows multiple historical rows
+-- (dismissed/created) for the same email but blocks duplicate active ones.
+CREATE UNIQUE INDEX IF NOT EXISTS calendar_suggestions_pending_unique
+  ON calendar_suggestions(user_id, lower(email))
+  WHERE status = 'pending';
+
+-- ============================================================
+-- INTERACTION DEDUP INDEX (calendar sync)
+-- ============================================================
+-- syncCalendar writes metadata.dedup_key = `${event.id}:${contactId}` for every
+-- meeting interaction it creates. This unique index makes re-syncs safe even
+-- under races: the second insert hits 23505 and is silently ignored.
+CREATE UNIQUE INDEX IF NOT EXISTS interactions_calendar_dedup_idx
+  ON interactions ((metadata->>'dedup_key'))
+  WHERE type = 'meeting' AND metadata->>'dedup_key' IS NOT NULL;

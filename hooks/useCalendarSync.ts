@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { AppState, type AppStateStatus } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "@/lib/auth/ctx";
 import type { Tables } from "@/types/database";
@@ -7,9 +8,15 @@ import {
   connectCalendar,
   disconnectCalendar,
   getCalendarSuggestions,
+  CalendarTokenExpiredError,
   type SyncResult,
   type Suggestion,
 } from "@/lib/calendarSync";
+
+// Refresh the Google access token if it expires within this window.
+const TOKEN_REFRESH_BUFFER_MS = 60_000;
+// Auto-sync on app focus if the last sync was longer ago than this.
+const AUTO_SYNC_INTERVAL_MS = 30 * 60 * 1000;
 
 export type CalendarSyncData = {
   isConnected: boolean;
@@ -65,6 +72,21 @@ export function useCalendarSync(): CalendarSyncData {
     fetchState();
   }, [fetchState]);
 
+  const refreshAccessToken = useCallback(async (): Promise<string | null> => {
+    const { data, error } = await supabase.functions.invoke<{
+      access_token?: string;
+      expires_at?: string;
+      error?: string;
+    }>("refresh-google-token", { body: {} });
+
+    if (error || !data?.access_token) {
+      throw new Error(
+        data?.error ?? error?.message ?? "Failed to refresh Google token",
+      );
+    }
+    return data.access_token;
+  }, []);
+
   const sync = useCallback(async () => {
     if (!userId || !syncState?.provider_token) return;
     setIsSyncing(true);
@@ -72,7 +94,34 @@ export function useCalendarSync(): CalendarSyncData {
     setSyncResult(null);
 
     try {
-      const result = await syncCalendar(userId, syncState.provider_token);
+      let accessToken = syncState.provider_token;
+
+      // Pre-flight refresh if the token is missing an expiry or near/past expiry.
+      const expiresAt = syncState.provider_token_expires_at
+        ? new Date(syncState.provider_token_expires_at).getTime()
+        : null;
+      const needsRefresh =
+        expiresAt !== null && expiresAt - Date.now() < TOKEN_REFRESH_BUFFER_MS;
+
+      if (needsRefresh) {
+        const refreshed = await refreshAccessToken();
+        if (refreshed) accessToken = refreshed;
+      }
+
+      let result: SyncResult;
+      try {
+        result = await syncCalendar(userId, accessToken);
+      } catch (err) {
+        // Server-side rejection — refresh once and retry.
+        if (err instanceof CalendarTokenExpiredError) {
+          const refreshed = await refreshAccessToken();
+          if (!refreshed) throw err;
+          result = await syncCalendar(userId, refreshed);
+        } else {
+          throw err;
+        }
+      }
+
       setSyncResult(result);
       await fetchState();
     } catch (err) {
@@ -82,7 +131,13 @@ export function useCalendarSync(): CalendarSyncData {
     } finally {
       setIsSyncing(false);
     }
-  }, [userId, syncState?.provider_token, fetchState]);
+  }, [
+    userId,
+    syncState?.provider_token,
+    syncState?.provider_token_expires_at,
+    fetchState,
+    refreshAccessToken,
+  ]);
 
   const handleConnect = useCallback(
     async (providerToken: string, refreshToken?: string) => {
@@ -100,6 +155,39 @@ export function useCalendarSync(): CalendarSyncData {
     setSyncResult(null);
     setSyncError(null);
   }, [userId]);
+
+  // Auto-sync on app focus when the last sync is older than AUTO_SYNC_INTERVAL_MS.
+  // Stash the latest values in a ref so the AppState listener doesn't churn.
+  const autoSyncRef = useRef({
+    isConnected: false,
+    lastSyncAt: null as string | null,
+    isSyncing: false,
+    sync,
+  });
+  autoSyncRef.current = {
+    isConnected: syncState?.is_connected ?? false,
+    lastSyncAt: syncState?.last_sync_at ?? null,
+    isSyncing,
+    sync,
+  };
+
+  useEffect(() => {
+    const handleAppStateChange = (nextState: AppStateStatus) => {
+      if (nextState !== "active") return;
+      const { isConnected, lastSyncAt, isSyncing: currentlySyncing, sync: doSync } =
+        autoSyncRef.current;
+      if (!isConnected || currentlySyncing) return;
+      const lastMs = lastSyncAt ? new Date(lastSyncAt).getTime() : 0;
+      if (Date.now() - lastMs >= AUTO_SYNC_INTERVAL_MS) {
+        doSync().catch(() => {
+          // sync() already records errors into syncError state.
+        });
+      }
+    };
+
+    const subscription = AppState.addEventListener("change", handleAppStateChange);
+    return () => subscription.remove();
+  }, []);
 
   const pendingSuggestionsCount = suggestions.filter(
     (s) => s.status === "pending",

@@ -21,6 +21,18 @@ export type SyncResult = {
 
 export type Suggestion = Tables<"calendar_suggestions">;
 
+/**
+ * Thrown by fetchCalendarEvents when the access token is rejected (401/403).
+ * Callers (the useCalendarSync hook) catch this, refresh via the Edge Function,
+ * and retry once with the new token.
+ */
+export class CalendarTokenExpiredError extends Error {
+  constructor(message = "Google Calendar access token expired") {
+    super(message);
+    this.name = "CalendarTokenExpiredError";
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Google Calendar API
 // ---------------------------------------------------------------------------
@@ -66,6 +78,9 @@ export async function fetchCalendarEvents(
     if (!response.ok) {
       const errorBody = await response.text();
       console.error(`Google Calendar API error (${response.status}): ${errorBody}`);
+      if (response.status === 401 || response.status === 403) {
+        throw new CalendarTokenExpiredError();
+      }
       throw new Error(
         `Google Calendar API error (${response.status})`,
       );
@@ -200,18 +215,29 @@ export async function syncCalendar(
     ),
   );
 
-  // Also get existing interaction metadata to avoid duplicating calendar events
+  // Also get existing interaction metadata to avoid duplicating calendar events.
+  // Dedup key is `${event.id}:${contactId}` so the same event with multiple
+  // attendees produces one interaction per attendee, but re-running sync is a no-op.
   const { data: existingInteractions } = await supabase
     .from("interactions")
     .select("metadata")
     .eq("user_id", userId)
     .eq("type", "meeting");
 
-  const existingEventIds = new Set<string>();
+  const existingDedupKeys = new Set<string>();
   for (const row of (existingInteractions ?? []) as unknown as { metadata: Record<string, unknown> }[]) {
+    const dedupKey = row.metadata?.dedup_key;
+    if (typeof dedupKey === "string") {
+      existingDedupKeys.add(dedupKey);
+      continue;
+    }
+    // Backfill: rows written by older sync only stored calendar_event_id without contact_id.
+    // Treat them as already-synced for the same (event, contact) by reconstructing the key
+    // from the legacy fields when both are present.
     const calendarEventId = row.metadata?.calendar_event_id;
-    if (typeof calendarEventId === "string") {
-      existingEventIds.add(calendarEventId);
+    const legacyContactId = row.metadata?.contact_id;
+    if (typeof calendarEventId === "string" && typeof legacyContactId === "string") {
+      existingDedupKeys.add(`${calendarEventId}:${legacyContactId}`);
     }
   }
 
@@ -234,8 +260,8 @@ export async function syncCalendar(
 
       if (contactId) {
         // Check if we already created an interaction for this event+contact
-        const eventContactKey = `${event.id}:${contactId}`;
-        if (existingEventIds.has(eventContactKey)) continue;
+        const dedupKey = `${event.id}:${contactId}`;
+        if (existingDedupKeys.has(dedupKey)) continue;
 
         // Create interaction
         const { error: interactionError } = await supabase
@@ -246,11 +272,19 @@ export async function syncCalendar(
             type: "meeting",
             title: event.summary,
             occurred_at: event.start,
-            metadata: { calendar_event_id: event.id } as unknown as Tables<"interactions">["metadata"],
+            metadata: {
+              calendar_event_id: event.id,
+              contact_id: contactId,
+              dedup_key: dedupKey,
+            } as unknown as Tables<"interactions">["metadata"],
           } as never);
 
+        // Ignore Postgres unique-violation (23505) — dedup index caught a race.
         if (!interactionError) {
           interactionsCreated++;
+          existingDedupKeys.add(dedupKey);
+        } else if ((interactionError as { code?: string }).code !== "23505") {
+          console.error("Calendar sync interaction insert failed:", interactionError);
         }
       } else {
         // Unmatched – create suggestion (skip duplicates)
@@ -296,20 +330,26 @@ export async function connectCalendar(
   userId: string,
   providerToken: string,
   refreshToken?: string,
+  expiresAt?: string | null,
 ): Promise<void> {
   const { data: existing } = await supabase
     .from("calendar_sync_state")
-    .select("user_id")
+    .select("user_id, provider_refresh_token")
     .eq("user_id", userId)
     .single();
 
   if (existing) {
+    // Preserve refresh token across re-auth flows that don't return one
+    // (Google only re-issues a refresh_token when prompt=consent is used).
+    const existingRefresh = (existing as unknown as { provider_refresh_token: string | null })
+      .provider_refresh_token;
     await supabase
       .from("calendar_sync_state")
       .update({
         is_connected: true,
         provider_token: providerToken,
-        provider_refresh_token: refreshToken ?? null,
+        provider_refresh_token: refreshToken ?? existingRefresh ?? null,
+        provider_token_expires_at: expiresAt ?? null,
       } as never)
       .eq("user_id", userId);
   } else {
@@ -318,6 +358,7 @@ export async function connectCalendar(
       is_connected: true,
       provider_token: providerToken,
       provider_refresh_token: refreshToken ?? null,
+      provider_token_expires_at: expiresAt ?? null,
     } as never);
   }
 }
@@ -329,6 +370,7 @@ export async function disconnectCalendar(userId: string): Promise<void> {
       is_connected: false,
       provider_token: null,
       provider_refresh_token: null,
+      provider_token_expires_at: null,
       sync_token: null,
     } as never)
     .eq("user_id", userId);

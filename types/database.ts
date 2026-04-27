@@ -511,6 +511,7 @@ export type Database = {
           is_connected: boolean;
           provider_token: string | null;
           provider_refresh_token: string | null;
+          provider_token_expires_at: string | null;
           created_at: string;
         };
         Insert: {
@@ -520,6 +521,7 @@ export type Database = {
           is_connected?: boolean;
           provider_token?: string | null;
           provider_refresh_token?: string | null;
+          provider_token_expires_at?: string | null;
         };
         Update: {
           last_sync_at?: string | null;
@@ -527,6 +529,7 @@ export type Database = {
           is_connected?: boolean;
           provider_token?: string | null;
           provider_refresh_token?: string | null;
+          provider_token_expires_at?: string | null;
         };
         Relationships: [
           {
