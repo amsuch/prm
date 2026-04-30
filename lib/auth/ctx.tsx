@@ -34,15 +34,23 @@ export function SessionProvider({ children }: PropsWithChildren) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setIsLoading(false);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        setSession(session);
+      })
+      .catch((err) => {
+        console.warn("getSession failed:", err);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
+      setIsLoading(false);
 
       // Capture Google provider tokens after OAuth sign-in
       if (
